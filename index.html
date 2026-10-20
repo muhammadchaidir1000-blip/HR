@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1B29A3">
-<title>Unimedika HR Suite</title>
+<title>LyrionX HR Suite</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
@@ -653,11 +653,34 @@ html:has(body.has-demo){scroll-padding-bottom:140px}
 .pz-cta{position:sticky;bottom:0;margin:0 -8px;padding:18px 8px 16px;background:linear-gradient(180deg,rgba(232,236,255,0),var(--bg) 40%)}
 .cmp-r{grid-template-columns:minmax(110px,180px) 1fr 52px!important}
 .pwcell{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.pwcell code{background:var(--surface-2);padding:4px 8px;border-radius:6px;font-size:13px;word-break:break-all}
+/* login kiri: logo LyrionX + manfaat lebih besar */
+.login-side .lx-pill{align-self:flex-start;padding:8px 20px 8px 10px}
+.login-side .lx-pill img{height:40px}
+.login-side .lx-pill b{font-size:16px}.login-side .lx-pill small{font-size:13px}
+.paperless{max-width:600px;gap:18px}
+.paperless .eyebrow{font-size:13px;letter-spacing:.09em;font-weight:800}
+.paperless ul{gap:18px}
+.paperless li{font-size:16px;line-height:1.55;gap:16px;align-items:flex-start}
+.paperless li b{display:block;font-size:17px;margin-bottom:2px}
+.paperless .pi{width:46px;height:46px;border-radius:13px}
+.paperless .pi svg{width:24px;height:24px}
+.brand-logo.lx{background:#fff;border-radius:8px;padding:3px 5px;object-fit:contain}
+.brand-ini{display:grid;place-items:center;font-weight:800;background:var(--brand);color:var(--on-brand);border-radius:10px}
+@media (max-width:820px){.login-side .lx-pill{align-self:flex-start}.paperless li{font-size:14px}.paperless li b{font-size:15px}.paperless .pi{width:38px;height:38px}}
+/* log aktivitas: huruf hitam, ukuran kecil */
+.audit-tbl,.audit-tbl td,.audit-tbl td *{font-size:11.5px!important}
+.audit-tbl th{font-size:11px!important}
+.audit-tbl td,.audit-tbl td .faint{color:#000}
+.audit-tbl td{padding-top:5px;padding-bottom:5px}
+:root[data-theme="dark"] .audit-tbl td,:root[data-theme="dark"] .audit-tbl td .faint{color:#E6EAFF}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .audit-tbl td,:root:not([data-theme="light"]) .audit-tbl td .faint{color:#E6EAFF}}
+.rep-wholist{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px 14px;max-height:220px;overflow:auto;padding:8px;border:1px solid var(--line);border-radius:10px}
+.rep-who summary{cursor:pointer}
 </style>
 </head>
 <body>
 
-<div id="app"><div id="boot">Memuat Unimedika HR Suite…</div></div>
+<div id="app"><div id="boot">Memuat HR Suite…</div></div>
 <div id="modal-root"></div>
 <script>
 /** @license
@@ -1134,6 +1157,18 @@ const nf = (n,d=0) => Number(n||0).toLocaleString('id-ID',{maximumFractionDigits
 const uid = p => p + '_' + Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-4);
 const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
 const pad = n => String(n).padStart(2,'0');
+/* masa berlaku akun perusahaan (diatur Super Admin): validFrom / validUntil (YYYY-MM-DD), kosong = tanpa batas */
+const fmtD = d => { if (!d) return ''; const [y, m, x] = d.split('-'); return `${x}/${m}/${y}`; };
+const coValid = co => {
+  if (!co) return { st: 'none', label: 'Tanpa batas', cls: 'info' };
+  const t = todayISO(), f = co.validFrom || '', u = co.validUntil || '';
+  const days = d => Math.round((new Date(d + 'T00:00:00') - new Date(t + 'T00:00:00')) / 86400000);
+  if (f && t < f) return { st: 'future', label: 'Belum berlaku (mulai ' + fmtD(f) + ')', cls: 'warn', msg: 'Akun perusahaan Anda belum berlaku. Berlaku mulai ' + fmtD(f) + '.' };
+  if (u && t > u) return { st: 'expired', label: 'Kedaluwarsa ' + fmtD(u), cls: 'bad', msg: 'Masa berlaku akun perusahaan telah berakhir pada ' + fmtD(u) + '. Hubungi Super Admin untuk perpanjangan.' };
+  if (u) { const n = days(u); return { st: n <= 30 ? 'soon' : 'ok', label: 'Sampai ' + fmtD(u) + (n === 0 ? ' (hari ini)' : ' (' + n + ' hari lagi)'), cls: n <= 30 ? 'warn' : 'ok' }; }
+  return { st: 'none', label: 'Tanpa batas', cls: 'info' };
+};
+const coBlock = a => { if (!a || a.role === 'superadmin') return ''; const v = coValid(Store.get('companies', a.companyId)); return v.st === 'expired' || v.st === 'future' ? v.msg : ''; };
 const todayISO = () => { const d=new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
 const monthISO = () => todayISO().slice(0,7);
 const nowISO = () => new Date().toISOString();
@@ -1352,11 +1387,14 @@ function pwIssues(pw) {
   return e;
 }
 async function audit(action, detail = '') {
-  const day = todayISO();
-  const cur = Store.get('audit', day) || { entries: [] };
-  const entries = (cur.entries || []).slice(-299);
-  entries.push({ t: nowISO(), user: S.user?.username || '-', role: S.user?.role || '-', companyId: S.companyId || null, action, detail: String(detail).slice(0, 200) });
-  try { await Store.put('audit', day, { entries }); } catch (e) {}
+  /* satu dokumen per pengguna per hari agar tiap orang menulis log miliknya sendiri */
+  if (!S.user) return;
+  const day = todayISO(), id = day + '_' + S.user.id;
+  const cur = Store.get('audit', id) || { entries: [] };
+  const entries = (cur.entries || []).slice(-499);
+  const cid = S.user.role === SA ? (S.companyId || null) : S.user.companyId || null;
+  entries.push({ t: nowISO(), user: S.user.username || '-', role: S.user.role || '-', companyId: cid, action, detail: String(detail).slice(0, 200) });
+  try { await Store.put('audit', id, { day, entries, companyId: cid, accountId: S.user.id }); } catch (e) {}
 }
 
 /* ---------------- DISC engine (dari SCORING_DISC.xlsm) ---------------- */
@@ -1528,17 +1566,29 @@ const NAV = [
   { id: 'overtime', label: 'Lembur', icon: 'clock', roles: [SA, CO], group: 'Kepegawaian' },
   { id: 'leaves', label: 'Cuti', icon: 'cal', roles: [SA, CO], group: 'Kepegawaian' },
   { id: 'payroll', label: 'Payroll', icon: 'money', roles: [SA, CO], group: 'Kepegawaian' },
+  { id: 'reports', label: 'Laporan', icon: 'chart', roles: [SA, CO], group: 'Laporan' },
   { id: 'accounts', label: 'Akun Pengguna', icon: 'key', roles: [SA, CO], group: 'Pengaturan' },
   { id: 'skilltests', label: 'Soal Tes Kemampuan Unit', icon: 'skill', roles: [SA, CO], group: 'Pengaturan' },
   { id: 'settings', label: 'Pengaturan Perusahaan', icon: 'gear', roles: [SA, CO], group: 'Pengaturan' },
   { id: 'companies', label: 'Daftar Perusahaan', icon: 'building', roles: [SA], group: 'Master' },
   { id: 'master', label: 'Master Data Psikotes', icon: 'book', roles: [SA], group: 'Master' },
+  { id: 'menuaccess', label: 'Akses Menu per RS', icon: 'gear', roles: [SA], group: 'Master' },
   { id: 'audit', label: 'Log Aktivitas', icon: 'log', roles: [SA], group: 'Master' }
 ];
 /* halaman yang boleh dibuka Super Admin sebelum masuk ke perusahaan */
-const SA_OUTSIDE = ['companies', 'company', 'master', 'audit'];
+const SETTINGS_IDS = ['accounts', 'skilltests', 'settings'];
+const SA_OUTSIDE = ['companies', 'company', 'master', 'audit', 'menuaccess', 'reports', ...SETTINGS_IDS];
+/* menu yang bisa dibuka/ditutup per perusahaan (Super Admin > Akses Menu per RS); belum diatur = semua terbuka */
+const MENU_TOGGLE = ['exec', 'participants', 'meetings', 'cmppsy', 'cmpskill', 'employees', 'overtime', 'leaves', 'payroll', 'reports', ...SETTINGS_IDS];
+const ROUTE_MENU = { candidate: 'participants', candidates: 'participants', ist: 'participants', istresult: 'participants', kerjakan: 'participants', 'test-edit': 'skilltests', 'test-results': 'skilltests' };
+const menuOn = (id, cid) => { const co = Store.get('companies', cid || (S.user && S.user.role === SA ? S.companyId : S.user && S.user.companyId)); return !co || !Array.isArray(co.menus) || co.menus.includes(id); };
 const HIDDEN_ROUTES = { 'company': [SA], 'candidate': [SA, CO], 'disc-take': [US], 'skill-take': [US], 'test-edit': [SA, CO], 'test-results': [SA, CO], 'istresult': [SA, CO], 'myresult': [US], 'candidates': [SA, CO], 'ist': [SA, CO], 'kerjakan': [SA, CO] };
-function canRoute(r) { const n = NAV.find(x => x.id === r); const roles = n ? n.roles : HIDDEN_ROUTES[r]; return !!(roles && S.user && roles.includes(S.user.role)); }
+function canRoute(r) {
+  const n = NAV.find(x => x.id === r); const roles = n ? n.roles : HIDDEN_ROUTES[r]; if (!(roles && S.user && roles.includes(S.user.role))) return false;
+  const mid = ROUTE_MENU[r] || r;
+  if (MENU_TOGGLE.includes(mid) && (S.user.role === CO || (S.user.role === SA && S.inCompany)) && !menuOn(mid)) return false;
+  return true;
+}
 const navOn = n => S.route === n.id || (S.route === 'company' && n.id === 'companies') || (['candidate', 'candidates', 'istresult', 'ist', 'kerjakan'].includes(S.route) && n.id === 'participants') || (S.route === 'myresult' && n.id === 'mytests') || ((S.route === 'test-edit' || S.route === 'test-results') && n.id === 'skilltests');
 const inScope = x => S.user.role === SA ? x.companyId === S.companyId : x.companyId === S.user.companyId;
 const icon = k => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICON[k] || ''}</svg>`;
@@ -1611,6 +1661,7 @@ const App = {
     const a = Store.get('accounts', prof.account_id);
     if (!a) { const e = new Error('noaccount'); e.code = 'noaccount'; throw e; }
     a.role = prof.role;
+    { const blk = coBlock(a); if (blk) { const e = new Error(blk); e.code = 'coexpired'; throw e; } }
     if (restore) { const o = JSON.parse(sessionStorage.getItem('hrs:session') || 'null'); if (!o || o.id !== a.id || Date.now() - o.t > 30 * 60 * 1000) { const e = new Error('expired'); e.code = 'expired'; throw e; } this.setUser(a, o.cid, o.ic); }
     else this.setUser(a);
     Store.startPolling();
@@ -1627,7 +1678,7 @@ const App = {
     if (typeof istEnsureSamples === 'function') await istEnsureSamples();
     /* catat password awal akun bawaan agar Super Admin bisa melihatnya (hanya bila belum pernah diganti) */
     try { for (const a of Store.all('accounts')) { if (a.initPass || !a.salt) continue; for (const pw of ['Admin#2026', 'Unimedika#2026', 'Kandidat#2026', 'Contoh#2026', 'Demo#2026']) { if ((await sha256(a.salt + ':' + pw)) === a.passHash) { await Store.put('accounts', a.id, { ...a, initPass: pw }); break; } } } } catch (e) { console.warn('initPass', e); }
-    try { const s = sessionStorage.getItem('hrs:session'); if (s) { const o = JSON.parse(s); const a = Store.get('accounts', o.id); if (a && a.active && Date.now() - o.t < 30 * 60 * 1000) this.setUser(a, o.cid, o.ic); } } catch (e) {}
+    try { const s = sessionStorage.getItem('hrs:session'); if (s) { const o = JSON.parse(s); const a = Store.get('accounts', o.id); if (a && a.active && !coBlock(a) && Date.now() - o.t < 30 * 60 * 1000) this.setUser(a, o.cid, o.ic); } } catch (e) {}
     this.initIdle();
     this.render();
   },
@@ -1646,13 +1697,14 @@ const App = {
   },
   go(route, params = {}) {
     if (S.test && !route.endsWith('-take')) { toast('Selesaikan tes terlebih dahulu.'); return; }
-    if (S.user.role === SA && route === 'companies') S.inCompany = false;
+    if (S.user.role === SA && (route === 'companies' || SETTINGS_IDS.includes(route) || route === 'menuaccess')) S.inCompany = false;
     S.route = route; S.params = params; this.saveSession(); this.render(); window.scrollTo(0, 0);
   },
   onRemoteChange(col) {
     if (!S.user) return;
     const a = S.user && Store.get('accounts', S.user.id);
     if (!a || !a.active) { this.logout('Akun Anda dinonaktifkan atau dihapus oleh admin.'); return; }
+    { const blk = coBlock(a); if (blk) { this.logout(blk); return; } }
     if (a) S.user = a;
     if (S.test || $('#modal-root').innerHTML) return;
     const f = document.activeElement; if (f && /INPUT|SELECT|TEXTAREA/.test(f.tagName)) return;
@@ -1663,7 +1715,7 @@ const App = {
     document.body.classList.toggle('has-user', !!S.user); document.body.dataset.role = S.user ? S.user.role : 'guest';
     if (!S.user) { app.innerHTML = Views.login(); Views.loginMount(); return; }
     if (S.test) { this.renderTest(); return; }
-    const groups = []; NAV.filter(n => n.roles.includes(S.user.role) && (S.user.role !== SA || S.inCompany || SA_OUTSIDE.includes(n.id) || n.id === 'dash' && false)).forEach(n => { const g = n.group || ''; let grp = groups.find(x => x.g === g); if (!grp) groups.push(grp = { g, items: [] }); grp.items.push(n); });
+    const groups = []; NAV.filter(n => n.roles.includes(S.user.role) && (S.user.role === SA ? (S.inCompany ? !SETTINGS_IDS.includes(n.id) && n.id !== 'menuaccess' : SA_OUTSIDE.includes(n.id)) : true) && (!MENU_TOGGLE.includes(n.id) || S.user.role === US || (S.user.role === SA && !S.inCompany) || menuOn(n.id))).forEach(n => { const g = n.group || ''; let grp = groups.find(x => x.g === g); if (!grp) groups.push(grp = { g, items: [] }); grp.items.push(n); });
     const navHtml = groups.map(g => `<div class="nav-group">${g.g ? `<div class="eyebrow">${esc(g.g)}</div>` : ''}${g.items.map(n => `<button class="nav-item ${navOn(n) ? 'on' : ''}" data-go="${n.id}" title="${esc(n.label)}" aria-label="${esc(n.label)}">${icon(n.icon)}<span>${esc(n.label)}</span></button>`).join('')}</div>`).join('');
     const comps = Store.all('companies');
     const compSel = S.user.role === SA && !S.inCompany ? '<span class="pill info">Pilih perusahaan untuk dilihat</span>' : S.user.role === SA ? `<button class="btn sm" data-go="companies">\u2190 Daftar Perusahaan</button><label class="row small muted" style="gap:6px">Perusahaan aktif <select class="input" id="compSel" style="width:auto;padding:6px 10px">${comps.map(c => `<option value="${c.id}" ${c.id === S.companyId ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select></label>`
@@ -1671,12 +1723,12 @@ const App = {
     const cur = NAV.find(n => n.id === S.route) || { label: { candidate: 'Detail Hasil Psikotes', company: 'Detail Perusahaan', 'test-edit': 'Tes Kemampuan Unit', 'test-results': 'Tes Kemampuan Unit', istresult: 'Hasil Psikotes IST', myresult: 'Hasil Saya' }[S.route] || '' };
     app.innerHTML = `<div class="shell">
       <div class="side-backdrop" id="sideBg" hidden></div>
-      <aside class="side" id="side" aria-label="Menu utama"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><div class="brandmark"><img class="brand-logo" src="${LOGO_UM}" alt="Logo RS Unimedika"><span class="brand-text">Unimedika HR Suite</span></div><button class="nav-close" id="sideClose" aria-label="Tutup menu">✕</button></div>${navHtml}
+      <aside class="side" id="side" aria-label="Menu utama"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><div class="brandmark">${brandOf().logo}<span class="brand-text">${esc(brandOf().name)}</span></div><button class="nav-close" id="sideClose" aria-label="Tutup menu">✕</button></div>${navHtml}
         <div class="side-foot"><div><b style="color:var(--ink-text)">${esc(S.user.name)}</b><br>${ROLE_LABEL[S.user.role]}</div>
           <div class="row"><button class="btn sm side-btn" id="btnPw">Ganti password</button><button class="btn sm side-btn" id="btnOut">Keluar</button></div></div></aside>
       <div class="main">
         <header class="mbar"><button class="mbar-btn" id="mMenu" aria-label="Buka menu" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-          <div class="mbar-title"><span class="small">Unimedika HR Suite</span><b>${esc(cur.label)}</b></div><a class="mbar-lx" href="https://lyrionx.com" target="_blank" rel="noopener" aria-label="lyrionx.com"><img src="${LOGO_LX_MARK}" alt=""><span data-clock="short"></span></a></header>
+          <div class="mbar-title"><span class="small">${esc(brandOf().name)}</span><b>${esc(cur.label)}</b></div><a class="mbar-lx" href="https://lyrionx.com" target="_blank" rel="noopener" aria-label="lyrionx.com"><img src="${LOGO_LX_MARK}" alt=""><span data-clock="short"></span></a></header>
         <div class="topbar ${S.user.role === SA ? '' : 'co-sm'}">${compSel}<div class="grow"></div>
           <span class="small muted hide-sm">${Store.mode === 'db' ? 'Tersimpan di server' : 'Tersimpan di browser ini'}</span>
           <div class="acct hide-sm"><button class="acct-btn" id="acctBtn" aria-haspopup="menu" aria-expanded="false"><span class="acct-av" aria-hidden="true">${esc((S.user.name || '?').trim().charAt(0).toUpperCase())}</span><span class="acct-tx"><b>${esc(S.user.name)}</b><small>${ROLE_LABEL[S.user.role]}</small></span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
@@ -1707,9 +1759,15 @@ const App = {
     const c = $('#content'); if (!c) return;
     if (S.user.role === SA && !S.inCompany && !SA_OUTSIDE.includes(S.route)) S.route = 'companies';
     if (!canRoute(S.route)) { c.innerHTML = `<div class="card card-pad"><h2>Akses ditolak</h2><p class="muted">Peran ${esc(ROLE_LABEL[S.user.role])} tidak memiliki akses ke halaman ini.</p></div>`; return; }
+    if (S.user.role === SA && !S.inCompany && SETTINGS_IDS.includes(S.route) && !Store.get('companies', S.companyId)) S.companyId = (Store.all('companies')[0] || {}).id || null;
     const v = Views[S.route.replace(/-(\w)/g, (_, x) => x.toUpperCase())];
     c.innerHTML = v ? v() : '<p>Halaman tidak ditemukan</p>';
-    if (S.route !== 'dash' && !(S.user.role === SA && !S.inCompany && S.route === 'companies')) c.insertAdjacentHTML('afterbegin', '<div class="back-row"><button class="btn sm back-home" data-go="dash" aria-label="Kembali ke Beranda">\u2190 Kembali ke Beranda</button></div>');
+    if (S.user.role === SA && !S.inCompany && SETTINGS_IDS.includes(S.route)) {
+      const cs = Store.all('companies');
+      c.insertAdjacentHTML('afterbegin', `<div class="note info" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px"><b>Perusahaan:</b><select class="input" id="outCo" style="width:auto;min-width:220px">${cs.map(x => `<option value="${x.id}" ${x.id === S.companyId ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select><span class="small muted">Pengaturan di bawah berlaku untuk perusahaan yang dipilih.</span></div>`);
+      const oc = $('#outCo', c); if (oc) oc.onchange = () => { S.companyId = oc.value; this.saveSession(); this.renderContent(); };
+    }
+    if (S.route !== 'dash' && !(S.user.role === SA && !S.inCompany)) c.insertAdjacentHTML('afterbegin', '<div class="back-row"><button class="btn sm back-home" data-go="dash" aria-label="Kembali ke Beranda">\u2190 Kembali ke Beranda</button></div>');
     const m = Views[S.route.replace(/-(\w)/g, (_, x) => x.toUpperCase()) + 'Mount']; m && m(c);
     $$('[data-go]', c).forEach(b => b.onclick = () => this.go(b.dataset.go, b.dataset.p ? JSON.parse(b.dataset.p) : {}));
     stackTables(c);
@@ -1744,6 +1802,16 @@ function showWelcome(name) {
 
 /* ---------------- Views ---------------- */
 const Views = {};
+/* merek di sidebar/tes: LyrionX di luar perusahaan; di dalam perusahaan mengikuti nama dan logo RS */
+const brandOf = () => {
+  const lx = { name: 'LyrionX HR Suite', logo: `<img class="brand-logo lx" src="${LOGO_LX_MARK}" alt="LyrionX.Co">` };
+  if (!S.user) return lx;
+  const cid = S.user.role === SA ? (S.inCompany ? S.companyId : null) : S.user.companyId, co = cid && Store.get('companies', cid);
+  if (!co) return lx;
+  const um = co.id === 'c_humana' || /unimedika/i.test(co.name || '');
+  const logo = um ? `<img class="brand-logo" src="${LOGO_UM}" alt="Logo ${esc(co.name)}">` : co.logo ? `<img class="brand-logo" src="${esc(co.logo)}" alt="Logo ${esc(co.name)}">` : `<span class="brand-logo brand-ini" aria-hidden="true">${esc((co.name || '?').replace(/^(RS|RSU|RSIA|Rumah Sakit)\s+/i, '').charAt(0).toUpperCase())}</span>`;
+  return { name: co.name || 'HR Suite', logo };
+};
 
 const LOGIN_ROLES = {
   super: { label: 'Super Admin', title: 'Masuk Super Admin', hint: 'Kelola semua perusahaan, akun, master data psikotes, dan keamanan sistem.', side: 'Pusat kendali sistem', sub: 'Akses penuh untuk mengelola perusahaan, akun admin, master data psikotes beserta kunci jawaban, dan persetujuan pendaftaran.', roles: [SA] },
@@ -1760,13 +1828,12 @@ Views.login = () => { const k0 = (() => { try { const q = new URLSearchParams(lo
   <canvas class="fx-canvas" id="fxCanvas" aria-hidden="true"></canvas>
   <div class="fx-orbs" aria-hidden="true"><i></i><i></i><i></i></div>
   <section class="login-side">
-    <div class="stack rise" style="gap:4px;--d:.05s"><div class="brandmark"><img class="brand-logo" src="${LOGO_UM}" alt="Logo RS Unimedika">Unimedika HR Suite</div><div class="small" style="color:var(--ink-muted);padding-left:46px">RS Unimedika Setu Bekasi</div></div>
-    <div class="stack" style="gap:16px"><h1 class="rise" id="sideH" style="--d:.15s">Rekrutmen, psikotes, dan payroll dalam satu tempat.</h1>
-      <p class="rise" id="sideP" style="--d:.28s">Psikotes DISC dan IST dengan skor otomatis, tes kompetensi per unit kerja, jadwal wawancara Zoom/Google Meet, serta lembur, cuti, dan gaji karyawan.</p></div>
+    <div class="stack rise" style="gap:6px;--d:.05s"><a class="lx-pill" href="https://lyrionx.com" target="_blank" rel="noopener" aria-label="LyrionX.Co - lyrionx.com"><img src="${LOGO_LX_MARK}" alt=""><span><b>LyrionX.Co</b><small>lyrionx.com</small></span></a><div class="small" style="color:var(--ink-muted);padding-left:6px;font-weight:700;letter-spacing:.04em">HR Suite</div></div>
+    <div class="stack" style="gap:16px"><h1 class="rise" id="sideH" style="--d:.15s">Rekrutmen, psikotes, dan payroll dalam satu tempat.</h1></div>
     <div class="paperless rise" style="--d:.4s"><div class="eyebrow">Manfaat rekrutmen digital tanpa kertas</div>
       <ul>${PAPERLESS.map(([i, t, d]) => `<li><span class="pi">${i}</span><span><b>${t}</b> ${d}</span></li>`).join('')}</ul></div>
   </section>
-  <section class="login-main"><div class="login-stack"><a class="lx-pill rise" style="--d:.1s" href="https://lyrionx.com" target="_blank" rel="noopener" aria-label="LyrionX.Co - lyrionx.com"><img src="${LOGO_LX_MARK}" alt=""><span><b>LyrionX.Co</b><small>lyrionx.com</small></span></a><form class="login-card rise" style="--d:.2s" id="loginForm" autocomplete="on">
+  <section class="login-main"><div class="login-stack"><form class="login-card rise" style="--d:.2s" id="loginForm" autocomplete="on">
     <div><h1 style="font-size:24px" id="loginTitle">Masuk</h1><p class="muted" style="margin:4px 0 0">Pilih jenis akun, lalu masukkan data login dari HRD.</p></div>
     <label class="f">Username<input class="input" id="lu" name="u" autocomplete="username" required></label>
     <div class="f"><label for="lp" style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">Password<button type="button" class="link-btn" id="forgotBtn">Lupa password?</button></label><span class="pw-wrap"><input class="input" id="lp" name="p" type="password" autocomplete="current-password" required><button type="button" class="pw-eye" id="pwEye" aria-label="Tampilkan password">Lihat</button></span></div>
@@ -1802,7 +1869,7 @@ Views.loginMount = () => {
           t.n++; if (t.n >= LOCK.max) { t.until = Date.now() + LOCK.ms; t.n = 0; } LOCK.tries[u] = t; err.textContent = 'Username atau password salah.'; err.hidden = false; return;
         }
         let a; try { a = await App.enterSupa(false); }
-        catch (er) { await Supa.logout(); Store.reset(); err.textContent = (er.code === 'inactive' || er.code === 'noaccount') ? 'Akun belum aktif atau dinonaktifkan. Pendaftaran baru perlu disetujui Super Admin atau HRD.' : supaErr(er); err.hidden = false; return; }
+        catch (er) { await Supa.logout(); Store.reset(); err.textContent = er.code === 'coexpired' ? er.message : (er.code === 'inactive' || er.code === 'noaccount') ? 'Akun belum aktif atau dinonaktifkan. Pendaftaran baru perlu disetujui Super Admin atau HRD.' : supaErr(er); err.hidden = false; return; }
         LOCK.tries[u] = { n: 0, until: 0 };
         audit('login'); App.render(); if (a.role !== US) showWelcome(a.name);
       } finally { if (btn) btn.disabled = false; }
@@ -1812,6 +1879,7 @@ Views.loginMount = () => {
     const ok = a && (await sha256(a.salt + ':' + p)) === a.passHash;
     if (!ok) { t.n++; if (t.n >= LOCK.max) { t.until = Date.now() + LOCK.ms; t.n = 0; } LOCK.tries[u] = t; err.textContent = 'Username atau password salah.'; err.hidden = false; return; }
     if (a.pending) { err.textContent = 'Pendaftaran akun Anda masih menunggu persetujuan. Hubungi Super Admin atau HRD.'; err.hidden = false; return; }
+    { const blk = coBlock(a); if (blk) { err.textContent = blk; err.hidden = false; return; } }
     if (!a.active) { err.textContent = 'Akun dinonaktifkan. Hubungi admin.'; err.hidden = false; return; }
     LOCK.tries[u] = { n: 0, until: 0 };
     App.setUser(a); audit('login'); App.render(); if (a.role !== US) showWelcome(a.name);
@@ -2072,7 +2140,7 @@ const Test = {
   renderDisc() {
     const t = S.test; const s = t.sess.subject || {}; const done = t.sess.answers.filter((_, i) => this.answered(i) === 2).length;
     const order = [...Array(24).keys()];
-    $('#app').innerHTML = `<div class="test-top"><div class="brandmark" style="font-size:13px"><img class="brand-logo" src="${LOGO_UM}" alt="Logo RS Unimedika">D.I.S.C. Test</div>
+    $('#app').innerHTML = `<div class="test-top"><div class="brandmark" style="font-size:13px">${brandOf().logo}D.I.S.C. Test</div>
       <div class="progress" aria-label="Progres"><i style="width:${done / 24 * 100}%"></i></div><span class="small muted mono">${done}/24</span>
       ${t.paper ? '<span class="pill acc">Input lembar jawaban · tanpa batas waktu</span>' : `<div class="timer" id="timer" role="timer" aria-live="off">${mmss(this.remaining())}</div>`}
       ${t.admin ? '<button class="btn sm" id="tCancel">Batal</button>' : ''}</div>
@@ -2108,7 +2176,7 @@ const Test = {
     if (S.test.kind === 'disc') { this.renderDisc(); return; }
     const t = S.test; const n = t.sess.answers.length; const done = t.sess.answers.filter((_, i) => this.answered(i) === 2).length;
     const title = t.test.title;
-    $('#app').innerHTML = `<div class="test-top"><div class="brandmark" style="font-size:13px"><img class="brand-logo" src="${LOGO_UM}" alt="Logo RS Unimedika">${esc(title)}</div>
+    $('#app').innerHTML = `<div class="test-top"><div class="brandmark" style="font-size:13px">${brandOf().logo}${esc(title)}</div>
       <div class="progress" aria-label="Progres"><i style="width:${done / n * 100}%"></i></div><span class="small muted mono">${done}/${n}</span>
       <div class="timer" id="timer" role="timer" aria-live="off">${mmss(this.remaining())}</div></div>
       <div class="test-body" id="testBody"></div>`;
@@ -3104,16 +3172,17 @@ Views.settingsMount = c => {
 /* ---- Master perusahaan ---- */
 Views.companies = () => {
   const comps = Store.all('companies');
-  return `<div class="page-head"><div><h1>Master Perusahaan</h1><p>Klik salah satu perusahaan untuk melihat semua akun yang terdaftar. Setiap perusahaan memiliki data, akun, dan pengaturannya sendiri.</p></div><button class="btn primary" id="addC">+ Perusahaan</button></div>
-  <div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Nama</th><th>Alamat</th><th class="num">Admin</th><th class="num">Peserta</th><th class="num">Karyawan</th><th class="num">Hasil psikotes</th><th></th></tr></thead><tbody>
-    ${comps.map(c => { const acc = Store.all('accounts', a => a.companyId === c.id); return `<tr class="click" data-open="${c.id}" tabindex="0" role="link" aria-label="Buka ${esc(c.name)}"><td><b>${esc(c.name)}</b>${c.id === S.companyId ? ' <span class="pill acc">aktif</span>' : ''}</td><td class="small muted">${esc(c.address || '')}</td><td class="num">${acc.filter(a => a.role === CO).length}</td><td class="num">${acc.filter(a => a.role === US).length}</td><td class="num">${Store.all('employees', e => e.companyId === c.id).length}</td><td class="num">${Store.all('disc_results', e => e.companyId === c.id).length}</td>
+  const warnCo = comps.filter(c => ['soon', 'expired'].includes(coValid(c).st));
+  return `${warnCo.length ? `<div class="note warn req-banner"><span><b>${warnCo.length} perusahaan</b> masa berlakunya segera berakhir atau sudah berakhir: ${warnCo.map(c => esc(c.name)).join(', ')}.</span></div>` : ''}<div class="page-head"><div><h1>Master Perusahaan</h1><p>Klik salah satu perusahaan untuk melihat semua akun yang terdaftar. Setiap perusahaan memiliki data, akun, dan pengaturannya sendiri.</p></div><button class="btn primary" id="addC">+ Perusahaan</button></div>
+  <div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Nama</th><th>Alamat</th><th>Masa berlaku akun</th><th class="num">Admin</th><th class="num">Peserta</th><th class="num">Karyawan</th><th class="num">Hasil psikotes</th><th></th></tr></thead><tbody>
+    ${comps.map(c => { const acc = Store.all('accounts', a => a.companyId === c.id); return `<tr class="click" data-open="${c.id}" tabindex="0" role="link" aria-label="Buka ${esc(c.name)}"><td><b>${esc(c.name)}</b>${c.id === S.companyId ? ' <span class="pill acc">aktif</span>' : ''}</td><td class="small muted">${esc(c.address || '')}</td><td>${(() => { const v = coValid(c); return `<span class="pill ${v.cls}">${esc(v.label)}</span>`; })()}</td><td class="num">${acc.filter(a => a.role === CO).length}</td><td class="num">${acc.filter(a => a.role === US).length}</td><td class="num">${Store.all('employees', e => e.companyId === c.id).length}</td><td class="num">${Store.all('disc_results', e => e.companyId === c.id).length}</td>
       <td><div class="row" style="flex-wrap:nowrap"><button class="btn sm" data-edit="${c.id}">Ubah</button><button class="btn sm" data-act="${c.id}">Jadikan aktif</button><span class="chev" aria-hidden="true">›</span></div></td></tr>`; }).join('')}
   </tbody></table></div></div>`;
 };
 function companyForm(co = {}) {
-  openModal({ title: co.id ? 'Ubah perusahaan' : 'Perusahaan baru', body: `<form id="cF" class="stack"><label class="f">Nama<input class="input" name="name" required value="${esc(co.name || '')}"></label><label class="f">Alamat<input class="input" name="address" value="${esc(co.address || '')}"></label>${co.id ? '' : '<p class="small muted" style="margin:0">Pengaturan awal (unit, BPJS, waktu tes) disalin dari templat standar dan bisa diubah kemudian.</p>'}</form>`,
+  openModal({ title: co.id ? 'Ubah perusahaan' : 'Perusahaan baru', body: `<form id="cF" class="stack"><label class="f">Nama<input class="input" name="name" required value="${esc(co.name || '')}"></label><label class="f">Alamat<input class="input" name="address" value="${esc(co.address || '')}"></label><div class="form-grid"><label class="f">Akun berlaku dari<input class="input" type="date" name="validFrom" value="${esc(co.validFrom || '')}"></label><label class="f">Akun berlaku sampai<input class="input" type="date" name="validUntil" value="${esc(co.validUntil || '')}"></label></div><p class="small muted" style="margin:0">Kosongkan jika tanpa batas. Setelah lewat tanggal ini, Admin Perusahaan dan peserta RS tersebut tidak bisa masuk sampai masa berlaku diperpanjang.</p>${co.id ? '' : '<p class="small muted" style="margin:0">Pengaturan awal (unit, BPJS, waktu tes) disalin dari templat standar dan bisa diubah kemudian.</p>'}</form>`,
     foot: '<button class="btn" data-close>Batal</button><button class="btn primary" form="cF">Simpan</button>',
-    onMount: r => $('#cF', r).onsubmit = async ev => { ev.preventDefault(); const d = formData(ev.target); const id = co.id || uid('c'); await Store.put('companies', id, { ...(co.id ? Store.get('companies', co.id) : { settings: JSON.parse(JSON.stringify(SEED.companies.c_humana.settings)), createdAt: todayISO() }), name: d.name, address: d.address }); audit(co.id ? 'ubah perusahaan' : 'buat perusahaan', d.name); closeModal(); App.render(); } });
+    onMount: r => $('#cF', r).onsubmit = async ev => { ev.preventDefault(); const d = formData(ev.target); const id = co.id || uid('c'); await Store.put('companies', id, { ...(co.id ? Store.get('companies', co.id) : { settings: JSON.parse(JSON.stringify(SEED.companies.c_humana.settings)), createdAt: todayISO() }), name: d.name, address: d.address, validFrom: d.validFrom || '', validUntil: d.validUntil || '' }); audit(co.id ? 'ubah perusahaan' : 'buat perusahaan', d.name); closeModal(); App.render(); } });
 }
 Views.companiesMount = c => {
   $('#addC', c).onclick = () => companyForm();
@@ -3172,14 +3241,69 @@ Views.discref = () => `<div class="page-head"><div><h1>Master Soal DISC</h1><p>2
   </tbody></table></div></div>`;
 
 /* ---- Audit ---- */
+const AUDIT_F = { from: '', to: '', co: '', q: '', act: '' };
+const auditDay = t => { const d = new Date(t); return isNaN(d) ? '' : `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+const auditRows = () => {
+  const f = AUDIT_F, q = f.q.trim().toLowerCase();
+  return Store.all('audit').flatMap(d => d.entries || []).filter(e => {
+    const dy = auditDay(e.t);
+    return (!f.from || dy >= f.from) && (!f.to || dy <= f.to) && (!f.co || (f.co === '-' ? !e.companyId : e.companyId === f.co)) && (!f.act || e.action === f.act)
+      && (!q || (e.user || '').toLowerCase().includes(q) || (e.detail || '').toLowerCase().includes(q) || (e.action || '').toLowerCase().includes(q));
+  }).sort((a, b) => b.t.localeCompare(a.t));
+};
+const auditTable = rows => {
+  const cn = id => Store.get('companies', id)?.name || '–', shown = rows.slice(0, 1000);
+  return rows.length ? `<div class="tbl-wrap"><table class="tbl audit-tbl"><thead><tr><th>Tanggal &amp; waktu</th><th>Pengguna</th><th>Perusahaan</th><th>Aktivitas</th><th>Detail</th></tr></thead><tbody>
+  ${shown.map(e => `<tr><td class="mono">${fmtDT(e.t)}</td><td>${esc(e.user)} <span class="faint">(${esc(ROLE_LABEL[e.role] || e.role)})</span></td><td>${esc(cn(e.companyId))}</td><td>${esc(e.action)}</td><td>${esc(e.detail)}</td></tr>`).join('')}</tbody></table></div>${rows.length > shown.length ? `<p class="small muted" style="padding:8px 14px">Menampilkan 1000 dari ${rows.length} aktivitas. Persempit rentang tanggal untuk melihat sisanya.</p>` : ''}` : '<div class="empty">Tidak ada aktivitas pada filter ini.</div>';
+};
 Views.audit = () => {
-  const all = Store.all('audit').flatMap(d => d.entries || []).sort((a, b) => b.t.localeCompare(a.t)).slice(0, 300);
-  const cn = id => Store.get('companies', id)?.name || '–';
-  return `<div class="page-head"><div><h1>Log Aktivitas</h1><p>300 aktivitas terakhir: login, perubahan data, pengerjaan tes.</p></div></div>
-  <div class="card">${all.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Waktu</th><th>Pengguna</th><th>Perusahaan</th><th>Aktivitas</th><th>Detail</th></tr></thead><tbody>
-  ${all.map(e => `<tr><td class="small mono">${fmtDT(e.t)}</td><td>${esc(e.user)} <span class="small faint">${esc(ROLE_LABEL[e.role] || e.role)}</span></td><td class="small">${esc(cn(e.companyId))}</td><td>${esc(e.action)}</td><td class="small muted">${esc(e.detail)}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">Belum ada aktivitas.</div>'}</div>`;
+  const f = AUDIT_F, cos = Store.all('companies'), acts = [...new Set(Store.all('audit').flatMap(d => d.entries || []).map(e => e.action))].sort();
+  const rows = auditRows(), users = new Set(rows.map(e => e.user)).size;
+  return `<div class="page-head"><div><h1>Log Aktivitas</h1><p>Riwayat penggunaan aplikasi: login, perubahan data, pengerjaan tes. Pilih tanggal untuk melihat riwayat hari atau periode tertentu.</p></div><button class="btn" id="auCsv">Unduh CSV</button></div>
+  <div class="card card-pad audit-filter"><div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));align-items:end">
+    <label class="f">Dari tanggal<input class="input" type="date" id="auFrom" value="${esc(f.from)}"></label>
+    <label class="f">Sampai tanggal<input class="input" type="date" id="auTo" value="${esc(f.to)}"></label>
+    <label class="f">Perusahaan<select class="input" id="auCo"><option value="">Semua</option>${cos.map(c => `<option value="${c.id}" ${f.co === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}<option value="-" ${f.co === '-' ? 'selected' : ''}>Tanpa perusahaan (Super Admin)</option></select></label>
+    <label class="f">Aktivitas<select class="input" id="auAct"><option value="">Semua</option>${acts.map(a => `<option ${f.act === a ? 'selected' : ''}>${esc(a)}</option>`).join('')}</select></label>
+    <label class="f">Cari pengguna/detail<input class="input" id="auQ" value="${esc(f.q)}" placeholder="mis. username"></label>
+    <div class="row" style="gap:6px"><button class="btn sm" data-auq="today">Hari ini</button><button class="btn sm" data-auq="7">7 hari</button><button class="btn sm" data-auq="30">30 hari</button><button class="btn sm" data-auq="all">Semua</button></div></div></div>
+  <div class="small muted" style="margin:10px 2px">${rows.length} aktivitas dari ${users} pengguna${f.from || f.to ? ' pada ' + (f.from ? fmtD(f.from) : 'awal') + ' – ' + (f.to ? fmtD(f.to) : 'sekarang') : ''}.</div>
+  <div class="card" id="auList">${auditTable(rows)}</div>`;
+};
+Views.auditMount = c => {
+  const re = () => { const rows = auditRows(); $('#auList', c).innerHTML = auditTable(rows); };
+  const bind = (id, k, ev = 'onchange') => { const el = $('#' + id, c); el[ev] = () => { AUDIT_F[k] = el.value; App.renderContent(); }; };
+  bind('auFrom', 'from'); bind('auTo', 'to'); bind('auCo', 'co'); bind('auAct', 'act');
+  $('#auQ', c).oninput = e => { AUDIT_F.q = e.target.value; re(); };
+  $$('[data-auq]', c).forEach(b => b.onclick = () => { const k = b.dataset.auq, t = todayISO(); if (k === 'all') { AUDIT_F.from = ''; AUDIT_F.to = ''; } else { const d = new Date(); d.setDate(d.getDate() - (k === 'today' ? 0 : +k - 1)); AUDIT_F.from = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; AUDIT_F.to = t; } App.renderContent(); });
+  $('#auCsv', c).onclick = () => {
+    const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"', cn = id => Store.get('companies', id)?.name || '';
+    const csv = '\ufeff' + ['Waktu,Pengguna,Peran,Perusahaan,Aktivitas,Detail', ...auditRows().map(e => [fmtDT(e.t), e.user, ROLE_LABEL[e.role] || e.role, cn(e.companyId), e.action, e.detail].map(q).join(','))].join('\r\n');
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); a.download = 'log-aktivitas-' + todayISO() + '.csv'; document.body.appendChild(a); a.click(); a.remove();
+  };
 };
 
+
+/* ---- Akses menu per RS (Super Admin) ---- */
+Views.menuaccess = () => {
+  const cos = Store.all('companies'), items = MENU_TOGGLE.map(id => NAV.find(n => n.id === id));
+  if (!cos.length) return '<div class="card card-pad"><p class="muted">Belum ada perusahaan.</p></div>';
+  const head = cos.map(c => `<th style="text-align:center;min-width:110px">${esc(c.name)}</th>`).join('');
+  let last = null;
+  const rows = items.map(n => { const g = n.group || 'Utama'; const gr = g !== last ? `<tr><td colspan="${cos.length + 1}" class="eyebrow" style="padding-top:14px">${esc(g)}</td></tr>` : ''; last = g;
+    return gr + `<tr><td>${esc(n.label)}</td>${cos.map(c => `<td style="text-align:center"><input type="checkbox" class="mx" data-co="${c.id}" data-m="${n.id}" ${menuOn(n.id, c.id) ? 'checked' : ''} aria-label="${esc(n.label)} - ${esc(c.name)}"></td>`).join('')}</tr>`; }).join('');
+  return `<div class="page-head"><div><h1>Akses Menu per RS</h1><p>Centang menu yang dibuka untuk tiap rumah sakit. Menu yang tidak dicentang tidak tampil bagi Admin Perusahaan (HRD) RS tersebut. Perubahan langsung tersimpan.</p></div></div>
+  <div class="card card-pad" style="overflow:auto"><table class="tbl"><thead><tr><th>Menu</th>${head}</tr></thead><tbody>${rows}</tbody></table></div>
+  <p class="small muted">Beranda, Tes Saya (peserta), dan menu Super Admin selalu tersedia. Pengaturan (Akun Pengguna, Soal Tes, Pengaturan Perusahaan) dikelola Super Admin di tampilan luar.</p>`;
+};
+Views.menuaccessMount = c => {
+  $$('.mx', c).forEach(cb => cb.onchange = async () => {
+    const co = Store.get('companies', cb.dataset.co); if (!co) return;
+    const on = MENU_TOGGLE.filter(id => $$('.mx', c).some(x => x.dataset.co === co.id && x.dataset.m === id && x.checked));
+    try { await Store.put('companies', co.id, { ...co, menus: on }); audit('ubah akses menu', co.name); toast('Akses menu ' + co.name + ' disimpan'); }
+    catch (e) { cb.checked = !cb.checked; toast('Gagal menyimpan: ' + (e && e.message || e)); }
+  });
+};
 /* =========================================================
    Psikotes IST (Intelligenz Struktur Test)
    Skoring dari Skoring_IST V2.xlsx · soal dari IST_Test_2026.pdf
@@ -3334,7 +3458,7 @@ const Ist = {
     const t = S.test, s = t.sess, sub = this.sub();
     const tot = IST_ORDER.length;
     const timer = ['run', 'memo'].includes(s.stage) ? `<div class="timer" id="timer" role="timer" aria-live="off">${mmss(this.left())}</div>` : '<span class="pill">Siap dimulai</span>';
-    return `<div class="test-top"><div class="brandmark" style="font-size:13px"><img class="brand-logo" src="${LOGO_UM}" alt="Logo RS Unimedika">Tes IST</div>
+    return `<div class="test-top"><div class="brandmark" style="font-size:13px">${brandOf().logo}Tes IST</div>
       <div class="progress" aria-label="Progres subtes"><i style="width:${(s.phase + (s.stage === 'run' ? .5 : 0)) / tot * 100}%"></i></div><span class="small muted mono">Subtes ${s.phase + 1}/${tot}</span>${timer}
       ${t.admin ? '<button class="btn sm" id="tCancel">Batal</button>' : ''}</div>`;
   },
@@ -3950,10 +4074,12 @@ setInterval(() => Demo.bar(), 600);
 /* ---------- SUPER ADMIN: daftar perusahaan ---------- */
 Views.companies = () => {
   const comps = Store.all('companies');
-  return `<div class="page-head"><div><h1>Daftar Perusahaan</h1><p>Pilih perusahaan lalu tekan <b>Masuk</b> untuk melihat data rekrutmen, psikotes, dan kepegawaiannya. Tiap perusahaan memiliki data, akun, dan pengaturan sendiri.</p></div><button class="btn primary" id="addC">+ Perusahaan</button></div>
+  const warnCo = comps.filter(c => ['soon', 'expired'].includes(coValid(c).st));
+  return `${warnCo.length ? `<div class="note warn req-banner"><span><b>${warnCo.length} perusahaan</b> masa berlaku akunnya segera berakhir atau sudah berakhir: ${warnCo.map(c => esc(c.name)).join(', ')}.</span></div>` : ''}<div class="page-head"><div><h1>Daftar Perusahaan</h1><p>Pilih perusahaan lalu tekan <b>Masuk</b> untuk melihat data rekrutmen, psikotes, dan kepegawaiannya. Tiap perusahaan memiliki data, akun, dan pengaturan sendiri.</p></div><button class="btn primary" id="addC">+ Perusahaan</button></div>
   <div class="co-grid">${comps.map(c => {
     const acc = Store.all('accounts', a => a.companyId === c.id), res = Store.all('disc_results', x => x.companyId === c.id).length + Store.all('ist_results', x => x.companyId === c.id).length;
     return `<div class="card card-pad stack co-card"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><div><h2 style="margin:0">${esc(c.name)}</h2><div class="small muted">${esc(c.address || '–')}</div></div><span class="co-ic" aria-hidden="true">${icon('building')}</span></div>
+      ${(() => { const v = coValid(c); return `<div class="row" style="gap:8px"><span class="small muted">Masa berlaku akun</span><span class="pill ${v.cls}">${esc(v.label)}</span></div>`; })()}
       <div class="co-stats"><div><b>${acc.filter(a => a.role === CO).length}</b><span>Admin</span></div><div><b>${acc.filter(a => a.role === US).length}</b><span>Peserta</span></div><div><b>${Store.all('employees', e => e.companyId === c.id).length}</b><span>Karyawan</span></div><div><b>${res}</b><span>Hasil tes</span></div></div>
       <div class="row"><button class="btn primary" data-enter="${c.id}">Masuk</button><button class="btn" data-open="${c.id}">Akun &amp; password</button><button class="btn" data-edit="${c.id}">Ubah</button></div></div>`; }).join('')}</div>
   ${comps.length ? '' : '<div class="empty">Belum ada perusahaan. Tekan + Perusahaan.</div>'}`;
@@ -4135,6 +4261,181 @@ function renderPeserta() {
   App.render = function () { if (S.user && S.user.role === US && !S.test) { renderPeserta(); return; } pzClear(); return r0.call(this); };
   App.renderContent = function () { if (S.user && S.user.role === US && !S.test) { renderPeserta(); return; } return rc0.call(this); };
 })();
+/* =====================================================================
+   MENU LAPORAN
+   1) Laporan Hasil Psikotes  - filter peserta, tanggal, jenis tes, unit, posisi; unduh Excel (CSV) / PDF
+   2) Laporan Analisa Peserta - peringkat peserta terbaik & paling sesuai kebutuhan perusahaan
+   Super Admin (di luar perusahaan): semua perusahaan, atau pilih satu perusahaan.
+   ===================================================================== */
+const REP = { tab: 'hasil', from: '', to: '', co: '', unit: '', pos: '', tests: { disc: true, ist: true, skill: true }, who: [], whoOpen: false, wD: 40, wI: 30, wS: 30 };
+const repDay = t => { if (!t) return ''; const d = new Date(t); if (isNaN(d)) return String(t).slice(0, 10); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+const repAllCo = () => S.user.role === SA && !S.inCompany;
+const repCo = () => repAllCo() ? REP.co : (S.user.role === SA ? S.companyId : S.user.companyId);
+const repIn = x => { const c = repCo(); return !c || x.companyId === c; };
+/* level posisi (Staff / Head of Unit / Head of Department) dari isian posisi/jabatan */
+const repLevel = p => { p = String(p || '').trim(); if (!p) return ''; if (POSISI.includes(p)) return p; const l = p.toLowerCase();
+  if (/head of department|kepala (departemen|bidang|divisi|bagian)|manajer|manager|direktur|kabid|kadiv|wakil direktur/.test(l)) return 'Head of Department';
+  if (/head of unit|kepala|supervisor|koordinator|penanggung jawab|\bpj\b|kasie|kepala ruang/.test(l)) return 'Head of Unit'; return 'Staff'; };
+const repCoName = id => Store.get('companies', id)?.name || '–';
+
+/* semua hasil tes (DISC, IST, tes unit) dalam satu bentuk seragam */
+function repRecords() {
+  const out = [], acc = id => id ? Store.get('accounts', id) : null;
+  const base = (r, a) => ({ k: (r.accountId || 'n:' + (r.name || '').toLowerCase()) + '|' + (r.companyId || ''), name: r.name || a?.name || '-', co: r.companyId, coName: repCoName(r.companyId), unit: r.unit || a?.unit || '', pos: r.position || a?.position || '', lvl: repLevel(r.position || a?.position || ''), at: r.finishedAt || r.testDate || r.createdAt || '', date: repDay(r.finishedAt || r.testDate || r.createdAt) });
+  Store.all('disc_results', repIn).forEach(r => {
+    let R = null; try { R = discRecommendation(r); } catch (e) {}
+    const b = base(r, acc(r.accountId));
+    out.push({ ...b, kind: 'disc', test: 'Psikotes DISC', R, res: R ? `Pola asli ${R.sc.p[2].key} (${R.sc.def[2].title})` : '-', score: R && R.fit != null ? R.fit : null, scoreTxt: R && R.fit != null ? 'Kesesuaian ' + R.fit + '%' : '-', status: R ? R.tier : '-', level: R ? R.level : 'info' });
+  });
+  Store.all('ist_results', repIn).forEach(r => {
+    let C = null; try { C = istCalc(r); } catch (e) {}
+    const b = base(r, acc(r.accountId)), pend = !C || C.pending;
+    out.push({ ...b, kind: 'ist', test: 'Psikotes IST', C, res: pend ? 'Menunggu penilaian GE' : `Jumlah SW ${C.jSW}, ${C.gaya && C.gaya.fleksibel ? 'berpikir fleksibel' : 'mantap berpikir'}`, score: pend ? null : +C.iq, scoreTxt: pend ? '-' : 'IQ ' + istFmtIq(C.iq), status: pend ? 'Menunggu GE' : istIqCat(C.iq), level: pend ? 'warn' : 'info' });
+  });
+  Store.all('skill_results', repIn).forEach(r => {
+    const t = Store.get('skill_tests', r.testId); if (!t) return;
+    const s = skillScore(t, r.answers || []), b = base({ ...r, unit: t.unit }, acc(r.accountId)); if (!b.unit) b.unit = t.unit || '';
+    out.push({ ...b, unit: acc(r.accountId)?.unit || t.unit || '', kind: 'skill', test: t.title, s, res: `${s.correct}/${s.total} benar, passing grade ${t.passing}`, score: s.score, scoreTxt: 'Nilai ' + s.score, status: s.passed ? 'Lulus' : 'Belum lulus', level: s.passed ? 'ok' : 'bad' });
+  });
+  return out;
+}
+const repFilter = (rows, withKinds) => rows.filter(x => (!withKinds || REP.tests[x.kind]) && (!REP.from || x.date >= REP.from) && (!REP.to || x.date <= REP.to) && (!REP.unit || x.unit === REP.unit) && (!REP.pos || x.lvl === REP.pos));
+
+/* ---------- analisa: peringkat peserta ---------- */
+const repCat = v => v >= 80 ? ['Sangat sesuai', 'ok'] : v >= 70 ? ['Sesuai', 'ok'] : v >= 55 ? ['Dipertimbangkan', 'warn'] : ['Kurang sesuai', 'bad'];
+function repAnalysis(recs) {
+  const g = {}; recs.forEach(x => { (g[x.k] = g[x.k] || []).push(x); });
+  const wsum = { d: +REP.wD || 0, i: +REP.wI || 0, s: +REP.wS || 0 };
+  const rows = Object.values(g).map(list => {
+    const first = list[0], latest = k => list.filter(x => x.kind === k).sort((a, b) => (b.at || '').localeCompare(a.at || ''))[0];
+    const d = latest('disc'), i = latest('ist');
+    const sk = {}; list.filter(x => x.kind === 'skill').sort((a, b) => (b.at || '').localeCompare(a.at || '')).forEach(x => { if (!sk[x.test]) sk[x.test] = x; }); const skl = Object.values(sk);
+    const fit = d && d.R && d.R.fit != null && d.R.tier !== 'Tes ulang' ? d.R.fit : null;
+    const iq = i && i.score != null ? i.score : null, iqN = iq == null ? null : Math.max(0, Math.min(100, (iq - 70) / 60 * 100));
+    const skAvg = skl.length ? Math.round(skl.reduce((s, x) => s + x.score, 0) / skl.length) : null, skFail = skl.some(x => x.status !== 'Lulus');
+    const comps = [[fit, wsum.d], [iqN, wsum.i], [skAvg, wsum.s]].filter(c => c[0] != null && c[1] > 0), tw = comps.reduce((s, c) => s + c[1], 0);
+    const total = tw ? Math.round(comps.reduce((s, c) => s + c[0] * c[1], 0) / tw) : null;
+    let cat = total == null ? ['Belum cukup data', 'info'] : repCat(total);
+    if (total != null && skFail && total >= 70) cat = ['Dipertimbangkan', 'warn'];
+    if (total != null && fit == null && wsum.d > 0) cat = ['Data belum lengkap', 'info'];
+    const notes = [];
+    if (d && d.R) { if (d.R.gaps && d.R.gaps.length) notes.push(d.R.gaps[0]); else if (fit != null) notes.push(`Profil DISC ${fit}% sesuai kebutuhan unit.`); else notes.push(d.R.reason); } else notes.push('Belum mengerjakan DISC.');
+    if (!i) notes.push('Belum mengerjakan IST.'); else if (iq == null) notes.push('IST menunggu penilaian GE.');
+    if (skFail) notes.push('Ada tes kemampuan unit di bawah passing grade.');
+    return { k: first.k, name: first.name, co: first.co, coName: first.coName, unit: first.unit, pos: first.pos, fit, iq, skAvg, skFail, total, cat, notes, tests: [d, i, ...skl].filter(Boolean).length, d };
+  }).sort((a, b) => ((b.fit != null) - (a.fit != null)) || (b.total ?? -1) - (a.total ?? -1) || a.name.localeCompare(b.name));
+  rows.forEach((r, n) => { r.rank = n + 1; });
+  return rows;
+}
+
+/* ---------- unduhan ---------- */
+function repCsv(name, head, rows) {
+  const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+  const csv = '﻿' + [head, ...rows].map(r => r.map(q).join(';')).join('\r\n');
+  download(name + '-' + todayISO() + '.csv', new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+}
+async function repPdf({ file, title, sub, cols, rows, notes = [] }) {
+  let jsPDF; try { jsPDF = await loadPdfLib(); } catch (e) { toast('Pustaka PDF tidak dapat dimuat. Periksa koneksi internet lalu coba lagi.'); return; }
+  const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape', compress: true }), W = 297, H = 210, M = 10, brand = brandOf().name;
+  const tw = W - 2 * M, sum = cols.reduce((s, c) => s + c.w, 0), cw = cols.map(c => c.w / sum * tw);
+  let y = 0, page = 0;
+  const head = () => {
+    page++; doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.text(title, M, 14);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(90); doc.text(sub, M, 19.5, { maxWidth: tw }); doc.setTextColor(0);
+    y = 25;
+    doc.setFillColor(36, 64, 224); doc.rect(M, y, tw, 7, 'F'); doc.setTextColor(255); doc.setFont('helvetica', 'bold'); doc.setFontSize(8);
+    let x = M; cols.forEach((c, i) => { doc.text(c.h, x + 1.5, y + 4.7); x += cw[i]; }); doc.setTextColor(0); y += 7;
+  };
+  const foot = () => { doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(110); doc.text(`${brand} - dicetak ${fmtDT(nowISO())} oleh ${S.user.name}`, M, H - 6); doc.text('Halaman ' + page, W - M, H - 6, { align: 'right' }); doc.setTextColor(0); };
+  head(); doc.setFontSize(7.8);
+  rows.forEach((r, ri) => {
+    const lines = r.map((v, i) => doc.splitTextToSize(String(v ?? ''), cw[i] - 3)), n = Math.max(1, ...lines.map(l => l.length)), rh = n * 3.6 + 2.2;
+    if (y + rh > H - 14) { foot(); doc.addPage(); head(); doc.setFontSize(7.8); }
+    if (ri % 2) { doc.setFillColor(238, 242, 255); doc.rect(M, y, tw, rh, 'F'); }
+    let x = M; lines.forEach((l, i) => { doc.setFont('helvetica', cols[i].b ? 'bold' : 'normal'); doc.text(l, x + 1.5, y + 4); x += cw[i]; }); y += rh;
+  });
+  if (!rows.length) { doc.setFontSize(9); doc.text('Tidak ada data pada filter ini.', M, y + 8); y += 12; }
+  if (notes.length) { y += 4; doc.setFontSize(8); notes.forEach(t => { const ls = doc.splitTextToSize(t, tw); if (y + ls.length * 3.8 > H - 14) { foot(); doc.addPage(); page++; y = 16; } doc.text(ls, M, y); y += ls.length * 3.8 + 1.5; }); }
+  foot();
+  await download(file + '-' + todayISO() + '.pdf', doc.output('blob'));
+}
+
+/* ---------- tampilan ---------- */
+Views.reports = () => {
+  const all = repAllCo(), cos = Store.all('companies');
+  const recsAll = repRecords(), recs = repFilter(recsAll, false);
+  const units = [...new Set([...(all ? cos : [Store.get('companies', repCo())]).filter(Boolean).flatMap(c => (c.settings?.units || []).map(u => u.name)), ...recsAll.map(x => x.unit).filter(Boolean)])].sort();
+  const poss = POSISI;
+  const people = Object.values(recsAll.reduce((m, x) => { m[x.k] = m[x.k] || { k: x.k, name: x.name, coName: x.coName }; return m; }, {})).sort((a, b) => a.name.localeCompare(b.name));
+  const who = REP.who.length ? new Set(REP.who) : null;
+  const filt = repFilter(recsAll, true).filter(x => !who || who.has(x.k));
+  const head = `<div class="page-head"><div><h1>Laporan${all ? ' Semua Perusahaan' : ''}</h1><p>${all ? 'Seluruh laporan dari semua perusahaan. Pilih satu perusahaan atau lihat semuanya.' : esc(repCoName(repCo()))}. Unduh laporan hasil psikotes dan lihat analisa peserta yang paling sesuai kebutuhan perusahaan.</p></div></div>
+  <div class="tabs" role="tablist"><button class="tab ${REP.tab === 'hasil' ? 'on' : ''}" data-rtab="hasil">Laporan Hasil Psikotes</button><button class="tab ${REP.tab === 'analisa' ? 'on' : ''}" data-rtab="analisa">Laporan Analisa Peserta</button></div>`;
+  const common = `<div class="card card-pad" style="margin-top:14px"><div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr));align-items:end">
+    ${all ? `<label class="f">Perusahaan<select class="input" id="rCo"><option value="">Semua perusahaan</option>${cos.map(c => `<option value="${c.id}" ${REP.co === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select></label>` : ''}
+    <label class="f">Tanggal pelaksanaan dari<input class="input" type="date" id="rFrom" value="${esc(REP.from)}"></label>
+    <label class="f">Sampai<input class="input" type="date" id="rTo" value="${esc(REP.to)}"></label>
+    <label class="f">Unit<select class="input" id="rUnit"><option value="">Semua unit</option>${units.map(u => `<option ${REP.unit === u ? 'selected' : ''}>${esc(u)}</option>`).join('')}</select></label>
+    <label class="f">Posisi (level)<select class="input" id="rPos"><option value="">Semua posisi</option>${poss.map(p => `<option ${REP.pos === p ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select></label></div>`;
+  if (REP.tab === 'hasil') {
+    const T = REP.tests;
+    return head + common + `<div class="row" style="gap:18px;margin-top:12px;flex-wrap:wrap"><b class="small">Daftar psikotes:</b>
+      <label class="row small" style="gap:6px"><input type="checkbox" data-rt="disc" ${T.disc ? 'checked' : ''}> Psikotes DISC</label><label class="row small" style="gap:6px"><input type="checkbox" data-rt="ist" ${T.ist ? 'checked' : ''}> Psikotes IST</label><label class="row small" style="gap:6px"><input type="checkbox" data-rt="skill" ${T.skill ? 'checked' : ''}> Tes Kemampuan Unit</label></div>
+      <details class="rep-who" ${REP.whoOpen ? 'open' : ''} style="margin-top:12px"><summary class="small"><b>Daftar peserta:</b> ${REP.who.length ? REP.who.length + ' peserta dipilih' : 'semua peserta (' + people.length + ')'}</summary>
+        <div class="row" style="gap:8px;margin:8px 0"><button class="btn sm" data-rw="all">Pilih semua</button><button class="btn sm" data-rw="none">Kosongkan (= semua)</button></div>
+        <div class="rep-wholist">${people.map(p => `<label class="row small" style="gap:6px"><input type="checkbox" data-rwk="${esc(p.k)}" ${who && who.has(p.k) ? 'checked' : ''}> ${esc(p.name)}${all ? ` <span class="faint">- ${esc(p.coName)}</span>` : ''}</label>`).join('') || '<span class="muted small">Belum ada peserta.</span>'}</div></details></div>
+    <div class="row" style="justify-content:space-between;margin:14px 2px 8px"><div class="small muted">${filt.length} hasil tes dari ${new Set(filt.map(x => x.k)).size} peserta.</div><div class="row"><button class="btn" id="rCsv" ${filt.length ? '' : 'disabled'}>Unduh Excel (CSV)</button><button class="btn primary" id="rPdf" ${filt.length ? '' : 'disabled'}>Unduh PDF</button></div></div>
+    <div class="card">${filt.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Tanggal</th>${all ? '<th>Perusahaan</th>' : ''}<th>Peserta</th><th>Unit</th><th>Posisi</th><th>Psikotes</th><th>Hasil</th><th>Skor</th><th>Status</th></tr></thead><tbody>
+      ${[...filt].sort((a, b) => (b.at || '').localeCompare(a.at || '')).slice(0, 500).map(x => `<tr><td class="small">${fmtD(x.date)}</td>${all ? `<td class="small">${esc(x.coName)}</td>` : ''}<td><b>${esc(x.name)}</b></td><td>${esc(x.unit || '-')}</td><td>${esc(x.pos || '-')}</td><td>${esc(x.test)}</td><td class="small">${esc(x.res)}</td><td class="small">${esc(x.scoreTxt)}</td><td><span class="pill ${x.level}">${esc(x.status)}</span></td></tr>`).join('')}</tbody></table></div>${filt.length > 500 ? '<p class="small muted" style="padding:8px 14px">Tabel menampilkan 500 hasil terbaru; file unduhan memuat semuanya.</p>' : ''}` : '<div class="empty">Tidak ada hasil tes pada filter ini.</div>'}</div>`;
+  }
+  /* analisa */
+  const A = repAnalysis(recs), ranked = A.filter(x => x.total != null && x.fit != null), top = ranked.slice(0, 3);
+  const avg = ranked.length ? Math.round(ranked.reduce((s, x) => s + x.total, 0) / ranked.length) : null, good = ranked.filter(x => x.total >= 70).length;
+  const col = v => v >= 70 ? 'var(--st-good,#0E8F74)' : v >= 55 ? 'var(--st-warn,#E0A100)' : 'var(--st-bad,#D64545)';
+  const bestUnit = Object.entries(ranked.reduce((m, x) => { const u = x.unit || '(tanpa unit)'; (m[u] = m[u] || []).push(x); return m; }, {})).map(([u, l]) => [u, l[0]]);
+  return head + common + `<div class="row" style="gap:14px;margin-top:12px;flex-wrap:wrap;align-items:end"><b class="small">Bobot penilaian (%):</b>
+      <label class="f" style="width:110px">DISC (kesesuaian unit)<input class="input" type="number" min="0" max="100" id="wD" value="${REP.wD}"></label><label class="f" style="width:110px">IST (IQ)<input class="input" type="number" min="0" max="100" id="wI" value="${REP.wI}"></label><label class="f" style="width:110px">Tes kemampuan unit<input class="input" type="number" min="0" max="100" id="wS" value="${REP.wS}"></label>
+      <span class="small muted" style="flex:1;min-width:220px">Bobot dihitung ulang otomatis bila peserta belum mengerjakan salah satu tes. Kebutuhan perusahaan dinilai dari profil DISC ideal tiap unit dan passing grade tes unit.</span></div></div>
+    <div class="grid g4" style="margin-top:14px"><div class="card kpi k-blue"><span class="eyebrow">Peserta dianalisis</span><b>${A.length}</b><span class="small">${ranked.length} punya data cukup</span></div><div class="card kpi k-teal"><span class="eyebrow">Sesuai / sangat sesuai</span><b>${good}</b><span class="small">skor 70 ke atas</span></div><div class="card kpi k-orange"><span class="eyebrow">Skor rata-rata</span><b>${avg ?? '-'}</b><span class="small">dari 100</span></div><div class="card kpi k-purple"><span class="eyebrow">Peserta terbaik</span><b style="font-size:20px">${top[0] ? esc(top[0].name) : '-'}</b><span class="small">${top[0] ? 'skor ' + top[0].total : ''}</span></div></div>
+    ${ranked.length ? `<div class="grid g2" style="align-items:start;margin-top:14px"><div class="card card-pad stack"><div class="eyebrow">Peringkat skor akhir</div>${cmpBars(ranked.slice(0, 15).map(x => ({ name: x.name, v: x.total })), { max: 100, ref: { v: 70, l: 'batas sesuai (70)' }, color: col })}</div>
+      <div class="card card-pad stack"><div class="eyebrow">Kandidat terbaik per unit</div>${bestUnit.map(([u, x]) => `<div class="row" style="justify-content:space-between;gap:8px"><span><b>${esc(u)}</b><div class="small muted">${esc(x.name)}${x.pos ? ' - ' + esc(x.pos) : ''}</div></span><span class="pill ${x.cat[1]}">${x.total} - ${esc(x.cat[0])}</span></div>`).join('')}</div></div>` : ''}
+    <div class="row" style="justify-content:space-between;margin:14px 2px 8px"><div class="small muted">Diurutkan dari peserta paling baik dan paling sesuai kebutuhan perusahaan.</div><div class="row"><button class="btn" id="rCsv" ${A.length ? '' : 'disabled'}>Unduh Excel (CSV)</button><button class="btn primary" id="rPdf" ${A.length ? '' : 'disabled'}>Unduh PDF</button></div></div>
+    <div class="card">${A.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th class="num">Peringkat</th><th>Peserta</th>${all ? '<th>Perusahaan</th>' : ''}<th>Unit / posisi</th><th class="num">DISC</th><th class="num">IQ</th><th class="num">Tes unit</th><th class="num">Skor akhir</th><th>Kategori</th><th>Catatan</th></tr></thead><tbody>
+      ${A.map(x => `<tr><td class="num"><b>${x.total != null && x.fit != null ? x.rank : '-'}</b></td><td><b>${esc(x.name)}</b></td>${all ? `<td class="small">${esc(x.coName)}</td>` : ''}<td>${esc(x.unit || '-')}<div class="small muted">${esc(x.pos || '')}</div></td><td class="num">${x.fit != null ? x.fit + '%' : '-'}</td><td class="num">${x.iq != null ? istFmtIq(x.iq) : '-'}</td><td class="num">${x.skAvg != null ? x.skAvg : '-'}</td><td class="num"><b>${x.total ?? '-'}</b></td><td><span class="pill ${x.cat[1]}">${esc(x.cat[0])}</span></td><td class="small">${esc(x.notes.join(' '))}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">Belum ada hasil tes pada filter ini.</div>'}</div>
+    <p class="small muted">Skor akhir = rata-rata berbobot dari kesesuaian DISC dengan profil unit, IQ IST (skala 70-130 menjadi 0-100), dan rata-rata nilai tes kemampuan unit. Peserta dengan nilai tes unit di bawah passing grade tidak dikategorikan lebih tinggi dari "Dipertimbangkan". Laporan ini alat bantu keputusan, bukan pengganti wawancara.</p>`;
+};
+Views.reportsMount = c => {
+  const re = () => App.renderContent();
+  $$('[data-rtab]', c).forEach(b => b.onclick = () => { REP.tab = b.dataset.rtab; re(); });
+  const bind = (id, k) => { const el = $('#' + id, c); if (el) el.onchange = () => { REP[k] = el.value; if (k === 'co') { REP.who = []; } re(); }; };
+  bind('rCo', 'co'); bind('rFrom', 'from'); bind('rTo', 'to'); bind('rUnit', 'unit'); bind('rPos', 'pos');
+  ['wD', 'wI', 'wS'].forEach(k => { const el = $('#' + k, c); if (el) el.onchange = () => { REP[k] = Math.max(0, Math.min(100, +el.value || 0)); re(); }; });
+  $$('[data-rt]', c).forEach(cb => cb.onchange = () => { REP.tests[cb.dataset.rt] = cb.checked; re(); });
+  const wd = $('.rep-who', c); if (wd) wd.ontoggle = () => { REP.whoOpen = wd.open; };
+  $$('[data-rwk]', c).forEach(cb => cb.onchange = () => { const k = cb.dataset.rwk; REP.who = cb.checked ? [...new Set([...REP.who, k])] : REP.who.filter(x => x !== k); REP.whoOpen = true; re(); });
+  $$('[data-rw]', c).forEach(b => b.onclick = e => { e.preventDefault(); REP.whoOpen = true; REP.who = b.dataset.rw === 'all' ? Object.keys(repRecords().reduce((m, x) => (m[x.k] = 1, m), {})) : []; re(); });
+  const all = repAllCo(), recs = repRecords();
+  const sub = () => `${all ? (REP.co ? repCoName(REP.co) : 'Semua perusahaan') : repCoName(repCo())} | Tanggal: ${REP.from || REP.to ? (REP.from ? fmtD(REP.from) : 'awal') + ' - ' + (REP.to ? fmtD(REP.to) : 'sekarang') : 'semua'} | Unit: ${REP.unit || 'semua'} | Posisi: ${REP.pos || 'semua'}`;
+  if (REP.tab === 'hasil') {
+    const rows = () => { const who = REP.who.length ? new Set(REP.who) : null; return repFilter(recs, true).filter(x => !who || who.has(x.k)).sort((a, b) => (a.date || '').localeCompare(b.date || '') || a.name.localeCompare(b.name)); };
+    $('#rCsv', c).onclick = () => { repCsv('laporan-hasil-psikotes', ['Tanggal pelaksanaan', 'Perusahaan', 'Peserta', 'Unit', 'Posisi', 'Psikotes', 'Hasil', 'Skor', 'Status'], rows().map(x => [fmtD(x.date), x.coName, x.name, x.unit, x.pos, x.test, x.res, x.scoreTxt, x.status])); audit('unduh laporan hasil psikotes (Excel)', rows().length + ' baris'); };
+    $('#rPdf', c).onclick = async e => { const b = e.currentTarget; b.disabled = true; const t = b.textContent; b.textContent = 'Membuat PDF...'; try { await repPdf({ file: 'laporan-hasil-psikotes', title: 'Laporan Hasil Psikotes', sub: sub(), cols: [{ h: 'Tanggal', w: 17 }, ...(all ? [{ h: 'Perusahaan', w: 28 }] : []), { h: 'Peserta', w: 30, b: 1 }, { h: 'Unit', w: 24 }, { h: 'Posisi', w: 22 }, { h: 'Psikotes', w: 28 }, { h: 'Hasil', w: 48 }, { h: 'Skor', w: 20 }, { h: 'Status', w: 22 }], rows: rows().map(x => [fmtD(x.date), ...(all ? [x.coName] : []), x.name, x.unit || '-', x.pos || '-', x.test, x.res, x.scoreTxt, x.status]) }); audit('unduh laporan hasil psikotes (PDF)', rows().length + ' baris'); } catch (er) { console.error(er); toast('Gagal membuat PDF'); } b.disabled = false; b.textContent = t; };
+  } else {
+    const A = () => repAnalysis(repFilter(recs, false));
+    const line = x => [x.total != null && x.fit != null ? x.rank : '-', x.name, ...(all ? [x.coName] : []), x.unit || '-', x.pos || '-', x.fit != null ? x.fit + '%' : '-', x.iq != null ? istFmtIq(x.iq) : '-', x.skAvg != null ? x.skAvg : '-', x.total ?? '-', x.cat[0], x.notes.join(' ')];
+    $('#rCsv', c).onclick = () => { repCsv('laporan-analisa-peserta', ['Peringkat', 'Peserta', ...(all ? ['Perusahaan'] : []), 'Unit', 'Posisi', 'Kesesuaian DISC', 'IQ IST', 'Nilai tes unit', 'Skor akhir', 'Kategori', 'Catatan'], A().map(line)); audit('unduh laporan analisa peserta (Excel)'); };
+    $('#rPdf', c).onclick = async e => {
+      const b = e.currentTarget; b.disabled = true; const t = b.textContent; b.textContent = 'Membuat PDF...';
+      try {
+        const a = A(), r = a.filter(x => x.total != null), top = r.slice(0, 3), good = r.filter(x => x.total >= 70).length;
+        const notes = [`Ringkasan: ${a.length} peserta dianalisis, ${good} berkategori sesuai atau sangat sesuai (skor 70 ke atas).` + (top.length ? ` Peserta terbaik: ${top.map(x => `${x.name} (${x.total})`).join(', ')}.` : ''),
+          `Metode: skor akhir adalah rata-rata berbobot dari kesesuaian DISC dengan profil unit (${REP.wD}%), IQ IST skala 70-130 menjadi 0-100 (${REP.wI}%), dan rata-rata nilai tes kemampuan unit (${REP.wS}%). Bobot dihitung ulang bila ada tes yang belum dikerjakan. Peserta dengan nilai tes unit di bawah passing grade tidak dikategorikan lebih tinggi dari "Dipertimbangkan". Laporan ini alat bantu keputusan, bukan pengganti wawancara.`];
+        await repPdf({ file: 'laporan-analisa-peserta', title: 'Laporan Analisa Peserta - Peringkat Kesesuaian dengan Kebutuhan Perusahaan', sub: sub(), cols: [{ h: 'No', w: 9 }, { h: 'Peserta', w: 30, b: 1 }, ...(all ? [{ h: 'Perusahaan', w: 26 }] : []), { h: 'Unit', w: 22 }, { h: 'Posisi', w: 20 }, { h: 'DISC', w: 12 }, { h: 'IQ', w: 11 }, { h: 'Tes unit', w: 13 }, { h: 'Skor', w: 11 }, { h: 'Kategori', w: 22 }, { h: 'Catatan', w: 70 }], rows: a.map(line), notes });
+        audit('unduh laporan analisa peserta (PDF)');
+      } catch (er) { console.error(er); toast('Gagal membuat PDF'); } b.disabled = false; b.textContent = t;
+    };
+  }
+};
 /* ---------------- boot ---------------- */
 App.start().catch(e => { console.error(e); $('#app').innerHTML = `<div id="boot">Gagal memuat aplikasi: ${esc(e.message || e)}</div>`; });
 </script>
