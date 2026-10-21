@@ -676,6 +676,49 @@ html:has(body.has-demo){scroll-padding-bottom:140px}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .audit-tbl td,:root:not([data-theme="light"]) .audit-tbl td .faint{color:#E6EAFF}}
 .rep-wholist{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px 14px;max-height:220px;overflow:auto;padding:8px;border:1px solid var(--line);border-radius:10px}
 .rep-who summary{cursor:pointer}
+.dirty-bar{position:sticky;bottom:12px;z-index:30;margin-top:16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 16px;border-radius:14px;background:#FFF4D6;color:#3D2B00;border:1px solid #E0A100;box-shadow:0 8px 26px rgba(0,0,0,.18)}
+.dirty-bar[hidden]{display:none}
+
+/* ===== PAPI Kostick ===== */
+.pp-radar{width:100%;max-width:400px;margin:0 auto;display:block}
+.pp-ring{fill:none;stroke:var(--line-2);stroke-width:1}
+.pp-ax{stroke:var(--line-2);stroke-width:.8}
+.pp-rt{font-size:9px;fill:var(--faint)}
+.pp-poly{fill:color-mix(in srgb,var(--brand) 18%,transparent);stroke:var(--brand);stroke-width:2;stroke-linejoin:round}
+.pp-lb{font-size:13px;font-weight:800}
+.pp-lv{font-size:10.5px;fill:var(--muted);font-weight:700}
+.pp-legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted)}
+.pp-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.pp-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.pp-bar{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden;min-width:70px}
+.pp-bar i{display:block;height:100%;border-radius:99px}
+.pp-int{display:grid;gap:14px;padding:14px}
+.pp-ig{display:grid;gap:8px}
+.pp-ign{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.pp-ir{border:1px solid var(--line-2);border-radius:10px;padding:10px 12px;background:var(--surface)}
+.pp-irh{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.pp-ir p{margin:6px 0 0;font-size:13.5px;line-height:1.55;color:var(--text)}
+.pp-k{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:7px;color:#fff;font-weight:800;font-size:13px}
+.pp-ans{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:4px}
+.pp-ans span{display:flex;flex-direction:column;align-items:center;padding:4px 0;border:1px solid var(--line-2);border-radius:6px;font-weight:800;font-size:13px}
+.pp-ans span small{font-weight:600;font-size:10px;color:var(--faint)}
+.pp-ans span.nil{color:var(--faint);background:var(--surface-2)}
+.pp-pages{display:flex;flex-wrap:wrap;gap:6px}
+.pp-pg{all:unset;box-sizing:border-box;cursor:pointer;min-width:36px;height:36px;display:grid;place-items:center;border-radius:8px;border:1.5px solid var(--line);font-weight:700;font-size:13px;background:var(--surface)}
+.pp-pg.part{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-text)}
+.pp-pg.full{border-color:var(--brand);background:var(--brand-soft);color:var(--brand-text)}
+.pp-pg.on{outline:2px solid var(--brand);outline-offset:2px}
+.pp-pg:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.pp-sheet{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 22px}
+.pp-col{display:flex;flex-direction:column;gap:3px}
+.pp-row{display:grid;grid-template-columns:34px 1fr 1fr;gap:6px;align-items:center;padding:2px 4px;border-radius:6px}
+.pp-row.cur{background:var(--brand-soft)}
+.pp-no{font-weight:800;font-size:13px;text-align:right;color:var(--muted)}
+.pp-ab{all:unset;box-sizing:border-box;cursor:pointer;height:32px;display:grid;place-items:center;border:1.5px solid var(--line);border-radius:7px;font-weight:800;font-size:13px;background:var(--surface)}
+.pp-ab.on{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
+.pp-ab:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.pp-ex{display:grid;gap:6px}
+@media (max-width:720px){.pp-sheet{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -1148,7 +1191,7 @@ const IST_SAMPLE_DATA=[{"id":"ir_excel","d":{"name":"Mochammad Rizki Firmansyah"
    ========================================================= */
 const F = ['D','I','S','C'];
 const FNAME = {D:'Dominance',I:'Influence',S:'Steadiness',C:'Compliance'};
-const COLS = ['companies','accounts','disc_results','disc_sessions','ist_results','ist_sessions','skill_tests','skill_results','skill_sessions','meetings','employees','overtime','leaves','payroll_runs','audit','initpass'];
+const COLS = ['companies','accounts','disc_results','disc_sessions','ist_results','ist_sessions','papi_results','papi_sessions','skill_tests','skill_results','skill_sessions','meetings','employees','overtime','leaves','payroll_runs','audit','initpass'];
 const $ = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => [...r.querySelectorAll(s)];
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1572,24 +1615,26 @@ const NAV = [
   { id: 'settings', label: 'Pengaturan Perusahaan', icon: 'gear', roles: [SA, CO], group: 'Pengaturan' },
   { id: 'companies', label: 'Daftar Perusahaan', icon: 'building', roles: [SA], group: 'Master' },
   { id: 'master', label: 'Master Data Psikotes', icon: 'book', roles: [SA], group: 'Master' },
+  { id: 'skillmaster', label: 'Master Tes Kemampuan Unit', icon: 'skill', roles: [SA], group: 'Master' },
   { id: 'menuaccess', label: 'Akses Menu per RS', icon: 'gear', roles: [SA], group: 'Master' },
   { id: 'audit', label: 'Log Aktivitas', icon: 'log', roles: [SA], group: 'Master' }
 ];
 /* halaman yang boleh dibuka Super Admin sebelum masuk ke perusahaan */
 const SETTINGS_IDS = ['accounts', 'skilltests', 'settings'];
-const SA_OUTSIDE = ['companies', 'company', 'master', 'audit', 'menuaccess', 'reports', ...SETTINGS_IDS];
+const PICK_IDS = [...SETTINGS_IDS, 'skillmaster'];
+const SA_OUTSIDE = ['companies', 'company', 'master', 'audit', 'menuaccess', 'reports', 'skillmaster', 'test-edit', 'test-results', ...SETTINGS_IDS];
 /* menu yang bisa dibuka/ditutup per perusahaan (Super Admin > Akses Menu per RS); belum diatur = semua terbuka */
 const MENU_TOGGLE = ['exec', 'participants', 'meetings', 'cmppsy', 'cmpskill', 'employees', 'overtime', 'leaves', 'payroll', 'reports', ...SETTINGS_IDS];
-const ROUTE_MENU = { candidate: 'participants', candidates: 'participants', ist: 'participants', istresult: 'participants', kerjakan: 'participants', 'test-edit': 'skilltests', 'test-results': 'skilltests' };
+const ROUTE_MENU = { candidate: 'participants', candidates: 'participants', ist: 'participants', istresult: 'participants', papi: 'participants', papiresult: 'participants', kerjakan: 'participants', 'test-edit': 'skilltests', 'test-results': 'skilltests' };
 const menuOn = (id, cid) => { const co = Store.get('companies', cid || (S.user && S.user.role === SA ? S.companyId : S.user && S.user.companyId)); return !co || !Array.isArray(co.menus) || co.menus.includes(id); };
-const HIDDEN_ROUTES = { 'company': [SA], 'candidate': [SA, CO], 'disc-take': [US], 'skill-take': [US], 'test-edit': [SA, CO], 'test-results': [SA, CO], 'istresult': [SA, CO], 'myresult': [US], 'candidates': [SA, CO], 'ist': [SA, CO], 'kerjakan': [SA, CO] };
+const HIDDEN_ROUTES = { 'company': [SA], 'candidate': [SA, CO], 'disc-take': [US], 'skill-take': [US], 'test-edit': [SA, CO], 'test-results': [SA, CO], 'istresult': [SA, CO], 'papi': [SA, CO], 'papiresult': [SA, CO], 'myresult': [US], 'candidates': [SA, CO], 'ist': [SA, CO], 'kerjakan': [SA, CO] };
 function canRoute(r) {
   const n = NAV.find(x => x.id === r); const roles = n ? n.roles : HIDDEN_ROUTES[r]; if (!(roles && S.user && roles.includes(S.user.role))) return false;
   const mid = ROUTE_MENU[r] || r;
   if (MENU_TOGGLE.includes(mid) && (S.user.role === CO || (S.user.role === SA && S.inCompany)) && !menuOn(mid)) return false;
   return true;
 }
-const navOn = n => S.route === n.id || (S.route === 'company' && n.id === 'companies') || (['candidate', 'candidates', 'istresult', 'ist', 'kerjakan'].includes(S.route) && n.id === 'participants') || (S.route === 'myresult' && n.id === 'mytests') || ((S.route === 'test-edit' || S.route === 'test-results') && n.id === 'skilltests');
+const navOn = n => S.route === n.id || (S.route === 'company' && n.id === 'companies') || (['candidate', 'candidates', 'istresult', 'ist', 'papi', 'papiresult', 'kerjakan'].includes(S.route) && n.id === 'participants') || (S.route === 'myresult' && n.id === 'mytests') || ((S.route === 'test-edit' || S.route === 'test-results') && n.id === 'skilltests');
 const inScope = x => S.user.role === SA ? x.companyId === S.companyId : x.companyId === S.user.companyId;
 const icon = k => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICON[k] || ''}</svg>`;
 
@@ -1676,6 +1721,7 @@ const App = {
     if (Supa.on) { await this.startSupa(); return; }
     await Store.init();
     if (typeof istEnsureSamples === 'function') await istEnsureSamples();
+    if (typeof papiEnsureSamples === 'function') await papiEnsureSamples();
     /* catat password awal akun bawaan agar Super Admin bisa melihatnya (hanya bila belum pernah diganti) */
     try { for (const a of Store.all('accounts')) { if (a.initPass || !a.salt) continue; for (const pw of ['Admin#2026', 'Unimedika#2026', 'Kandidat#2026', 'Contoh#2026', 'Demo#2026']) { if ((await sha256(a.salt + ':' + pw)) === a.passHash) { await Store.put('accounts', a.id, { ...a, initPass: pw }); break; } } } } catch (e) { console.warn('initPass', e); }
     try { const s = sessionStorage.getItem('hrs:session'); if (s) { const o = JSON.parse(s); const a = Store.get('accounts', o.id); if (a && a.active && !coBlock(a) && Date.now() - o.t < 30 * 60 * 1000) this.setUser(a, o.cid, o.ic); } } catch (e) {}
@@ -1697,7 +1743,8 @@ const App = {
   },
   go(route, params = {}) {
     if (S.test && !route.endsWith('-take')) { toast('Selesaikan tes terlebih dahulu.'); return; }
-    if (S.user.role === SA && (route === 'companies' || SETTINGS_IDS.includes(route) || route === 'menuaccess')) S.inCompany = false;
+    if (S.dirty && route !== S.route) { confirmBox('Ada perubahan yang belum disimpan. Tinggalkan halaman ini tanpa menyimpan?', 'Tinggalkan', true).then(ok => { if (ok) { S.dirty = false; S._set = null; this.go(route, params); } }); return; }
+    if (S.user.role === SA && (route === 'companies' || PICK_IDS.includes(route) || route === 'menuaccess')) S.inCompany = false;
     S.route = route; S.params = params; this.saveSession(); this.render(); window.scrollTo(0, 0);
   },
   onRemoteChange(col) {
@@ -1706,6 +1753,7 @@ const App = {
     if (!a || !a.active) { this.logout('Akun Anda dinonaktifkan atau dihapus oleh admin.'); return; }
     { const blk = coBlock(a); if (blk) { this.logout(blk); return; } }
     if (a) S.user = a;
+    if (S.dirty) return;
     if (S.test || $('#modal-root').innerHTML) return;
     const f = document.activeElement; if (f && /INPUT|SELECT|TEXTAREA/.test(f.tagName)) return;
     this.renderContent();
@@ -1715,12 +1763,12 @@ const App = {
     document.body.classList.toggle('has-user', !!S.user); document.body.dataset.role = S.user ? S.user.role : 'guest';
     if (!S.user) { app.innerHTML = Views.login(); Views.loginMount(); return; }
     if (S.test) { this.renderTest(); return; }
-    const groups = []; NAV.filter(n => n.roles.includes(S.user.role) && (S.user.role === SA ? (S.inCompany ? !SETTINGS_IDS.includes(n.id) && n.id !== 'menuaccess' : SA_OUTSIDE.includes(n.id)) : true) && (!MENU_TOGGLE.includes(n.id) || S.user.role === US || (S.user.role === SA && !S.inCompany) || menuOn(n.id))).forEach(n => { const g = n.group || ''; let grp = groups.find(x => x.g === g); if (!grp) groups.push(grp = { g, items: [] }); grp.items.push(n); });
+    const groups = []; NAV.filter(n => n.roles.includes(S.user.role) && (S.user.role === SA ? (S.inCompany ? !SETTINGS_IDS.includes(n.id) && n.id !== 'menuaccess' && n.id !== 'skillmaster' : SA_OUTSIDE.includes(n.id)) : true) && (!MENU_TOGGLE.includes(n.id) || S.user.role === US || (S.user.role === SA && !S.inCompany) || menuOn(n.id))).forEach(n => { const g = n.group || ''; let grp = groups.find(x => x.g === g); if (!grp) groups.push(grp = { g, items: [] }); grp.items.push(n); });
     const navHtml = groups.map(g => `<div class="nav-group">${g.g ? `<div class="eyebrow">${esc(g.g)}</div>` : ''}${g.items.map(n => `<button class="nav-item ${navOn(n) ? 'on' : ''}" data-go="${n.id}" title="${esc(n.label)}" aria-label="${esc(n.label)}">${icon(n.icon)}<span>${esc(n.label)}</span></button>`).join('')}</div>`).join('');
     const comps = Store.all('companies');
     const compSel = S.user.role === SA && !S.inCompany ? '<span class="pill info">Pilih perusahaan untuk dilihat</span>' : S.user.role === SA ? `<button class="btn sm" data-go="companies">\u2190 Daftar Perusahaan</button><label class="row small muted" style="gap:6px">Perusahaan aktif <select class="input" id="compSel" style="width:auto;padding:6px 10px">${comps.map(c => `<option value="${c.id}" ${c.id === S.companyId ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select></label>`
       : S.user.role === CO ? `<span class="pill info">${esc(Store.get('companies', S.user.companyId)?.name || '')}</span>` : '';
-    const cur = NAV.find(n => n.id === S.route) || { label: { candidate: 'Detail Hasil Psikotes', company: 'Detail Perusahaan', 'test-edit': 'Tes Kemampuan Unit', 'test-results': 'Tes Kemampuan Unit', istresult: 'Hasil Psikotes IST', myresult: 'Hasil Saya' }[S.route] || '' };
+    const cur = NAV.find(n => n.id === S.route) || { label: { candidate: 'Detail Hasil Psikotes', company: 'Detail Perusahaan', 'test-edit': 'Tes Kemampuan Unit', 'test-results': 'Tes Kemampuan Unit', istresult: 'Hasil Psikotes IST', papi: 'Hasil Psikotes PAPI', papiresult: 'Hasil Psikotes PAPI', myresult: 'Hasil Saya' }[S.route] || '' };
     app.innerHTML = `<div class="shell">
       <div class="side-backdrop" id="sideBg" hidden></div>
       <aside class="side" id="side" aria-label="Menu utama"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><div class="brandmark">${brandOf().logo}<span class="brand-text">${esc(brandOf().name)}</span></div><button class="nav-close" id="sideClose" aria-label="Tutup menu">✕</button></div>${navHtml}
@@ -1757,12 +1805,14 @@ const App = {
   },
   renderContent() {
     const c = $('#content'); if (!c) return;
+    if (S._dirtyRoute !== S.route) { S.dirty = false; S._dirtyRoute = S.route; }
+    c.oninput = null; c.onchange = null; if (S._dcClick) { c.removeEventListener('click', S._dcClick, true); S._dcClick = null; }
     if (S.user.role === SA && !S.inCompany && !SA_OUTSIDE.includes(S.route)) S.route = 'companies';
     if (!canRoute(S.route)) { c.innerHTML = `<div class="card card-pad"><h2>Akses ditolak</h2><p class="muted">Peran ${esc(ROLE_LABEL[S.user.role])} tidak memiliki akses ke halaman ini.</p></div>`; return; }
-    if (S.user.role === SA && !S.inCompany && SETTINGS_IDS.includes(S.route) && !Store.get('companies', S.companyId)) S.companyId = (Store.all('companies')[0] || {}).id || null;
+    if (S.user.role === SA && !S.inCompany && PICK_IDS.includes(S.route) && !Store.get('companies', S.companyId)) S.companyId = (Store.all('companies')[0] || {}).id || null;
     const v = Views[S.route.replace(/-(\w)/g, (_, x) => x.toUpperCase())];
     c.innerHTML = v ? v() : '<p>Halaman tidak ditemukan</p>';
-    if (S.user.role === SA && !S.inCompany && SETTINGS_IDS.includes(S.route)) {
+    if (S.user.role === SA && !S.inCompany && PICK_IDS.includes(S.route)) {
       const cs = Store.all('companies');
       c.insertAdjacentHTML('afterbegin', `<div class="note info" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px"><b>Perusahaan:</b><select class="input" id="outCo" style="width:auto;min-width:220px">${cs.map(x => `<option value="${x.id}" ${x.id === S.companyId ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select><span class="small muted">Pengaturan di bawah berlaku untuk perusahaan yang dipilih.</span></div>`);
       const oc = $('#outCo', c); if (oc) oc.onchange = () => { S.companyId = oc.value; this.saveSession(); this.renderContent(); };
@@ -1772,7 +1822,7 @@ const App = {
     $$('[data-go]', c).forEach(b => b.onclick = () => this.go(b.dataset.go, b.dataset.p ? JSON.parse(b.dataset.p) : {}));
     stackTables(c);
   },
-  renderTest() { S.test.kind === 'ist' ? Ist.render() : Test.render(); }
+  renderTest() { S.test.kind === 'ist' ? Ist.render() : S.test.kind === 'papi' ? Papi.render() : Test.render(); }
 };
 
 /* jam aktual + animasi welcome */
@@ -1793,7 +1843,7 @@ function showWelcome(name) {
   $$('.welcome').forEach(x => x.remove());
   const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   const o = document.createElement('div'); o.className = 'welcome'; o.setAttribute('role', 'status');
-  o.innerHTML = `<div class="wl-orb a"></div><div class="wl-orb b"></div><div class="wl-box"><img class="wl-logo" src="${LOGO_UM}" alt=""><h1 class="wl-word" aria-label="Welcome">${'Welcome'.split('').map((ch, i) => `<span style="--i:${i}" aria-hidden="true">${ch}</span>`).join('')}</h1><p class="wl-sub">Selamat datang, <b>${esc(name)}</b></p><div class="wl-line"><i></i></div><p class="wl-org">Unimedika HR Suite \u00b7 RS Unimedika Setu Bekasi</p></div>`;
+  o.innerHTML = `<div class="wl-orb a"></div><div class="wl-orb b"></div><div class="wl-box"><img class="wl-logo" src="${LOGO_LX_MARK}" alt="LyrionX.Co"><h1 class="wl-word" aria-label="Welcome">${'Welcome'.split('').map((ch, i) => `<span style="--i:${i}" aria-hidden="true">${ch}</span>`).join('')}</h1><p class="wl-sub">Selamat datang, <b>${esc(name)}</b></p><div class="wl-line"><i></i></div><p class="wl-org">${esc(brandOf().name)}</p></div>`;
   document.body.appendChild(o);
   let done = false; const end = () => { if (done) return; done = true; o.classList.add('out'); setTimeout(() => o.remove(), 650); };
   const t = setTimeout(end, reduce ? 900 : 3000);
@@ -2708,7 +2758,7 @@ Views.candidateMount = c => {
 /* ---- Tes kemampuan unit ---- */
 Views.skilltests = () => {
   const tests = Store.all('skill_tests', inScope);
-  return `<div class="page-head"><div><h1>Tes Kemampuan Unit Kerja</h1><p>Buat bank soal pilihan ganda khusus tiap unit, atur waktu dan nilai kelulusan, lalu tugaskan ke akun peserta.</p></div><button class="btn primary" data-go="test-edit">+ Tes baru</button></div>
+  return `<div class="page-head"><div><h1>Tes Kemampuan Unit Kerja</h1><p>Buat bank soal pilihan ganda khusus tiap unit, atur waktu dan nilai kelulusan, lalu tugaskan ke akun peserta.</p></div><div class="row"><button class="btn" id="skTpl">Unduh template</button><button class="btn" id="skUp">Upload soal</button><button class="btn primary" data-go="test-edit">+ Tes baru</button></div></div>
   <div class="grid g3">${tests.length ? tests.map(t => { const rs = Store.all('skill_results', x => x.testId === t.id); const pass = rs.filter(x => skillScore(t, x.answers || []).passed).length;
     return `<div class="card card-pad stack"><div class="row" style="justify-content:space-between"><span class="pill info">${esc(t.unit)}</span>${t.active === false ? '<span class="pill">Nonaktif</span>' : '<span class="pill ok">Aktif</span>'}</div>
       <h3>${esc(t.title)}</h3><div class="row small muted"><span>${t.questions.length} soal</span><span>· ${t.minutes} menit</span><span>· KKM ${t.passing}</span></div>
@@ -3055,19 +3105,31 @@ function accountForm(a = {}) {
     <label class="f">Unit (peserta)<select class="input" name="unit">${unitOptions(cid, a.unit)}</select></label>
     <label class="f">Posisi yang dilamar / jabatan${posSelect(a.position || '')}</label>
     <label class="f">Psikotes IST<select class="input" name="istAllowed"><option value="0" ${!a.istAllowed ? 'selected' : ''}>Ditutup</option><option value="1" ${a.istAllowed ? 'selected' : ''}>Dibuka</option></select></label>
+    <label class="f">Psikotes PAPI Kostick<select class="input" name="papiAllowed"><option value="0" ${!a.papiAllowed ? 'selected' : ''}>Ditutup</option><option value="1" ${a.papiAllowed ? 'selected' : ''}>Dibuka</option></select></label>
     <label class="f">Psikotes DISC<select class="input" name="discAllowed"><option value="1" ${a.discAllowed !== false ? 'selected' : ''}>Dibuka</option><option value="0" ${a.discAllowed === false ? 'selected' : ''}>Ditutup</option></select></label>
-    <fieldset style="grid-column:1/-1;border:1px solid var(--line);border-radius:8px;padding:10px 12px"><legend class="small muted" style="padding:0 4px">Tes kemampuan yang ditugaskan</legend>
-      ${tests.length ? tests.map(t => `<label class="row small" style="gap:6px"><input type="checkbox" name="t_${t.id}" ${(a.tests || []).includes(t.id) ? 'checked' : ''}> ${esc(t.title)} <span class="faint">(${esc(t.unit)})</span></label>`).join('') : '<span class="small faint">Belum ada tes untuk perusahaan ini.</span>'}</fieldset>
+    <fieldset style="grid-column:1/-1;border:1px solid var(--line);border-radius:8px;padding:10px 12px"><legend class="small muted" style="padding:0 4px">Tes kemampuan yang ditugaskan</legend><div id="aTests"></div></fieldset>
     <div id="aErr" class="note bad" hidden style="grid-column:1/-1"></div></form>`,
     foot: `${a.id && a.role === US ? '<button class="btn danger" id="aDel" style="margin-right:auto">Hapus akun</button>' : ''}<button class="btn" data-close>Batal</button><button class="btn primary" form="aF">Simpan</button>`,
     onMount: r => {
+      /* tes kemampuan mengikuti unit peserta: pilih unit -> tes unit tersebut otomatis tercentang */
+      const sel = new Set(a.tests || []);
+      const row = t => `<label class="row small" style="gap:6px"><input type="checkbox" name="t_${t.id}" data-tid="${t.id}" ${sel.has(t.id) ? 'checked' : ''}> ${esc(t.title)} <span class="faint">(${esc(t.unit)}, ${t.questions.length} soal)</span>${t.active === false ? ' <span class="pill">Nonaktif</span>' : ''}</label>`;
+      const drawTests = () => {
+        const u = $('[name=unit]', r).value, mine = tests.filter(t => t.unit === u), rest = tests.filter(t => t.unit !== u);
+        $('#aTests', r).innerHTML = !tests.length ? '<span class="small faint">Belum ada tes untuk perusahaan ini. Tambahkan di Master Tes Kemampuan Unit.</span>'
+          : (u ? (mine.length ? `<div class="small muted" style="margin-bottom:4px">Tes untuk unit <b>${esc(u)}</b>:</div>${mine.map(row).join('')}` : `<div class="small muted" style="margin-bottom:4px">Belum ada tes untuk unit <b>${esc(u)}</b>.</div>`) : '<div class="small muted" style="margin-bottom:4px">Pilih unit untuk menampilkan tes yang sesuai.</div>')
+          + (rest.length ? `<details style="margin-top:6px" ${!u || rest.some(t => sel.has(t.id)) ? 'open' : ''}><summary class="small muted">Tes unit lain (${rest.length})</summary>${rest.map(row).join('')}</details>` : '');
+        $$('[data-tid]', r).forEach(cb => cb.onchange = () => { cb.checked ? sel.add(cb.dataset.tid) : sel.delete(cb.dataset.tid); });
+      };
+      $('[name=unit]', r).onchange = () => { const u = $('[name=unit]', r).value; sel.clear(); tests.filter(t => t.unit === u && t.active !== false).forEach(t => sel.add(t.id)); drawTests(); };
+      drawTests();
       const del = $('#aDel', r); if (del) del.onclick = async () => { if (!(await confirmBox(`Hapus akun ${esc(a.username)}? Hasil tes tetap tersimpan.`, 'Hapus', true))) return; await Store.remove('accounts', a.id); audit('hapus akun', a.username); App.renderContent(); };
       $('#aF', r).onsubmit = async ev => { ev.preventDefault(); const f = ev.target; const d = formData(f); const er = $('#aErr', r); er.hidden = true;
         const username = (a.username || d.username).toLowerCase();
         if (!a.id && !Supa.on && Store.all('accounts', x => x.username.toLowerCase() === username).length) { er.textContent = 'Username sudah dipakai.'; er.hidden = false; return; }
         if (d.pw) { const iss = pwIssues(d.pw); if (iss.length) { er.textContent = 'Password belum memenuhi: ' + iss.join(', ') + '.'; er.hidden = false; return; } }
         const role = isSA ? d.role : US;
-        const body = { ...(a.id ? Store.get('accounts', a.id) : { active: true, createdAt: todayISO() }), name: d.name, username, role, companyId: role === SA ? null : (isSA ? d.companyId : S.user.companyId), unit: d.unit || '', position: d.position || '', discAllowed: d.discAllowed === '1', istAllowed: d.istAllowed === '1', tests: tests.filter(t => f['t_' + t.id]?.checked).map(t => t.id), sample: false };
+        const body = { ...(a.id ? Store.get('accounts', a.id) : { active: true, createdAt: todayISO() }), name: d.name, username, role, companyId: role === SA ? null : (isSA ? d.companyId : S.user.companyId), unit: d.unit || '', position: d.position || '', discAllowed: d.discAllowed === '1', istAllowed: d.istAllowed === '1', papiAllowed: d.papiAllowed === '1', tests: tests.filter(t => f['t_' + t.id]?.checked).map(t => t.id), sample: false };
         let id = a.id;
         try {
           if (!a.id) { if (!d.pw) { er.textContent = 'Password awal wajib diisi.'; er.hidden = false; return; } delete body.id; id = await Acct.create(body, d.pw); }
@@ -3159,13 +3221,14 @@ Views.settingsMount = c => {
     for (const [k, id] of hit) await Store.remove(k, id);
     audit('hapus data contoh', hit.length + ' data'); toast('Data contoh dihapus'); App.renderContent();
   };
+  trackDirty(c, () => $('#sSave', c).click());
   $('#sSave', c).onclick = async () => {
     sync();
     st.units = st.units.filter(u => u.name);
     st.signerName = $('#s_sn', c).value.trim(); st.signerTitle = $('#s_st', c).value.trim();
     st.discMinutes = clamp(+$('#s_disc', c).value || 15, 5, 60); st.workDays = +$('#s_wd', c).value; st.annualLeave = +$('#s_al', c).value || 12; 
     $$('[data-bp]', c).forEach(i => st.bpjs[i.dataset.bp] = +i.value || 0);
-    const comp = Store.get('companies', S.companyId); await Store.put('companies', comp.id, { ...comp, settings: st }); audit('ubah pengaturan perusahaan'); toast('Pengaturan disimpan'); App.renderContent();
+    const comp = Store.get('companies', S.companyId); await Store.put('companies', comp.id, { ...comp, settings: st }); audit('ubah pengaturan perusahaan'); S.dirty = false; toast('Pengaturan disimpan'); App.renderContent();
   };
 };
 
@@ -3284,6 +3347,18 @@ Views.auditMount = c => {
 };
 
 
+/* penanda perubahan belum disimpan: bilah Simpan + peringatan saat pindah halaman */
+function trackDirty(c, saveFn) {
+  c.insertAdjacentHTML('beforeend', '<div class="dirty-bar" id="dirtyBar" hidden><span><b>Ada perubahan yang belum disimpan.</b> Tekan Simpan agar perubahan berlaku.</span><span class="row"><button class="btn sm" type="button" id="dcCancel">Batalkan</button><button class="btn sm primary" type="button" id="dcSave">Simpan perubahan</button></span></div>');
+  const bar = $('#dirtyBar', c), mark = () => { S.dirty = true; bar.hidden = false; };
+  if (S.dirty) bar.hidden = false;
+  c.oninput = mark; c.onchange = mark;
+  if (S._dcClick) c.removeEventListener('click', S._dcClick, true);
+  S._dcClick = e => { const b = e.target.closest && e.target.closest('button'); if (b && !b.closest('#dirtyBar') && b.id !== 'sSave' && b.id !== 'maSave' && !b.id.startsWith('bk')) mark(); };
+  c.addEventListener('click', S._dcClick, true);
+  $('#dcSave', c).onclick = saveFn; $('#dcCancel', c).onclick = () => { S.dirty = false; S._set = null; App.renderContent(); };
+  return mark;
+}
 /* ---- Akses menu per RS (Super Admin) ---- */
 Views.menuaccess = () => {
   const cos = Store.all('companies'), items = MENU_TOGGLE.map(id => NAV.find(n => n.id === id));
@@ -3292,17 +3367,24 @@ Views.menuaccess = () => {
   let last = null;
   const rows = items.map(n => { const g = n.group || 'Utama'; const gr = g !== last ? `<tr><td colspan="${cos.length + 1}" class="eyebrow" style="padding-top:14px">${esc(g)}</td></tr>` : ''; last = g;
     return gr + `<tr><td>${esc(n.label)}</td>${cos.map(c => `<td style="text-align:center"><input type="checkbox" class="mx" data-co="${c.id}" data-m="${n.id}" ${menuOn(n.id, c.id) ? 'checked' : ''} aria-label="${esc(n.label)} - ${esc(c.name)}"></td>`).join('')}</tr>`; }).join('');
-  return `<div class="page-head"><div><h1>Akses Menu per RS</h1><p>Centang menu yang dibuka untuk tiap rumah sakit. Menu yang tidak dicentang tidak tampil bagi Admin Perusahaan (HRD) RS tersebut. Perubahan langsung tersimpan.</p></div></div>
+  return `<div class="page-head"><div><h1>Akses Menu per RS</h1><p>Centang menu yang dibuka untuk tiap rumah sakit. Menu yang tidak dicentang tidak tampil bagi Admin Perusahaan (HRD) RS tersebut. Tekan <b>Simpan</b> agar perubahan berlaku.</p></div><button class="btn primary" id="maSave">Simpan</button></div>
   <div class="card card-pad" style="overflow:auto"><table class="tbl"><thead><tr><th>Menu</th>${head}</tr></thead><tbody>${rows}</tbody></table></div>
   <p class="small muted">Beranda, Tes Saya (peserta), dan menu Super Admin selalu tersedia. Pengaturan (Akun Pengguna, Soal Tes, Pengaturan Perusahaan) dikelola Super Admin di tampilan luar.</p>`;
 };
 Views.menuaccessMount = c => {
-  $$('.mx', c).forEach(cb => cb.onchange = async () => {
-    const co = Store.get('companies', cb.dataset.co); if (!co) return;
-    const on = MENU_TOGGLE.filter(id => $$('.mx', c).some(x => x.dataset.co === co.id && x.dataset.m === id && x.checked));
-    try { await Store.put('companies', co.id, { ...co, menus: on }); audit('ubah akses menu', co.name); toast('Akses menu ' + co.name + ' disimpan'); }
-    catch (e) { cb.checked = !cb.checked; toast('Gagal menyimpan: ' + (e && e.message || e)); }
-  });
+  trackDirty(c, () => $('#maSave', c).click());
+  $('#maSave', c).onclick = async e => {
+    const btn = e.currentTarget; btn.disabled = true; let n = 0;
+    try {
+      for (const co of Store.all('companies')) {
+        const on = MENU_TOGGLE.filter(id => $$('.mx', c).some(x => x.dataset.co === co.id && x.dataset.m === id && x.checked));
+        const cur = Array.isArray(co.menus) ? co.menus : MENU_TOGGLE;
+        if (on.length === cur.length && on.every(id => cur.includes(id))) continue;
+        await Store.put('companies', co.id, { ...co, menus: on }); audit('ubah akses menu', co.name); n++;
+      }
+      S.dirty = false; toast(n ? 'Akses menu disimpan untuk ' + n + ' RS' : 'Tidak ada perubahan untuk disimpan'); App.renderContent();
+    } catch (er) { toast('Gagal menyimpan: ' + (er && er.message || er)); btn.disabled = false; }
+  };
 };
 /* =========================================================
    Psikotes IST (Intelligenz Struktur Test)
@@ -3848,7 +3930,8 @@ async function istEnsureSamples() {
    ========================================================= */
 const KJ = {
   disc: { nm: 'DISC', flag: 'discAllowed', res: 'disc_results', ses: 'disc_sessions', resRoute: 'candidate', allRoute: 'candidates' },
-  ist: { nm: 'IST', flag: 'istAllowed', res: 'ist_results', ses: 'ist_sessions', resRoute: 'istresult', allRoute: 'ist' }
+  ist: { nm: 'IST', flag: 'istAllowed', res: 'ist_results', ses: 'ist_sessions', resRoute: 'istresult', allRoute: 'ist' },
+  papi: { nm: 'PAPI Kostick', flag: 'papiAllowed', res: 'papi_results', ses: 'papi_sessions', resRoute: 'papiresult', allRoute: 'papi' }
 };
 function kjStatus(t, a) {
   const K = KJ[t], res = Store.all(K.res, r => r.accountId === a.id), sess = Store.get(K.ses, a.id);
@@ -3860,17 +3943,19 @@ function kjStatus(t, a) {
   else if (res.length) { pill = '<span class="pill info">Selesai</span>'; key = 'done'; }
   return { pill, key, last, n: res.length, open };
 }
+const kjTab = () => { const t = (S.params || {}).tab; return KJ[t] ? t : 'disc'; };
 Views.kerjakan = () => {
-  const tab = (S.params || {}).tab === 'ist' ? 'ist' : 'disc', K = KJ[tab];
+  const tab = kjTab(), K = KJ[tab];
   const users = Store.all('accounts', x => inScope(x) && x.role === US).sort((a, b) => a.name.localeCompare(b.name));
   const rows = users.map(a => ({ a, s: kjStatus(tab, a) }));
   const cnt = k => rows.filter(r => r.s.key === k).length;
   const info = tab === 'disc'
     ? 'Tes kepribadian 24 nomor (P dan K). Peserta bisa mengerjakan sendiri dari menu Tes Saya setelah tes dibuka, atau dipandu HRD.'
+    : tab === 'papi' ? 'Tes kepribadian kerja 90 nomor (pilih A atau B), tanpa batas waktu. Peserta bisa mengerjakan sendiri setelah tes dibuka, dipandu HRD, atau HRD menginput lembar jawaban kertas.'
     : 'Tes inteligensi 9 subtes (176 soal) dengan timer tiap subtes. Peserta bisa mengerjakan sendiri setelah tes dibuka, dipandu HRD, atau HRD menginput lembar jawaban kertas.';
   return `<div class="page-head"><div><h1>Kerjakan Psikotes</h1><p>Pilih jenis psikotes, tambahkan peserta, lalu buka tes atau kerjakan bersama peserta. ${info}</p></div>
     <div class="row"><button class="btn" id="kjWalk">Peserta tanpa akun</button><button class="btn primary" id="kjAdd">+ Peserta baru</button></div></div>
-  <div class="tabs" role="tablist">${[['disc', 'Psikotes DISC'], ['ist', 'Psikotes IST']].map(([k, l]) => `<button class="tab ${tab === k ? 'on' : ''}" role="tab" aria-selected="${tab === k}" data-ktab="${k}">${l}</button>`).join('')}</div>
+  <div class="tabs" role="tablist">${[['disc', 'Psikotes DISC'], ['ist', 'Psikotes IST'], ['papi', 'PAPI Kostick']].map(([k, l]) => `<button class="tab ${tab === k ? 'on' : ''}" role="tab" aria-selected="${tab === k}" data-ktab="${k}">${l}</button>`).join('')}</div>
   <div class="grid g4" style="margin-top:14px"><div class="card kpi k-blue"><span class="eyebrow">Peserta</span><b>${rows.length}</b><span class="small">terdaftar</span></div>
     <div class="card kpi k-teal"><span class="eyebrow">Tes dibuka</span><b>${cnt('open')}</b><span class="small">siap mengerjakan</span></div>
     <div class="card kpi k-orange"><span class="eyebrow">Sedang dikerjakan</span><b>${cnt('prog')}</b><span class="small">berlangsung</span></div>
@@ -3886,10 +3971,11 @@ Views.kerjakan = () => {
   <div class="note">Peserta yang akunnya dibuka mengerjakan sendiri dari perangkatnya lewat menu <b>Tes Saya</b>. Tombol <b>Kerjakan</b> dipakai bila HRD memandu atau menginput lembar jawaban. Hasil ada di menu Hasil Psikotes ${K.nm}.</div>`;
 };
 function kjModal(tab, acc) {
-  const ist = tab === 'ist', st = settingsOf(S.companyId);
-  const modes = ist ? [['online', 'Tes langsung dipandu HRD', 'Peserta mengerjakan 9 subtes di perangkat ini dengan timer tiap subtes.'], ['jawaban', 'Input lembar jawaban kertas', 'HRD mengetik jawaban per nomor dari lembar peserta.'], ['total', 'Input total skor mentah', 'HRD memasukkan jumlah benar per subtes.']]
+  const ist = tab === 'ist', papi = tab === 'papi', st = settingsOf(S.companyId);
+  const modes = papi ? [['online', 'Tes langsung dipandu HRD', 'Peserta memilih A atau B untuk 90 nomor di perangkat ini, tanpa batas waktu.'], ['paper', 'Input lembar jawaban kertas', 'HRD mengklik A atau B per nomor dari lembar peserta (bisa pakai keyboard).']]
+    : ist ? [['online', 'Tes langsung dipandu HRD', 'Peserta mengerjakan 9 subtes di perangkat ini dengan timer tiap subtes.'], ['jawaban', 'Input lembar jawaban kertas', 'HRD mengetik jawaban per nomor dari lembar peserta.'], ['total', 'Input total skor mentah', 'HRD memasukkan jumlah benar per subtes.']]
     : [['online', 'Tes langsung di perangkat ini', `Peserta mengisi sendiri, waktu ${st.discMinutes} menit, otomatis terkirim saat waktu habis.`], ['paper', 'Input dari lembar jawaban kertas', 'HRD memindahkan tanda [x] dari lembar peserta, tanpa batas waktu.']];
-  openModal({ title: `Kerjakan Psikotes ${ist ? 'IST' : 'DISC'}${acc ? ' · ' + esc(acc.name) : ''}`, body: `<form id="kjF" class="form-grid">
+  openModal({ title: `Kerjakan Psikotes ${KJ[tab].nm}${acc ? ' · ' + esc(acc.name) : ''}`, body: `<form id="kjF" class="form-grid">
     <label class="f" style="grid-column:1/-1">Nama<input class="input" name="name" required value="${esc(acc?.name || '')}" ${acc ? 'readonly' : ''}></label>
     <label class="f">Usia (tahun)<input class="input" name="age" type="number" min="15" max="80" required></label>
     <label class="f">Jenis kelamin<select class="input" name="gender"><option>Laki-Laki</option><option>Perempuan</option></select></label>
@@ -3902,9 +3988,13 @@ function kjModal(tab, acc) {
     onMount: r => { $('#kjF', r).onsubmit = async e => {
       e.preventDefault(); const d = formData(e.target);
       const subject = { accountId: acc?.id || null, name: d.name, age: +d.age, gender: d.gender, testDate: d.testDate, unit: d.unit || '', position: d.position || '' };
-      const prev = acc ? Store.all(ist ? 'ist_results' : 'disc_results', x => x.accountId === acc.id).length : 0;
+      const prev = acc ? Store.all(KJ[tab].res, x => x.accountId === acc.id).length : 0;
       closeModal();
       if (prev && !(await confirmBox(`${esc(d.name)} sudah pernah mengerjakan psikotes ini. Buat hasil baru?`, 'Lanjutkan'))) return;
+      if (papi) {
+        if (d.mode === 'online' && !(await confirmBox(`Serahkan perangkat kepada <b>${esc(d.name)}</b>. Tes PAPI tidak memakai batas waktu.`, 'Mulai tes'))) return;
+        Papi.startAdmin(subject, d.mode === 'paper'); return;
+      }
       if (d.mode === 'online') {
         if (!(await confirmBox(`Serahkan perangkat kepada <b>${esc(d.name)}</b>. Waktu berjalan setelah tombol ini ditekan.`, 'Mulai tes'))) return;
         ist ? Ist.startAdmin(subject) : Test.startDiscAdmin(subject, false);
@@ -3913,9 +4003,9 @@ function kjModal(tab, acc) {
     }; } });
 }
 Views.kerjakanMount = c => {
-  const tab = (S.params || {}).tab === 'ist' ? 'ist' : 'disc', K = KJ[tab];
+  const tab = kjTab(), K = KJ[tab];
   $$('[data-ktab]', c).forEach(b => b.onclick = () => { S.params = { tab: b.dataset.ktab }; App.renderContent(); });
-  $('#kjAdd', c).onclick = () => accountForm({ role: US, companyId: S.companyId, discAllowed: tab === 'disc', istAllowed: tab === 'ist' });
+  $('#kjAdd', c).onclick = () => accountForm({ role: US, companyId: S.companyId, discAllowed: tab === 'disc', istAllowed: tab === 'ist', papiAllowed: tab === 'papi' });
   $('#kjWalk', c).onclick = () => kjModal(tab, null);
   let t; $('#kjQ', c).oninput = e => { clearTimeout(t); t = setTimeout(() => { S.params = { ...S.params, tab, q: e.target.value }; App.renderContent(); const i = $('#kjQ'); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }, 300); };
   $$('[data-tog]', c).forEach(b => b.onclick = async () => { const a = Store.get('accounts', b.dataset.tog); await Store.put('accounts', a.id, { ...a, [K.flag]: !a[K.flag] }); audit((a[K.flag] ? 'tutup' : 'buka') + ' tes ' + K.nm, a.name); App.renderContent(); toast(`Tes ${K.nm} ${a[K.flag] ? 'ditutup' : 'dibuka'} untuk ${a.name}`); });
@@ -3952,28 +4042,32 @@ const msIstSoal = k => {
   return head + `<div class="ms-list">${Array.from({ length: n }, (_, i) => item(i)).join('')}</div>`;
 };
 Views.master = () => {
-  const p = S.params || {}, tab = p.tab === 'ist' ? 'ist' : p.tab === 'disc' ? 'disc' : 'ring';
+  const p = S.params || {}, tab = ['ist', 'disc', 'papi'].includes(p.tab) ? p.tab : 'ring';
   const sub = p.sub || 'SE';
-  const tabs = `<div class="tabs" role="tablist">${[['ring', 'Ringkasan'], ['disc', 'Psikotes DISC'], ['ist', 'Psikotes IST']].map(([k, l]) => `<button class="tab ${tab === k ? 'on' : ''}" role="tab" aria-selected="${tab === k}" data-mtab="${k}">${l}</button>`).join('')}</div>`;
+  const tabs = `<div class="tabs" role="tablist">${[['ring', 'Ringkasan'], ['disc', 'Psikotes DISC'], ['ist', 'Psikotes IST'], ['papi', 'PAPI Kostick']].map(([k, l]) => `<button class="tab ${tab === k ? 'on' : ''}" role="tab" aria-selected="${tab === k}" data-mtab="${k}">${l}</button>`).join('')}</div>`;
   let body = '';
   if (tab === 'ring') body = `<div class="grid g2">
     <div class="card card-pad stack"><div class="eyebrow">Psikotes DISC</div><h2>Personality System Graph</h2><div class="small muted">Sumber: SCORING_DISC.xlsm</div>
       <ul class="ist-notes"><li>24 nomor soal, tiap nomor 4 pernyataan (P = paling sesuai, K = paling tidak sesuai)</li><li>Kunci pemetaan P dan K ke faktor D, I, S, C atau *</li><li>40 pola kepribadian dengan deskripsi</li><li>Waktu pengerjaan diatur di Pengaturan Perusahaan (bawaan ${settingsOf(S.companyId).discMinutes} menit)</li></ul><div><button class="btn primary" data-mgo="disc">Buka data DISC</button></div></div>
     <div class="card card-pad stack"><div class="eyebrow">Psikotes IST</div><h2>Intelligenz Struktur Test</h2><div class="small muted">Sumber: Skoring_IST V2.xlsx dan IST_Test_2026.pdf</div>
-      <ul class="ist-notes"><li>9 subtes, 176 soal: lembar soal, petunjuk, contoh, dan kunci jawaban</li><li>Norma skor standar 8 kelompok usia (19–20 sampai 51–60 tahun)</li><li>Tabel Jumlah RW ke SW, tabel IQ, konversi GE, aturan aspek dan gaya pemecahan masalah</li><li>Total waktu ± ${IST_SUB.reduce((s, x) => s + x.min, 0)} menit + 3 menit hafalan ME</li></ul><div><button class="btn primary" data-mgo="ist">Buka data IST</button></div></div></div>
+      <ul class="ist-notes"><li>9 subtes, 176 soal: lembar soal, petunjuk, contoh, dan kunci jawaban</li><li>Norma skor standar 8 kelompok usia (19–20 sampai 51–60 tahun)</li><li>Tabel Jumlah RW ke SW, tabel IQ, konversi GE, aturan aspek dan gaya pemecahan masalah</li><li>Total waktu ± ${IST_SUB.reduce((s, x) => s + x.min, 0)} menit + 3 menit hafalan ME</li></ul><div><button class="btn primary" data-mgo="ist">Buka data IST</button></div></div>
+    <div class="card card-pad stack"><div class="eyebrow">Psikotes PAPI Kostick</div><h2>Personality and Preference Inventory</h2><div class="small muted">Sumber: Skoring_PAPI_Kostick_V1-1.xls dan PAPI_KOSTIK_Test_2026.pdf</div>
+      <ul class="ist-notes"><li>90 nomor, tiap nomor 2 pernyataan (A atau B)</li><li>Kunci pemetaan ke 20 skala dalam 7 aspek, masing-masing skala 0–9</li><li>Pedoman interpretasi per rentang skor untuk tiap skala</li><li>Tanpa batas waktu</li></ul><div><button class="btn primary" data-mgo="papi">Buka data PAPI</button></div></div></div>
     <div class="note warn">Halaman ini memuat <b>kunci jawaban</b> dan hanya dapat dibuka Super Admin. Jangan dibagikan kepada peserta atau admin perusahaan.</div>`;
   else if (tab === 'disc') body = `<div class="card"><div class="card-head"><h3>Lembar soal dan kunci DISC</h3><span class="small muted">24 nomor · tanda * = tidak dihitung ke faktor mana pun</span></div><div class="tbl-wrap"><table class="tbl no-stack"><thead><tr><th class="num">No</th><th>Pernyataan</th><th>Kunci P</th><th>Kunci K</th></tr></thead><tbody>
     ${DD.Q.map(q => q.s.map((s, j) => `<tr>${j === 0 ? `<td class="num" rowspan="4" style="vertical-align:top"><b>${q.n}</b></td>` : ''}<td>${esc(s)}</td><td class="mono">${q.p[j]}</td><td class="mono">${q.k[j]}</td></tr>`).join('')).join('')}</tbody></table></div></div>
     <div class="card"><div class="card-head"><h3>40 pola kepribadian</h3></div><div class="tbl-wrap"><table class="tbl"><thead><tr><th class="num">#</th><th>Pola</th><th>Tipe</th><th>Karakter</th></tr></thead><tbody>
     ${DD.DEF.map((d, i) => `<tr><td class="num">${d.no}</td><td class="mono">${esc(DD.PAT[i])}</td><td><b>${esc(d.title)}</b></td><td class="small">${esc(d.traits.join(', '))}</td></tr>`).join('')}</tbody></table></div></div>`;
+  else if (tab === 'papi') body = papiMasterTab();
   else body = `<div class="ist-chipnav">${IST_ORDER.map(k => `<button class="chip ${sub === k ? 'on' : ''}" data-msub="${k}">${k}<small>${esc(IST_BY[k].nama)}</small></button>`).join('')}<button class="chip ${sub === 'norma' ? 'on' : ''}" data-msub="norma">Norma<small>aturan &amp; tabel</small></button></div>
     <div class="stack">${sub === 'norma' ? istRefTab() : msIstSoal(IST_BY[sub] ? sub : 'SE')}</div>`;
-  return `<div class="page-head"><div><h1>Master Data Psikotes</h1><p>Seluruh data psikotes dalam satu tempat: lembar soal, petunjuk, kunci jawaban, norma, dan aturan skoring untuk DISC dan IST.</p></div></div>${tabs}<div class="stack" style="margin-top:14px">${body}</div>`;
+  return `<div class="page-head"><div><h1>Master Data Psikotes</h1><p>Seluruh data psikotes dalam satu tempat: lembar soal, petunjuk, kunci jawaban, norma, dan aturan skoring untuk DISC, IST, dan PAPI Kostick.</p></div></div>${tabs}<div class="stack" style="margin-top:14px">${body}</div>`;
 };
 Views.masterMount = c => {
   $$('[data-mtab]', c).forEach(b => b.onclick = () => { S.params = { tab: b.dataset.mtab }; App.renderContent(); window.scrollTo(0, 0); });
   $$('[data-mgo]', c).forEach(b => b.onclick = () => { S.params = { tab: b.dataset.mgo }; App.renderContent(); window.scrollTo(0, 0); });
   $$('[data-msub]', c).forEach(b => b.onclick = () => { S.params = { tab: 'ist', sub: b.dataset.msub }; App.renderContent(); window.scrollTo(0, 0); });
+  $$('[data-psub]', c).forEach(b => b.onclick = () => { S.params = { tab: 'papi', sub: b.dataset.psub }; App.renderContent(); window.scrollTo(0, 0); });
   const ag = $('#rAge', c); if (ag) ag.onchange = e => { S.params = { tab: 'ist', sub: 'norma', ai: e.target.value }; App.renderContent(); };
 };
 /* =========================================================
@@ -4023,10 +4117,11 @@ const Demo = {
     const cid = Store.all('companies')[0] ? Store.all('companies').find(c => c.id === 'c_humana')?.id || Object.keys(Store.cache.companies)[0] : null;
     const comp = Store.get('companies', cid) || Store.all('companies')[0];
     const id = a?.id || 'u_demo', salt = 'dm0s1m', st = settingsOf(comp.id || cid);
-    const body = { ...(a || {}), username: this.USER, name: 'Peserta Simulasi', role: US, companyId: comp.id || cid, unit: (st.units?.[0]?.name) || '', position: a?.position || '', discAllowed: true, istAllowed: true, tests: [], active: true, pending: false, demo: true, sample: true, createdAt: todayISO(), salt, passHash: await sha256(salt + ':' + this.PASS) };
+    const body = { ...(a || {}), username: this.USER, name: 'Peserta Simulasi', role: US, companyId: comp.id || cid, unit: (st.units?.[0]?.name) || '', position: a?.position || '', discAllowed: true, istAllowed: true, papiAllowed: true, tests: [], active: true, pending: false, demo: true, sample: true, createdAt: todayISO(), salt, passHash: await sha256(salt + ':' + this.PASS) };
     await Store.put('accounts', id, body);
     await Promise.all([...Store.all('disc_results', x => x.accountId === id), ...Store.all('ist_results', x => x.accountId === id)].map(r => Store.remove(r.number != null ? 'ist_results' : 'disc_results', r.id)));
     await Store.remove('disc_sessions', id).catch(() => {}); await Store.remove('ist_sessions', id).catch(() => {});
+    await Promise.all(Store.all('papi_results', x => x.accountId === id).map(r => Store.remove('papi_results', r.id))); await Store.remove('papi_sessions', id).catch(() => {});
     App.setUser(Store.get('accounts', id)); S.route = 'mytests'; App.render(); toast('Mode simulasi: Anda masuk sebagai Peserta Simulasi.');
   },
   rnd(n) { return Math.floor(Math.random() * n); },
@@ -4047,6 +4142,8 @@ const Demo = {
       const r = Store.all('ist_results', x => x.accountId === S.user.id).sort((x, y) => (y.finishedAt || '').localeCompare(x.finishedAt || ''))[0];
       if (r && !r.geScores) { const sc = Array.from({ length: 16 }, () => this.rnd(3)); await Store.put('ist_results', r.id, { ...r, geScores: sc, geRS: sc.reduce((a, b) => a + b, 0), sample: true }); }
       if (r) { S.test = null; App.go('myresult', { type: 'ist', id: r.id }); }
+    } else if (t.kind === 'papi') {
+      t.sess.answers = t.sess.answers.map(v => v || (Math.random() < .5 ? 'a' : 'b')); t.sess.startedAt = t.sess.startedAt || nowISO(); await Papi.submit();
     } else if (t.kind === 'disc') {
       t.sess.answers = t.sess.answers.map(() => { const p = this.rnd(4); let k = this.rnd(4); while (k === p) k = this.rnd(4); return [p, k]; });
       await Test.submit(false);
@@ -4077,7 +4174,7 @@ Views.companies = () => {
   const warnCo = comps.filter(c => ['soon', 'expired'].includes(coValid(c).st));
   return `${warnCo.length ? `<div class="note warn req-banner"><span><b>${warnCo.length} perusahaan</b> masa berlaku akunnya segera berakhir atau sudah berakhir: ${warnCo.map(c => esc(c.name)).join(', ')}.</span></div>` : ''}<div class="page-head"><div><h1>Daftar Perusahaan</h1><p>Pilih perusahaan lalu tekan <b>Masuk</b> untuk melihat data rekrutmen, psikotes, dan kepegawaiannya. Tiap perusahaan memiliki data, akun, dan pengaturan sendiri.</p></div><button class="btn primary" id="addC">+ Perusahaan</button></div>
   <div class="co-grid">${comps.map(c => {
-    const acc = Store.all('accounts', a => a.companyId === c.id), res = Store.all('disc_results', x => x.companyId === c.id).length + Store.all('ist_results', x => x.companyId === c.id).length;
+    const acc = Store.all('accounts', a => a.companyId === c.id), res = Store.all('disc_results', x => x.companyId === c.id).length + Store.all('ist_results', x => x.companyId === c.id).length + Store.all('papi_results', x => x.companyId === c.id).length;
     return `<div class="card card-pad stack co-card"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><div><h2 style="margin:0">${esc(c.name)}</h2><div class="small muted">${esc(c.address || '–')}</div></div><span class="co-ic" aria-hidden="true">${icon('building')}</span></div>
       ${(() => { const v = coValid(c); return `<div class="row" style="gap:8px"><span class="small muted">Masa berlaku akun</span><span class="pill ${v.cls}">${esc(v.label)}</span></div>`; })()}
       <div class="co-stats"><div><b>${acc.filter(a => a.role === CO).length}</b><span>Admin</span></div><div><b>${acc.filter(a => a.role === US).length}</b><span>Peserta</span></div><div><b>${Store.all('employees', e => e.companyId === c.id).length}</b><span>Karyawan</span></div><div><b>${res}</b><span>Hasil tes</span></div></div>
@@ -4094,14 +4191,14 @@ Views.companiesMount = c => {
 /* ---------- ADMIN PERUSAHAAN: Daftar Peserta ---------- */
 const prLatest = (col, id) => Store.all(col, x => x.accountId === id).sort((a, b) => (b.finishedAt || '').localeCompare(a.finishedAt || ''))[0];
 function prRow(a) {
-  const d = prLatest('disc_results', a.id), i = prLatest('ist_results', a.id);
-  const ds = Store.get('disc_sessions', a.id), is = Store.get('ist_sessions', a.id);
+  const d = prLatest('disc_results', a.id), i = prLatest('ist_results', a.id), p = prLatest('papi_results', a.id);
+  const ds = Store.get('disc_sessions', a.id), is = Store.get('ist_sessions', a.id), ps = Store.get('papi_sessions', a.id);
   const tests = (a.tests || []).map(id => Store.get('skill_tests', id)).filter(Boolean).map(t => { const r = prLatest('skill_results', a.id) && Store.all('skill_results', x => x.accountId === a.id && x.testId === t.id)[0]; return { t, r, s: r ? skillScore(t, r.answers || []) : null, prog: !!Store.get('skill_sessions', a.id + '__' + t.id) }; });
   const st = (assigned, res, sess) => res && !assigned ? 'done' : sess ? 'prog' : res ? 'done' : assigned ? 'open' : 'none';
-  const dst = st(a.discAllowed, d, ds), ist = st(a.istAllowed, i, is);
-  const slots = [dst, ist, ...tests.map(x => x.r ? 'done' : x.prog ? 'prog' : 'open')].filter(x => x !== 'none');
+  const dst = st(a.discAllowed, d, ds), ist = st(a.istAllowed, i, is), pst = st(a.papiAllowed, p, ps);
+  const slots = [dst, ist, pst, ...tests.map(x => x.r ? 'done' : x.prog ? 'prog' : 'open')].filter(x => x !== 'none');
   const all = slots.length ? (slots.every(x => x === 'done') ? 'done' : slots.some(x => x === 'prog' || x === 'done') ? 'prog' : 'open') : 'none';
-  return { a, d, i, dst, ist, tests, all, R: d ? discRecommendation(d) : null, C: i ? istCalc(i) : null };
+  return { a, d, i, p, dst, ist, pst, tests, all, R: d ? discRecommendation(d) : null, C: i ? istCalc(i) : null, PC: p ? papiCalc(p) : null };
 }
 const prPill = s => ({ done: '<span class="pill ok">Selesai</span>', prog: '<span class="pill warn">Sedang</span>', open: '<span class="pill">Belum</span>', none: '<span class="faint">–</span>' })[s];
 Views.participants = () => {
@@ -4112,9 +4209,9 @@ Views.participants = () => {
   if (f.st) rows = rows.filter(x => x.all === f.st);
   if (f.q) rows = rows.filter(x => x.a.name.toLowerCase().includes(f.q.toLowerCase()));
   rows.sort((x, y) => x.a.name.localeCompare(y.a.name));
-  const walk = [...Store.all('disc_results', r => inScope(r) && !r.accountId).map(r => ({ r, t: 'DISC', go: ['candidate', { id: r.id }] })), ...Store.all('ist_results', r => inScope(r) && !r.accountId).map(r => ({ r, t: 'IST', go: ['istresult', { id: r.id }] }))].sort((a, b) => (b.r.finishedAt || '').localeCompare(a.r.finishedAt || ''));
+  const walk = [...Store.all('disc_results', r => inScope(r) && !r.accountId).map(r => ({ r, t: 'DISC', go: ['candidate', { id: r.id }] })), ...Store.all('ist_results', r => inScope(r) && !r.accountId).map(r => ({ r, t: 'IST', go: ['istresult', { id: r.id }] })), ...Store.all('papi_results', r => inScope(r) && !r.accountId).map(r => ({ r, t: 'PAPI', go: ['papiresult', { id: r.id }] }))].sort((a, b) => (b.r.finishedAt || '').localeCompare(a.r.finishedAt || ''));
   const cnt = k => all.filter(x => x.all === k).length;
-  return `<div class="page-head"><div><h1>Daftar Peserta</h1><p>Semua peserta beserta hasil psikotes DISC, IST, dan tes kemampuan unit. Peserta masuk sendiri dengan username dan password lalu mengerjakan tes yang Anda pilih.</p></div>
+  return `<div class="page-head"><div><h1>Daftar Peserta</h1><p>Semua peserta beserta hasil psikotes DISC, IST, PAPI Kostick, dan tes kemampuan unit. Peserta masuk sendiri dengan username dan password lalu mengerjakan tes yang Anda pilih.</p></div>
     <div class="row"><button class="btn" id="pIst">Input lembar jawaban IST</button><button class="btn primary" id="pAdd">+ Peserta baru</button></div></div>
   <div class="grid g4"><div class="card kpi k-blue"><span class="eyebrow">Peserta</span><b>${all.length}</b><span class="small">terdaftar</span></div>
     <div class="card kpi k-teal"><span class="eyebrow">Belum mulai</span><b>${cnt('open')}</b><span class="small">menunggu</span></div>
@@ -4122,27 +4219,29 @@ Views.participants = () => {
     <div class="card kpi k-purple"><span class="eyebrow">Selesai semua</span><b>${cnt('done')}</b><span class="small">hasil lengkap</span></div></div>
   <div class="card" style="margin-top:14px"><div class="card-head"><div class="row"><input class="input" id="pq" placeholder="Cari peserta…" value="${esc(f.q || '')}" style="width:200px"><select class="input" id="pu" style="width:auto">${unitOptions(S.companyId, f.unit).replace('– pilih unit –', 'Semua unit')}</select>
     <select class="input" id="ps" style="width:auto">${[['', 'Semua status'], ['open', 'Belum mulai'], ['prog', 'Sedang / sebagian'], ['done', 'Selesai semua']].map(([v, l]) => `<option value="${v}" ${f.st === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div><span class="small muted">${rows.length} peserta</span></div>
-  ${rows.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th class="num">No</th><th>Peserta</th><th>Unit / posisi</th><th>Psikotes DISC</th><th>Psikotes IST</th><th>Tes kemampuan unit</th><th></th></tr></thead><tbody>
-    ${rows.map(({ a, d, i, dst, ist, tests, R, C }, n) => `<tr><td class="num no-col">${n + 1}</td><td><b>${esc(a.name)}</b>${sampleTag(a)}<div class="small muted mono">${esc(a.username)}${a.active ? '' : ' · nonaktif'}</div></td>
+  ${rows.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th class="num">No</th><th>Peserta</th><th>Unit / posisi</th><th>Psikotes DISC</th><th>Psikotes IST</th><th>PAPI Kostick</th><th>Tes kemampuan unit</th><th></th></tr></thead><tbody>
+    ${rows.map(({ a, d, i, p, dst, ist, pst, tests, R, C, PC }, n) => `<tr><td class="num no-col">${n + 1}</td><td><b>${esc(a.name)}</b>${sampleTag(a)}<div class="small muted mono">${esc(a.username)}${a.active ? '' : ' · nonaktif'}</div></td>
       <td>${esc(a.unit || '–')}<div class="small muted">${esc(a.position || '')}</div></td>
       <td>${prPill(dst)}${d ? `<div class="small"><a href="#" class="lnk" data-d="${d.id}">${R.fit != null ? 'Kesesuaian ' + R.fit + '%' : 'Lihat hasil'}</a><br><span class="muted">${esc(R.sc.def[2].title)}</span></div>` : ''}</td>
       <td>${prPill(ist)}${i ? (C.pending ? '<div class="small"><a href="#" class="lnk" data-i="' + i.id + '">Nilai GE</a></div>' : `<div class="small"><a href="#" class="lnk" data-i="${i.id}">IQ ${istFmtIq(C.iq)}</a><br><span class="muted">${esc(istIqCat(C.iq))}</span></div>`) : ''}</td>
+      <td>${prPill(pst)}${p ? `<div class="small"><a href="#" class="lnk" data-pp="${p.id}">${papiTop(PC.sc, 2).map(([k, v]) => k + ' ' + v).join(', ')}</a>${PC.complete ? '' : '<br><span class="muted">belum lengkap</span>'}</div>` : ''}</td>
       <td>${tests.length ? tests.map(x => `<div class="small">${esc(x.t.title.replace(/^Tes Kompetensi /, ''))}: ${x.s ? `<a href="#" class="lnk" data-t="${x.t.id}"><span class="pill ${x.s.passed ? 'ok' : 'bad'}">${x.s.score}</span></a>` : x.prog ? '<span class="pill warn">Sedang</span>' : '<span class="pill">Belum</span>'}</div>`).join('') : '<span class="faint">–</span>'}</td>
       <td><button class="btn sm" data-edit="${a.id}">Ubah</button></td></tr>`).join('')}</tbody></table></div>` : `<div class="empty">${all.length ? 'Tidak ada peserta yang cocok dengan filter.' : 'Belum ada peserta. Tekan <b>+ Peserta baru</b> untuk membuat akun dan memilih tes.'}</div>`}</div>
   ${walk.length ? `<div class="card"><div class="card-head"><h3>Peserta tanpa akun (hasil input HRD)</h3><span class="small muted">${walk.length} hasil</span></div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Peserta</th><th>Unit / posisi</th><th>Tes</th><th>Tanggal</th></tr></thead><tbody>${walk.map(({ r, t, go }, n) => `<tr class="click" data-go2="${n}"><td><b>${esc(r.name)}</b>${sampleTag(r)}</td><td>${esc(r.unit || '–')}<div class="small muted">${esc(r.position || '')}</div></td><td>${t}</td><td class="small">${fmtDate(r.finishedAt || r.testDate)}</td></tr>`).join('')}</tbody></table></div></div>` : ''}`;
 };
 Views.participantsMount = c => {
   const f = S.params || {}, re = o => { S.params = { ...f, ...o }; App.renderContent(); };
-  $('#pAdd', c).onclick = () => accountForm({ role: US, companyId: S.companyId, discAllowed: true, istAllowed: true });
+  $('#pAdd', c).onclick = () => accountForm({ role: US, companyId: S.companyId, discAllowed: true, istAllowed: true, papiAllowed: false });
   $('#pIst', c).onclick = () => App.go('ist', { tab: 'baru' });
   $('#pu', c).onchange = e => re({ unit: e.target.value }); $('#ps', c).onchange = e => re({ st: e.target.value });
   let t; $('#pq', c).oninput = e => { clearTimeout(t); t = setTimeout(() => { re({ q: e.target.value }); const i = $('#pq'); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }, 300); };
   $$('[data-d]', c).forEach(a => a.onclick = e => { e.preventDefault(); App.go('candidate', { id: a.dataset.d }); });
   $$('[data-i]', c).forEach(a => a.onclick = e => { e.preventDefault(); App.go('istresult', { id: a.dataset.i }); });
+  $$('[data-pp]', c).forEach(a => a.onclick = e => { e.preventDefault(); App.go('papiresult', { id: a.dataset.pp }); });
   $$('[data-t]', c).forEach(a => a.onclick = e => { e.preventDefault(); App.go('test-results', { id: a.dataset.t }); });
   $$('[data-edit]', c).forEach(b => b.onclick = () => accountForm(Store.get('accounts', b.dataset.edit)));
   const walk = [...Store.all('disc_results', r => inScope(r) && !r.accountId).map(r => ['candidate', { id: r.id }]), ...Store.all('ist_results', r => inScope(r) && !r.accountId).map(r => ['istresult', { id: r.id }])];
-  const wl = [...Store.all('disc_results', r => inScope(r) && !r.accountId).map(r => ({ r, go: ['candidate', { id: r.id }] })), ...Store.all('ist_results', r => inScope(r) && !r.accountId).map(r => ({ r, go: ['istresult', { id: r.id }] }))].sort((a, b) => (b.r.finishedAt || '').localeCompare(a.r.finishedAt || ''));
+  const wl = [...Store.all('disc_results', r => inScope(r) && !r.accountId).map(r => ({ r, go: ['candidate', { id: r.id }] })), ...Store.all('ist_results', r => inScope(r) && !r.accountId).map(r => ({ r, go: ['istresult', { id: r.id }] })), ...Store.all('papi_results', r => inScope(r) && !r.accountId).map(r => ({ r, go: ['papiresult', { id: r.id }] }))].sort((a, b) => (b.r.finishedAt || '').localeCompare(a.r.finishedAt || ''));
   $$('[data-go2]', c).forEach(tr => tr.onclick = () => App.go(...wl[+tr.dataset.go2].go));
 };
 
@@ -4226,6 +4325,9 @@ function pzItems(a) {
   const ir = Store.all('ist_results', x => x.accountId === a.id).length, is = Store.get('ist_sessions', a.id);
   if (a.istAllowed || is || ir) items.push({ k: 'ist', title: 'Psikotes IST (kemampuan berpikir)', meta: `±${IST_SUB.reduce((s, x) => s + x.min, 0) + 3} menit · 9 subtes · 176 soal`, done: ir > 0 && !a.istAllowed && !is, prog: !!is, start: () => Ist.startAccount(),
     steps: ['Isi usia dan jenis kelamin Anda.', 'Tes terdiri dari 9 subtes yang dikerjakan berurutan.', 'Sebelum tiap subtes ada petunjuk dan contoh. Baca dengan teliti.', 'Tekan Mulai subtes. Waktu tiap subtes berjalan sendiri dan tidak bisa dijeda.', 'Ada jawaban benar dan salah. Soal kosong dinilai salah, tidak ada pengurangan nilai.', 'Setelah subtes terakhir, tekan Selesai mengerjakan.'] });
+  const pr = Store.all('papi_results', x => x.accountId === a.id).length, ps = Store.get('papi_sessions', a.id);
+  if (a.papiAllowed || ps || pr) items.push({ k: 'papi', title: 'Psikotes PAPI Kostick (kepribadian kerja)', meta: '90 nomor · pilih A atau B · tanpa batas waktu', done: pr > 0 && !a.papiAllowed && !ps, prog: !!(ps && ps.startedAt), start: () => Papi.startAccount(),
+    steps: ['Ada 90 nomor. Tiap nomor berisi dua pernyataan, A dan B.', 'Pilih satu pernyataan yang PALING menggambarkan diri Anda dalam bekerja.', 'Bila keduanya sesuai atau keduanya tidak sesuai, tetap pilih yang paling mendekati.', 'Tidak ada batas waktu dan tidak ada jawaban benar atau salah. Jawab dengan spontan.', 'Semua nomor wajib dijawab. Setelah itu tekan Selesai mengerjakan.'] });
   (a.tests || []).map(id => Store.get('skill_tests', id)).filter(t => t && t.active !== false).forEach(t => {
     const r = Store.all('skill_results', x => x.accountId === a.id && x.testId === t.id).length, s = Store.get('skill_sessions', a.id + '__' + t.id);
     items.push({ k: 'skill', title: t.title, meta: `${t.minutes} menit · ${t.questions.length} soal pilihan ganda`, done: r > 0, prog: !!s, start: () => Test.startSkill(t.id),
@@ -4237,7 +4339,7 @@ function renderPeserta() {
   const a = Store.get('accounts', S.user.id) || S.user, items = pzItems(a), todo = items.filter(x => !x.done), next = todo.find(x => x.prog) || todo[0];
   const allDone = items.length > 0 && !todo.length;
   document.body.classList.add('has-user'); document.body.dataset.role = 'user';
-  const head = `<header class="pz-top"><div class="brandmark"><img class="brand-logo" src="${LOGO_UM}" alt="Logo RS Unimedika">Unimedika HR Suite</div><div class="row" style="flex-wrap:nowrap"><span class="small muted hide-sm"><b>${esc(a.name)}</b>${a.unit ? ' · ' + esc(a.unit) : ''}</span><button class="btn sm" id="pzOut">Keluar</button></div></header>`;
+  const head = `<header class="pz-top"><div class="brandmark">${brandOf().logo}<span class="brand-text">${esc(brandOf().name)}</span></div><div class="row" style="flex-wrap:nowrap"><span class="small muted hide-sm"><b>${esc(a.name)}</b>${a.unit ? ' · ' + esc(a.unit) : ''}</span><button class="btn sm" id="pzOut">Keluar</button></div></header>`;
   let main;
   if (allDone) {
     if (!pzOut) { pzOut = Date.now() + 8000; pzTick = setInterval(() => { const s = Math.ceil((pzOut - Date.now()) / 1000), el = $('#pzCnt'); if (s <= 0) { pzClear(); App.logout('Terima kasih. Anda sudah keluar otomatis.'); return; } if (el) el.textContent = s; }, 500); }
@@ -4267,7 +4369,7 @@ function renderPeserta() {
    2) Laporan Analisa Peserta - peringkat peserta terbaik & paling sesuai kebutuhan perusahaan
    Super Admin (di luar perusahaan): semua perusahaan, atau pilih satu perusahaan.
    ===================================================================== */
-const REP = { tab: 'hasil', from: '', to: '', co: '', unit: '', pos: '', tests: { disc: true, ist: true, skill: true }, who: [], whoOpen: false, wD: 40, wI: 30, wS: 30 };
+const REP = { tab: 'hasil', from: '', to: '', co: '', unit: '', pos: '', tests: { disc: true, ist: true, papi: true, skill: true }, who: [], whoOpen: false, wD: 40, wI: 30, wS: 30 };
 const repDay = t => { if (!t) return ''; const d = new Date(t); if (isNaN(d)) return String(t).slice(0, 10); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
 const repAllCo = () => S.user.role === SA && !S.inCompany;
 const repCo = () => repAllCo() ? REP.co : (S.user.role === SA ? S.companyId : S.user.companyId);
@@ -4278,7 +4380,7 @@ const repLevel = p => { p = String(p || '').trim(); if (!p) return ''; if (POSIS
   if (/head of unit|kepala|supervisor|koordinator|penanggung jawab|\bpj\b|kasie|kepala ruang/.test(l)) return 'Head of Unit'; return 'Staff'; };
 const repCoName = id => Store.get('companies', id)?.name || '–';
 
-/* semua hasil tes (DISC, IST, tes unit) dalam satu bentuk seragam */
+/* semua hasil tes (DISC, IST, PAPI, tes unit) dalam satu bentuk seragam */
 function repRecords() {
   const out = [], acc = id => id ? Store.get('accounts', id) : null;
   const base = (r, a) => ({ k: (r.accountId || 'n:' + (r.name || '').toLowerCase()) + '|' + (r.companyId || ''), name: r.name || a?.name || '-', co: r.companyId, coName: repCoName(r.companyId), unit: r.unit || a?.unit || '', pos: r.position || a?.position || '', lvl: repLevel(r.position || a?.position || ''), at: r.finishedAt || r.testDate || r.createdAt || '', date: repDay(r.finishedAt || r.testDate || r.createdAt) });
@@ -4292,6 +4394,11 @@ function repRecords() {
     const b = base(r, acc(r.accountId)), pend = !C || C.pending;
     out.push({ ...b, kind: 'ist', test: 'Psikotes IST', C, res: pend ? 'Menunggu penilaian GE' : `Jumlah SW ${C.jSW}, ${C.gaya && C.gaya.fleksibel ? 'berpikir fleksibel' : 'mantap berpikir'}`, score: pend ? null : +C.iq, scoreTxt: pend ? '-' : 'IQ ' + istFmtIq(C.iq), status: pend ? 'Menunggu GE' : istIqCat(C.iq), level: pend ? 'warn' : 'info' });
   });
+  Store.all('papi_results', repIn).forEach(r => {
+    let C = null; try { C = papiCalc(r); } catch (e) {}
+    const b = base(r, acc(r.accountId)), top = C ? papiTop(C.sc, 3) : [];
+    out.push({ ...b, kind: 'papi', test: 'Psikotes PAPI Kostick', C, res: C ? 'Skala menonjol: ' + top.map(([k, v]) => `${k} ${v} (${PAPI_SCALES[k]})`).join(', ') : '-', score: null, scoreTxt: C ? top.map(([k, v]) => k + ' ' + v).join(', ') : '-', status: C && C.complete ? 'Lengkap' : 'Belum lengkap', level: C && C.complete ? 'info' : 'warn' });
+  });
   Store.all('skill_results', repIn).forEach(r => {
     const t = Store.get('skill_tests', r.testId); if (!t) return;
     const s = skillScore(t, r.answers || []), b = base({ ...r, unit: t.unit }, acc(r.accountId)); if (!b.unit) b.unit = t.unit || '';
@@ -4304,7 +4411,8 @@ const repFilter = (rows, withKinds) => rows.filter(x => (!withKinds || REP.tests
 /* ---------- analisa: peringkat peserta ---------- */
 const repCat = v => v >= 80 ? ['Sangat sesuai', 'ok'] : v >= 70 ? ['Sesuai', 'ok'] : v >= 55 ? ['Dipertimbangkan', 'warn'] : ['Kurang sesuai', 'bad'];
 function repAnalysis(recs) {
-  const g = {}; recs.forEach(x => { (g[x.k] = g[x.k] || []).push(x); });
+  /* PAPI bersifat ipsatif (pola, bukan nilai), jadi tidak ikut pemeringkatan */
+  const g = {}; recs.filter(x => x.kind !== 'papi').forEach(x => { (g[x.k] = g[x.k] || []).push(x); });
   const wsum = { d: +REP.wD || 0, i: +REP.wI || 0, s: +REP.wS || 0 };
   const rows = Object.values(g).map(list => {
     const first = list[0], latest = k => list.filter(x => x.kind === k).sort((a, b) => (b.at || '').localeCompare(a.at || ''))[0];
@@ -4380,7 +4488,7 @@ Views.reports = () => {
   if (REP.tab === 'hasil') {
     const T = REP.tests;
     return head + common + `<div class="row" style="gap:18px;margin-top:12px;flex-wrap:wrap"><b class="small">Daftar psikotes:</b>
-      <label class="row small" style="gap:6px"><input type="checkbox" data-rt="disc" ${T.disc ? 'checked' : ''}> Psikotes DISC</label><label class="row small" style="gap:6px"><input type="checkbox" data-rt="ist" ${T.ist ? 'checked' : ''}> Psikotes IST</label><label class="row small" style="gap:6px"><input type="checkbox" data-rt="skill" ${T.skill ? 'checked' : ''}> Tes Kemampuan Unit</label></div>
+      <label class="row small" style="gap:6px"><input type="checkbox" data-rt="disc" ${T.disc ? 'checked' : ''}> Psikotes DISC</label><label class="row small" style="gap:6px"><input type="checkbox" data-rt="ist" ${T.ist ? 'checked' : ''}> Psikotes IST</label><label class="row small" style="gap:6px"><input type="checkbox" data-rt="papi" ${T.papi ? 'checked' : ''}> PAPI Kostick</label><label class="row small" style="gap:6px"><input type="checkbox" data-rt="skill" ${T.skill ? 'checked' : ''}> Tes Kemampuan Unit</label></div>
       <details class="rep-who" ${REP.whoOpen ? 'open' : ''} style="margin-top:12px"><summary class="small"><b>Daftar peserta:</b> ${REP.who.length ? REP.who.length + ' peserta dipilih' : 'semua peserta (' + people.length + ')'}</summary>
         <div class="row" style="gap:8px;margin:8px 0"><button class="btn sm" data-rw="all">Pilih semua</button><button class="btn sm" data-rw="none">Kosongkan (= semua)</button></div>
         <div class="rep-wholist">${people.map(p => `<label class="row small" style="gap:6px"><input type="checkbox" data-rwk="${esc(p.k)}" ${who && who.has(p.k) ? 'checked' : ''}> ${esc(p.name)}${all ? ` <span class="faint">- ${esc(p.coName)}</span>` : ''}</label>`).join('') || '<span class="muted small">Belum ada peserta.</span>'}</div></details></div>
@@ -4436,6 +4544,499 @@ Views.reportsMount = c => {
     };
   }
 };
+/* =====================================================================
+   MASTER DATA TES KEMAMPUAN UNIT
+   - Halaman Master (Super Admin): bank soal tiap perusahaan, dikelompokkan per unit
+   - Upload soal dari Excel (.xlsx) / CSV, dengan pratinjau dan validasi
+   - Template unduhan, salin tes ke perusahaan lain
+   ===================================================================== */
+const SK_HEAD = ['Unit', 'Judul Tes', 'Waktu (menit)', 'Nilai Lulus', 'Soal', 'Pilihan A', 'Pilihan B', 'Pilihan C', 'Pilihan D', 'Kunci (A-D)', 'Bobot'];
+const SK_SAMPLE = [
+  ['Keperawatan', 'Tes Kompetensi Perawat Pelaksana', 15, 70, 'Tindakan pertama sebelum memasang infus adalah...', 'Mencuci tangan', 'Memasang torniket', 'Menusuk vena', 'Mencatat di rekam medis', 'A', 1],
+  ['Keperawatan', 'Tes Kompetensi Perawat Pelaksana', 15, 70, 'Normal tekanan darah dewasa adalah sekitar...', '120/80 mmHg', '90/140 mmHg', '160/100 mmHg', '80/40 mmHg', 'A', 1]
+];
+const skKey = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+const SK_COLS = { unit: ['unit', 'unitkerja'], title: ['judultes', 'judul', 'namates', 'tes'], min: ['waktumenit', 'waktu', 'durasi', 'menit'], pass: ['nilailulus', 'kkm', 'passing', 'passinggrade', 'nilailulus0100'], q: ['soal', 'pertanyaan'], a: ['pilihana', 'opsia', 'a'], b: ['pilihanb', 'opsib', 'b'], c: ['pilihanc', 'opsic', 'c'], d: ['pilihand', 'opsid', 'd'], key: ['kuncia-d', 'kuncia d', 'kunci', 'kuncijawaban', 'jawaban', 'jawabanbenar', 'kuncijawabanad', 'kunciad'], w: ['bobot', 'skor', 'poin'] };
+
+function skParseCsv(text) {
+  text = text.replace(/^﻿/, '');
+  const first = text.split(/\r?\n/, 1)[0] || '', cnt = ch => (first.match(new RegExp('\\' + ch, 'g')) || []).length;
+  const delim = cnt(';') >= cnt(',') && cnt(';') >= cnt('\t') ? ';' : cnt('\t') > cnt(',') ? '\t' : ',';
+  const rows = []; let row = [], cur = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (q) { if (ch === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += ch; }
+    else if (ch === '"') q = true;
+    else if (ch === delim) { row.push(cur); cur = ''; }
+    else if (ch === '\n' || ch === '\r') { if (ch === '\r' && text[i + 1] === '\n') i++; row.push(cur); rows.push(row); row = []; cur = ''; }
+    else cur += ch;
+  }
+  if (cur !== '' || row.length) { row.push(cur); rows.push(row); }
+  return rows.filter(r => r.some(x => String(x).trim() !== ''));
+}
+async function skLoadXlsx() {
+  if (window.XLSX) return window.XLSX;
+  for (const u of ['https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js']) {
+    try { await loadScript(u); if (window.XLSX) return window.XLSX; } catch (e) {}
+  }
+  throw new Error('pustaka Excel tidak dapat dimuat');
+}
+async function skReadFile(file) {
+  if (/\.(xlsx|xls)$/i.test(file.name)) {
+    const X = await skLoadXlsx(), wb = X.read(await file.arrayBuffer(), { type: 'array' });
+    return X.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: false, defval: '' });
+  }
+  return skParseCsv(await file.text());
+}
+
+/* ubah baris tabel menjadi daftar tes + daftar masalah */
+function skBuild(rows, companyId) {
+  const errors = [], tests = {};
+  if (rows.length < 2) return { tests: [], errors: ['File kosong atau tidak memiliki baris soal.'] };
+  const head = rows[0].map(skKey), col = {};
+  Object.entries(SK_COLS).forEach(([k, names]) => { const i = head.findIndex(h => names.map(skKey).includes(h)); if (i >= 0) col[k] = i; });
+  const need = ['unit', 'title', 'q', 'a', 'b', 'c', 'd', 'key'], miss = need.filter(k => col[k] == null);
+  if (miss.length) return { tests: [], errors: ['Kolom tidak ditemukan: ' + miss.map(k => ({ unit: 'Unit', title: 'Judul Tes', q: 'Soal', a: 'Pilihan A', b: 'Pilihan B', c: 'Pilihan C', d: 'Pilihan D', key: 'Kunci' })[k]).join(', ') + '. Gunakan template yang disediakan.'] };
+  const units = (settingsOf(companyId).units || []).map(u => u.name), uMap = Object.fromEntries(units.map(u => [u.toLowerCase(), u]));
+  rows.slice(1).forEach((r, idx) => {
+    const n = idx + 2, g = k => String(col[k] != null ? r[col[k]] ?? '' : '').trim();
+    if (!g('q') && !g('unit') && !g('title')) return;
+    const unitRaw = g('unit'), unit = uMap[unitRaw.toLowerCase()], title = g('title');
+    if (!unit) { errors.push(`Baris ${n}: unit "${unitRaw}" tidak ada di pengaturan perusahaan ini.`); return; }
+    if (!title) { errors.push(`Baris ${n}: judul tes kosong.`); return; }
+    const o = ['a', 'b', 'c', 'd'].map(g);
+    if (!g('q') || o.some(x => !x)) { errors.push(`Baris ${n}: soal atau salah satu pilihan jawaban kosong.`); return; }
+    const kv = g('key').toUpperCase(), ai = 'ABCD'.indexOf(kv.charAt(0)) >= 0 && kv.length === 1 ? 'ABCD'.indexOf(kv) : (/^[1-4]$/.test(kv) ? +kv - 1 : -1);
+    if (ai < 0) { errors.push(`Baris ${n}: kunci "${g('key')}" harus A, B, C, atau D.`); return; }
+    const key = unit + '||' + title, t = tests[key] = tests[key] || { unit, title, minutes: +g('min') || 15, passing: g('pass') !== '' ? Math.max(0, Math.min(100, +g('pass'))) : 70, questions: [] };
+    t.questions.push({ q: g('q'), o, a: ai, w: Math.max(1, Math.min(10, +g('w') || 1)) });
+  });
+  return { tests: Object.values(tests), errors };
+}
+
+async function skTemplate() {
+  try {
+    const X = await skLoadXlsx(), ws = X.utils.aoa_to_sheet([SK_HEAD, ...SK_SAMPLE]); ws['!cols'] = SK_HEAD.map((h, i) => ({ wch: i === 4 ? 50 : i === 1 ? 34 : 16 }));
+    const wb = X.utils.book_new(); X.utils.book_append_sheet(wb, ws, 'Soal'); X.writeFile(wb, 'template-soal-tes-kemampuan-unit.xlsx');
+  } catch (e) {
+    const q = v => '"' + String(v).replace(/"/g, '""') + '"';
+    download('template-soal-tes-kemampuan-unit.csv', new Blob(['﻿' + [SK_HEAD, ...SK_SAMPLE].map(r => r.map(q).join(';')).join('\r\n')], { type: 'text/csv;charset=utf-8' }));
+  }
+}
+
+/* dialog upload: pilih file, pratinjau, impor */
+function skImportDialog(companyId, after) {
+  const co = Store.get('companies', companyId); if (!co) return;
+  let parsed = null;
+  openModal({ title: 'Upload soal tes kemampuan unit', wide: true, body: `<div class="stack">
+    <p class="small muted" style="margin:0">Perusahaan: <b>${esc(co.name)}</b>. Unggah file Excel (.xlsx) atau CSV. Satu baris = satu soal. Baris dengan <b>Unit</b> dan <b>Judul Tes</b> yang sama digabung menjadi satu tes. Nama unit harus sama dengan unit di Pengaturan Perusahaan.</p>
+    <div class="row"><button class="btn sm" type="button" id="skTpl">Unduh template Excel</button><input type="file" id="skFile" accept=".xlsx,.xls,.csv,text/csv" class="input" style="flex:1;min-width:220px"></div>
+    <label class="row small" style="gap:6px"><input type="checkbox" id="skRep" checked> Jika tes dengan unit dan judul yang sama sudah ada, ganti soalnya (jika tidak dicentang, dibuat sebagai tes baru)</label>
+    <div id="skPrev" class="stack"></div></div>`,
+    foot: '<button class="btn" data-close>Batal</button><button class="btn primary" id="skGo" disabled>Impor soal</button>',
+    onMount: r => {
+      $('#skTpl', r).onclick = () => skTemplate();
+      $('#skFile', r).onchange = async e => {
+        const f = e.target.files[0], pv = $('#skPrev', r); parsed = null; $('#skGo', r).disabled = true; if (!f) return;
+        pv.innerHTML = '<span class="small muted">Membaca file...</span>';
+        try { parsed = skBuild(await skReadFile(f), companyId); } catch (er) { pv.innerHTML = `<div class="note bad">Gagal membaca file: ${esc(er.message || er)}</div>`; return; }
+        const nq = parsed.tests.reduce((s, t) => s + t.questions.length, 0);
+        pv.innerHTML = (parsed.tests.length ? `<div class="note ok"><b>${parsed.tests.length} tes</b> dengan <b>${nq} soal</b> siap diimpor.</div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Unit</th><th>Judul tes</th><th class="num">Soal</th><th class="num">Waktu</th><th class="num">Lulus</th><th>Status</th></tr></thead><tbody>${parsed.tests.map(t => { const ex = Store.all('skill_tests', x => x.companyId === companyId && x.unit === t.unit && x.title === t.title)[0]; return `<tr><td>${esc(t.unit)}</td><td>${esc(t.title)}</td><td class="num">${t.questions.length}</td><td class="num">${t.minutes} mnt</td><td class="num">${t.passing}</td><td>${ex ? '<span class="pill warn">sudah ada</span>' : '<span class="pill ok">baru</span>'}</td></tr>`; }).join('')}</tbody></table></div>` : '')
+          + (parsed.errors.length ? `<div class="note ${parsed.tests.length ? 'warn' : 'bad'}"><b>${parsed.errors.length} baris dilewati:</b><ul style="margin:6px 0 0 18px;padding:0">${parsed.errors.slice(0, 15).map(x => `<li>${esc(x)}</li>`).join('')}${parsed.errors.length > 15 ? `<li>dan ${parsed.errors.length - 15} lainnya</li>` : ''}</ul></div>` : '');
+        $('#skGo', r).disabled = !parsed.tests.length;
+      };
+      $('#skGo', r).onclick = async () => {
+        if (!parsed || !parsed.tests.length) return; const b = $('#skGo', r); b.disabled = true; b.textContent = 'Mengimpor...';
+        const rep = $('#skRep', r).checked; let nNew = 0, nUp = 0;
+        try {
+          for (const t of parsed.tests) {
+            const ex = rep ? Store.all('skill_tests', x => x.companyId === companyId && x.unit === t.unit && x.title === t.title)[0] : null;
+            const id = ex ? ex.id : uid('st');
+            await Store.put('skill_tests', id, { ...(ex || { active: true }), title: t.title, unit: t.unit, minutes: t.minutes, passing: t.passing, questions: t.questions, companyId });
+            ex ? nUp++ : nNew++;
+          }
+          audit('upload soal tes kemampuan', `${co.name}: ${nNew} baru, ${nUp} diperbarui`); closeModal(); toast(`${nNew} tes baru, ${nUp} diperbarui`); if (after) after(); else App.renderContent();
+        } catch (er) { console.error(er); b.disabled = false; b.textContent = 'Impor soal'; toast('Gagal mengimpor: ' + (er && er.message || er)); }
+      };
+    } });
+}
+
+/* salin tes ke perusahaan lain */
+function skCopyDialog(testId) {
+  const t = Store.get('skill_tests', testId); if (!t) return;
+  const others = Store.all('companies', c => c.id !== t.companyId);
+  if (!others.length) { toast('Belum ada perusahaan lain.'); return; }
+  openModal({ title: 'Salin tes ke perusahaan lain', body: `<form id="skCp" class="stack"><p class="small muted" style="margin:0">Tes <b>${esc(t.title)}</b> (${esc(t.unit)}, ${t.questions.length} soal) akan disalin. Setelah itu bisa diubah sesuai kebutuhan perusahaan tujuan. Unit harus ada di perusahaan tujuan agar bisa dipilih peserta.</p>
+    <div class="stack" style="gap:6px">${others.map(c => `<label class="row small" style="gap:6px"><input type="checkbox" name="c_${c.id}"> ${esc(c.name)} ${(settingsOf(c.id).units || []).some(u => u.name === t.unit) ? '' : '<span class="pill warn">unit belum ada</span>'}</label>`).join('')}</div></form>`,
+    foot: '<button class="btn" data-close>Batal</button><button class="btn primary" form="skCp">Salin</button>',
+    onMount: r => $('#skCp', r).onsubmit = async ev => {
+      ev.preventDefault(); const d = formData(ev.target), ids = others.filter(c => d['c_' + c.id]).map(c => c.id); if (!ids.length) { toast('Pilih perusahaan tujuan.'); return; }
+      for (const cid of ids) await Store.put('skill_tests', uid('st'), { ...JSON.parse(JSON.stringify(t)), id: undefined, companyId: cid });
+      audit('salin tes kemampuan', `${t.title} ke ${ids.length} perusahaan`); closeModal(); toast('Tes disalin ke ' + ids.length + ' perusahaan'); App.renderContent();
+    } });
+}
+
+/* ---------- Halaman master (Super Admin) ---------- */
+Views.skillmaster = () => {
+  const cid = S.companyId, co = Store.get('companies', cid);
+  if (!co) return '<div class="card empty">Belum ada perusahaan.</div>';
+  const units = (settingsOf(cid).units || []).map(u => u.name), tests = Store.all('skill_tests', x => x.companyId === cid);
+  const extra = [...new Set(tests.map(t => t.unit).filter(u => !units.includes(u)))];
+  const parts = Store.all('accounts', a => a.companyId === cid && a.role === US);
+  const nq = tests.reduce((s, t) => s + t.questions.length, 0), noTest = units.filter(u => !tests.some(t => t.unit === u));
+  return `<div class="page-head"><div><h1>Master Tes Kemampuan Unit</h1><p>Bank soal tes kemampuan sesuai kebutuhan tiap perusahaan. Unggah soal dari Excel, lalu tes otomatis tampil untuk peserta pada unit yang sesuai.</p></div>
+    <div class="row"><button class="btn" id="skTpl">Unduh template</button><button class="btn" id="skUp">Upload soal</button><button class="btn primary" id="skNew">+ Tes baru</button></div></div>
+  <div class="grid g4"><div class="card kpi k-blue"><span class="eyebrow">Tes</span><b>${tests.length}</b><span class="small">${tests.filter(t => t.active !== false).length} aktif</span></div><div class="card kpi k-teal"><span class="eyebrow">Total soal</span><b>${nq}</b></div><div class="card kpi k-orange"><span class="eyebrow">Unit punya tes</span><b>${units.length - noTest.length}/${units.length}</b></div><div class="card kpi k-purple"><span class="eyebrow">Peserta</span><b>${parts.length}</b></div></div>
+  ${noTest.length ? `<div class="note warn" style="margin-top:14px"><b>Unit belum punya tes:</b> ${noTest.map(esc).join(', ')}. Upload soal untuk unit tersebut.</div>` : ''}
+  ${[...units, ...extra].map(u => { const ts = tests.filter(t => t.unit === u), pu = parts.filter(p => p.unit === u);
+    return `<div class="card" style="margin-top:14px"><div class="card-head"><h3>${esc(u)}${extra.includes(u) ? ' <span class="pill warn">unit tidak terdaftar</span>' : ''}</h3><span class="small muted">${ts.length} tes - ${pu.length} peserta</span></div>
+      ${ts.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Judul tes</th><th class="num">Soal</th><th class="num">Waktu</th><th class="num">Lulus</th><th class="num">Ditugaskan</th><th>Status</th><th></th></tr></thead><tbody>${ts.map(t => `<tr><td><b>${esc(t.title)}</b></td><td class="num">${t.questions.length}</td><td class="num">${t.minutes} mnt</td><td class="num">${t.passing}</td><td class="num">${parts.filter(p => (p.tests || []).includes(t.id)).length}</td><td>${t.active === false ? '<span class="pill">Nonaktif</span>' : '<span class="pill ok">Aktif</span>'}</td>
+        <td><div class="row" style="flex-wrap:nowrap"><button class="btn sm" data-sked="${t.id}">Ubah soal</button><button class="btn sm" data-skres="${t.id}">Hasil</button><button class="btn sm" data-skcp="${t.id}">Salin</button></div></td></tr>`).join('')}</tbody></table></div>` : '<div class="empty" style="padding:14px">Belum ada tes untuk unit ini.</div>'}</div>`; }).join('')}`;
+};
+Views.skillmasterMount = c => {
+  $('#skTpl', c).onclick = () => skTemplate();
+  $('#skUp', c).onclick = () => skImportDialog(S.companyId);
+  $('#skNew', c).onclick = () => App.go('test-edit');
+  $$('[data-sked]', c).forEach(b => b.onclick = () => App.go('test-edit', { id: b.dataset.sked }));
+  $$('[data-skres]', c).forEach(b => b.onclick = () => App.go('test-results', { id: b.dataset.skres }));
+  $$('[data-skcp]', c).forEach(b => b.onclick = () => skCopyDialog(b.dataset.skcp));
+};
+/* tombol upload di halaman Soal Tes (Admin Perusahaan / Super Admin) */
+Views.skilltestsMount = c => {
+  const up = $('#skUp', c); if (up) up.onclick = () => skImportDialog(S.companyId);
+  const tp = $('#skTpl', c); if (tp) tp.onclick = () => skTemplate();
+};
+/* PAPI Kostick: 90 pasang pernyataan [a, b, skala a, skala b] dan pedoman interpretasi per skala [min, maks, teks]. Sumber: PAPI_KOSTIK_Test_2026.pdf dan Skoring_PAPI_Kostick_V1-1.xls */
+const PAPI_ITEMS = [["Saya seorang pekerja keras", "Saya bukan seorang pemurung", "G", "E"], ["Saya suka bekerja lebih baik dari orang lain", "Saya suka mengerjakan apa yang sedang saya kerjakan, sampai selesai", "A", "N"], ["Saya suka menunjukkan caranya melaksanakan sesuatu hal", "Saya ingin bekerja sebaik mungkin", "P", "A"], ["Saya suka berkelakar", "Saya senang mengatakan kepada orang lain, apa yang harus dilakukannya", "X", "P"], ["Saya suka menggabungkan diri dengan kelompok-kelompok", "Saya suka diperhatikan oleh kelompok-kelompok", "B", "X"], ["Saya senang bersahabat intim dengan seseorang", "Saya senang bersahabat dengan sekelompok orang", "O", "B"], ["Saya cepat berubah bila hal itu diperlukan", "Saya berusaha untuk intim dengan teman-teman", "Z", "O"], ["Saya suka membalas dendam bila saya benar-benar disakiti", "Saya suka melakukan hal-hal yang baru dan berbeda", "K", "Z"], ["Saya ingin atasan saya menyukai saya", "Saya suka mengatakan kepada orang lain, bila mereka salah", "F", "K"], ["Saya suka mengikuti perintah-perintah yang diberikan kepada saya", "Saya suka menyenangkan hati orang yang memimpin saya", "W", "F"], ["Saya mencoba sekuat tenaga", "Saya seorang yang tertib", "G", "C"], ["Saya membuat orang lain melakukan apa yang saya inginkan", "Saya bukan seorang yang cepat gusar", "L", "E"], ["Saya suka mengatakan kepada kelompok, apa yang harus dilakukan", "Saya menekuni satu pekerjaan sampai selesai", "P", "N"], ["Saya ingin tampak bersemangat dan menarik", "Saya ingin menjadi sangat sukses", "X", "A"], ["Saya suka menyelaraskan diri dengan kelompok", "Saya suka membantu orang lain menentukan pendapatnya", "B", "P"], ["Saya cemas kalau orang lain tidak menyukai saya", "Saya senang kalau orang-orang memperhatikan saya", "O", "X"], ["Saya suka mencoba sesuatu yang baru", "Saya lebih suka bekerja bersama orang-orang daripada bekerja sendiri", "Z", "B"], ["Kadang-kadang saya menyalahkan orang lain bila terjadi sesuatu kesalahan", "Saya cemas bila seseorang tidak menyukai saya", "K", "O"], ["Saya suka menyenangkan hati orang yang memimpin saya", "Saya suka mencoba pekerjaan-pekerjaan yang baru dan berbeda", "F", "Z"], ["Saya menyukai petunjuk yang terinci untuk melakukan sesuatu pekerjaan", "Saya suka mengatakan kepada orang lain bila mengganggu saya", "W", "K"], ["Saya selalu mencoba sekuat tenaga", "Saya senang bekerja dengan sangat cermat dan hati-hati", "G", "D"], ["Saya adalah seorang pemimpin yang baik", "Saya mengorganisir tugas-tugas secara baik", "L", "C"], ["Saya mudah menjadi gusar", "Saya seorang yang lambat dalam membuat keputusan", "I", "E"], ["Saya senang mengerjakan beberapa pekerjaan pada waktu yang bersamaan", "Bila di dalam kelompok, saya lebih suka diam", "X", "N"], ["Saya senang bila diundang", "Saya ingin melakukan sesuatu lebih baik dari orang lain", "B", "A"], ["Saya suka berteman intim dengan teman-teman saya", "Saya suka memberi nasihat kepada orang lain", "O", "P"], ["Saya suka melakukan hal-hal yang baru dan berbeda", "Saya suka menceritakan keberhasilan saya dalam mengerjakan tugas", "Z", "X"], ["Bila saya benar, saya suka mempertahankannya mati-matian", "Saya suka bergabung ke dalam suatu kelompok", "K", "B"], ["Saya tidak mau berbeda dengan orang lain", "Saya berusaha untuk sangat intim dengan orang-orang", "F", "O"], ["Saya suka diajari mengenai caranya mengerjakan suatu pekerjaan", "Saya mudah merasa jemu (bosan)", "W", "Z"], ["Saya bekerja keras", "Saya banyak berpikir dan berencana", "G", "R"], ["Saya memimpin kelompok", "Hal-hal yang kecil (detail) menarik hati saya", "L", "D"], ["Saya cepat dan mudah mengambil keputusan", "Saya melakukan segala sesuatu secara rapih dan teratur", "I", "C"], ["Tugas-tugas saya kerjakan secara cepat", "Saya jarang marah atau sedih", "T", "E"], ["Saya ingin menjadi bagian dari kelompok", "Pada suatu waktu tertentu, saya hanya ingin mengerjakan satu tugas saja", "B", "N"], ["Saya berusaha untuk intim dengan teman-teman saya", "Saya berusaha keras untuk menjadi yang terbaik", "O", "A"], ["Saya menyukai mode baju baru dan tipe-tipe mobil baru", "Saya ingin menjadi penanggung jawab bagi orang-orang lain", "Z", "P"], ["Saya suka berdebat", "Saya ingin diperhatikan", "K", "X"], ["Saya suka menyenangkan hati orang yang memimpin saya", "Saya tertarik menjadi anggota dari suatu kelompok", "F", "B"], ["Saya senang mengikuti aturan secara tertib", "Saya suka orang-orang mengenal saya benar-benar", "W", "O"], ["Saya mencoba sekuat tenaga", "Saya sangat menyenangkan", "G", "S"], ["Orang lain beranggapan bahwa saya adalah seorang pemimpin yang baik", "Saya berpikir jauh ke depan dan terinci", "L", "R"], ["Seringkali saya memanfaatkan peluang", "Saya senang memperhatikan hal-hal sampai sekecil-kecilnya", "I", "D"], ["Orang lain menganggap saya bekerja cepat", "Orang lain menganggap saya dapat melakukan penataan yang rapi dan teratur", "T", "C"], ["Saya menyukai permainan-permainan dan olahraga", "Saya sangat menyenangkan", "V", "E"], ["Saya senang bila orang-orang dapat intim dan bersahabat", "Saya selalu berusaha menyelesaikan apa yang telah saya mulai", "O", "N"], ["Saya suka bereksperimen dan mencoba sesuatu yang baru", "Saya suka mengerjakan pekerjaan-pekerjaan yang sulit dengan baik", "Z", "A"], ["Saya senang diperlakukan secara adil", "Saya senang mengajari orang lain bagaimana caranya mengerjakan sesuatu", "K", "P"], ["Saya suka mengerjakan apa yang diharapkan dari saya", "Saya suka menarik perhatian", "F", "X"], ["Saya suka petunjuk-petunjuk terinci dalam melakukan sesuatu pekerjaan", "Saya senang berada bersama dengan orang-orang lain", "W", "B"], ["Saya selalu berusaha mengerjakan tugas secara sempurna", "Orang lain menganggap, saya tidak mengenal lelah, dalam kerja sehari-hari", "G", "V"], ["Saya tergolong tipe pemimpin", "Saya mudah berteman", "L", "S"], ["Saya memanfaatkan peluang-peluang", "Saya banyak berfikir", "I", "R"], ["Saya bekerja dengan kecepatan yang mantap dan cepat", "Saya senang mengerjakan hal-hal yang detail", "T", "D"], ["Saya memiliki banyak energi untuk permainan-permainan dan olahraga", "Saya menempatkan segala sesuatunya secara rapih dan teratur", "V", "C"], ["Saya bergaul baik dengan semua orang", "Saya pandai mengendalikan diri", "S", "E"], ["Saya ingin berkenalan dengan orang-orang baru dan mengerjakan hal baru", "Saya selalu ingin menyelesaikan pekerjaan yang sudah saya mulai", "Z", "N"], ["Biasanya saya bersikeras mengenai apa yang saya yakini", "Biasanya saya suka bekerja keras", "K", "A"], ["Saya menyukai saran-saran dari orang-orang yang saya kagumi", "Saya senang mengatur orang lain", "F", "P"], ["Saya biarkan orang-orang lain mempengaruhi saya", "Saya suka menerima banyak perhatian", "W", "X"], ["Biasanya saya bekerja sangat keras", "Biasanya saya bekerja cepat", "G", "T"], ["Bila saya berbicara, kelompok akan mendengarkan", "Saya terampil mempergunakan alat-alat kerja", "L", "V"], ["Saya lambat membina persahabatan", "Saya lambat dalam mengambil keputusan", "I", "S"], ["Biasanya saya makan secara cepat", "Saya suka membaca", "T", "R"], ["Saya menyukai pekerjaan yang memungkinkan saya berkeliling", "Saya menyukai pekerjaan yang harus dilakukan secara teliti", "V", "D"], ["Saya berteman sebanyak mungkin", "Saya dapat menemukan hal-hal yang telah saya pindahkan", "S", "C"], ["Perencanaan saya jauh ke masa depan", "Saya selalu menyenangkan", "R", "E"], ["Saya merasa bangga akan nama baik saya", "Saya tetap menekuni satu permasalahan sampai ia terselesaikan", "K", "N"], ["Saya suka menyenangkan hati orang-orang yang saya kagumi", "Saya suka menjadi seorang yang berhasil", "F", "A"], ["Saya senang bila orang-orang lain mengambil keputusan untuk kelompok", "Saya suka mengambil keputusan untuk kelompok", "W", "P"], ["Saya selalu berusaha sangat keras", "Saya cepat dan mudah mengambil keputusan", "G", "I"], ["Biasanya kelompok saya mengerjakan hal-hal yang saya inginkan", "Biasanya saya tergesa-gesa", "L", "T"], ["Saya seringkali merasa lelah", "Saya lambat dalam mengambil keputusan", "I", "V"], ["Saya bekerja secara cepat", "Saya mudah mendapat kawan", "T", "S"], ["Biasanya saya bersemangat atau bergairah", "Sebagian besar waktu saya untuk berpikir", "V", "R"], ["Saya sangat hangat kepada orang-orang", "Saya menyukai pekerjaan yang menuntut ketepatan", "S", "D"], ["Saya banyak berpikir dan merencana", "Saya meletakkan segala sesuatu pada tempatnya", "R", "C"], ["Saya suka tugas yang perlu ditekuni sampai kepada hal sedetilnya", "Saya tidak cepat marah", "D", "E"], ["Saya senang mengikuti orang-orang yang saya kagumi", "Saya selalu menyelesaikan pekerjaan yang saya mulai", "F", "N"], ["Saya menyukai petunjuk-petunjuk yang jelas", "Saya suka bekerja keras", "W", "A"], ["Saya mengejar apa yang saya inginkan", "Saya adalah seorang pemimpin yang baik", "G", "L"], ["Saya membuat orang lain bekerja keras", "Saya adalah seorang yang gampangan (tak banyak pertimbangan)", "L", "I"], ["Saya membuat keputusan-keputusan secara cepat", "Bicara saya cepat", "I", "T"], ["Biasanya saya bekerja tergesa-gesa", "Secara teratur saya berolahraga", "T", "V"], ["Saya tidak suka bertemu dengan orang-orang", "Saya cepat lelah", "V", "S"], ["Saya mempunyai banyak sekali teman", "Banyak waktu saya untuk berfikir", "S", "R"], ["Saya suka bekerja dengan teori", "Saya suka bekerja sedetil-detilnya", "R", "D"], ["Saya suka bekerja sampai sedetil-detilnya", "Saya suka mengorganisir pekerjaan saya", "D", "C"], ["Saya meletakkan segala sesuatu pada tempatnya", "Saya selalu menyenangkan", "C", "E"], ["Saya senang diberi petunjuk mengenai apa yang harus saya lakukan", "Saya harus menyelesaikan apa yang sudah saya mulai", "W", "N"]];
+const PAPI_BANDS = {"A": [[0, 4, "Tidak kompetitif, mapan, puas. Tidak terdorong untuk menghasilkan prestasi, tidak berusaha untuk mencapai sukses, membutuhkan dorongan dari luar diri, tidak berinisiatif, tidak memanfaatkan kemampuan diri secara optimal, ragu akan tujuan diri, misalnya sebagai akibat promosi / perubahan struktur jabatan."], [5, 7, "Tahu akan tujuan yang ingin dicapainya dan dapat merumuskannya, realistis akan kemampuan diri, dan berusaha untuk mencapai target."], [8, 9, "Sangat berambisi untuk berprestasi dan menjadi yang terbaik, menyukai tantangan, cenderung mengejar kesempurnaan, menetapkan target yang tinggi, 'self-starter', merumuskan kerja dengan baik. Tidak realistis akan kemampuannya, sulit dipuaskan, mudah kecewa, harapan yang tinggi mungkin mengganggu orang lain."]], "N": [[0, 2, "Tidak terlalu merasa perlu untuk menuntaskan sendiri tugas-tugasnya, senang menangani beberapa pekerjaan sekaligus, mudah mendelegasikan tugas. Komitmen rendah, cenderung meninggalkan tugas sebelum tuntas, konsentrasi mudah buyar, mungkin suka berpindah pekerjaan."], [3, 5, "Cukup memiliki komitmen untuk menuntaskan tugas, akan tetapi jika memungkinkan akan mendelegasikan sebagian dari pekerjaan nya kepada orang lain."], [6, 7, "Komitmen tinggi, lebih suka menangani pekerjaan satu demi satu, akan tetapi masih dapat mengubah prioritas jika terpaksa."], [8, 9, "Memiliki komitmen yang sangat tinggi terhadap tugas, sangat ingin menyelesaikan tugas, tekun dan tuntas dalam menangani pekerjaan satu demi satu hingga tuntas. Perhatian terpaku pada satu tugas, sulit untuk menangani beberapa pekerjaan sekaligus, sulit di interupsi, tidak melihat masalah sampingan."]], "G": [[0, 2, "Santai, kerja adalah sesuatu yang menyenangkan, bukan beban yang membutuhkan usaha besar. Mungkin termotivasi untuk mencari cara atau sistem yang dapat mempermudah dirinya dalam menyelesaikan pekerjaan, akan berusaha menghindari kerja keras, sehingga dapat memberi kesan malas."], [3, 4, "Bekerja keras sesuai tuntutan, menyalurkan usahanya untuk hal-hal yang bermanfaat / menguntungkan."], [5, 7, "Bekerja keras, tetapi jelas tujuan yang ingin dicapainya."], [8, 9, "Ingin tampil sebagai pekerja keras, sangat suka bila orang lain memandangnya sebagai pekerja keras. Cenderung menciptakan pekerjaan yang tidak perlu agar terlihat tetap sibuk, kadang kala tanpa tujuan yang jelas."]], "C": [[0, 2, "Lebih mementingkan fleksibilitas daripada struktur, pendekatan kerja lebih ditentukan oleh situasi daripada oleh perencanaan sebelumnya, mudah beradaptasi. Tidak mempedulikan keteraturan atau kerapihan, ceroboh."], [3, 4, "Fleksibel tapi masih cukup memperhatikan keteraturan atau sistematika kerja."], [5, 6, "Memperhatikan keteraturan dan sistematika kerja, tapi cukup fleksibel."], [7, 9, "Sistematis, bermetoda, berstruktur, rapi dan teratur, dapat menata tugas dengan baik. Cenderung kaku, tidak fleksibel."]], "D": [[0, 1, "Melihat pekerjaan secara makro, membedakan hal penting dari yang kurang penting, mendelegasikan detil pada orang lain, generalis. Menghindari detail, konsekuensinya mungkin bertindak tanpa data yang cukup/akurat, bertindak ceroboh pada hal yang butuh kecermatan. Dapat mengabaikan proses yang vital dalam evaluasi data."], [2, 3, "Cukup peduli akan akurasi dan kelengkapan data."], [4, 6, "Tertarik untuk menangani sendiri detail."], [7, 9, "Sangat menyukai detail, sangat peduli akan akurasi dan kelengkapan data. Cenderung terlalu terlibat dengan detail sehingga melupakan tujuan utama."]], "R": [[0, 3, "Tipe pelaksana, praktis - pragmatis, mengandalkan pengalaman masa lalu dan intuisi. Bekerja tanpa perencanaan, mengandalkan perasaan."], [4, 5, "Pertimbangan mencakup aspek teoritis (konsep atau pemikiran baru) dan aspek praktis (pengalaman) secara berimbang"], [6, 7, "Suka memikirkan suatu problem secara mendalam, merujuk pada teori dan konsep."], [8, 9, "Tipe pemikir, sangat berminat pada gagasan, konsep, teori, mencari alternatif baru, menyukai perencanaan. Mungkin sulit dimengerti oleh orang lain, terlalu teoritis dan tidak praktis, mengawang-awang dan berbelit-belit."]], "T": [[0, 3, "Santai. Kurang peduli akan waktu, kurang memiliki rasa urgensi, membuang-buang waktu, bukan pekerja yang tepat waktu."], [4, 6, "Cukup aktif dalam segi mental, dapat menyesuaikan tempo kerjanya dengan tuntutan pekerjaan / lingkungan."], [7, 9, "Cekatan, selalu siaga, bekerja cepat, ingin segera menyelesaikan tugas. Negatifnya : Tegang, cemas, impulsif, mungkin ceroboh, banyak gerakan yang tidak perlu."]], "V": [[0, 2, "Cocok untuk pekerjaan 'di belakang meja'. Cenderung lamban, tidak tanggap, mudah lelah, daya tahan lemah."], [3, 6, "Dapat bekerja di belakang meja dan senang jika sesekali harus terjun ke lapangan atau melaksanakan tugas-tugas yang bersifat mobile."], [7, 9, "Menyukai aktifitas fisik (antara lain olahraga), enerjik, memiliki stamina untuk menangani tugas-tugas berat, tidak mudah lelah. Tidak betah duduk lama, kurang dapat konsentrasi 'di belakang meja'."]], "W": [[0, 3, "Hanya butuh gambaran tentang kerangka tugas secara garis besar, berpatokan pada tujuan, dapat bekerja dalam suasana yang kurang berstruktur, berinsiatif, mandiri. Tidak patuh, cenderung mengabaikan/tidak paham pentingnya peraturan/prosedur, suka membuat peraturan sendiri yang bisa bertentangan dengan yang telah ada."], [4, 5, "Perlu pengarahan awal dan tolok ukur keberhasilan."], [6, 7, "Membutuhkan uraian rinci mengenai tugas, dan batasan tanggung jawab serta wewenang."], [8, 9, "Patuh pada kebijaksanaan, peraturan dan struktur organisasi. Ingin segala sesuatunya diuraikan secara rinci, kurang memiliki inisiatif, tidak fleksibel, terlalu tergantung pada organisasi, berharap 'disuapi'."]], "F": [[0, 3, "Otonom, dapat bekerja sendiri tanpa campur tangan orang lain, motivasi timbul karena pekerjaan itu sendiri - bukan karena pujian dari otoritas. Mempertanyakan otoritas, cenderung tidak puas terhadap atasan, loyalitas lebih didasari kepentingan pribadi."], [4, 6, "Loyal pada Perusahaan."], [7, 7, "Loyal pada pribadi atasan."], [8, 9, "Loyal, berusaha dekat dengan pribadi atasan, ingin menyenangkan atasan, sadar akan harapan atasan akan dirinya. Terlalu memperhatikan cara menyenangkan atasan, tidak berani berpendirian lain, tidak mandiri."]], "L": [[0, 1, "Puas dengan peran sebagai bawahan, memberikan kesempatan pada orang lain untuk memimpin, tidak dominan. Tidak percaya diri; sama sekali tidak berminat untuk berperan sebagai pemimpin; bersikap pasif dalam kelompok."], [2, 3, "Tidak percaya diri dan tidak ingin memimpin atau mengawasi orang lain."], [4, 4, "Kurang percaya diri dan kurang berminat untuk menjadi pemimpin"], [5, 5, "Cukup percaya diri, tidak secara aktif mencari posisi kepemimpinan akan tetapi juga tidak akan menghindarinya."], [6, 7, "Percaya diri dan ingin berperan sebagai pemimpin"], [8, 9, "Sangat percaya diri untuk berperan sebagai atasan dan sangat mengharapkan posisi tersebut. Lebih mementingkan citra dan status kepemimpinannya dari pada efektifitas kelompok, mungkin akan tampil angkuh atau terlalu percaya diri."]], "P": [[0, 1, "Permisif, akan memberikan kesempatan pada orang lain untuk memimpin. Tidak mau mengontrol orang lain dan tidak mau mempertanggung jawabkan hasil kerja bawahannya."], [2, 3, "Enggan mengontrol orang lain dan tidak mau mempertanggung jawabkan hasil kerja bawahannya, lebih memberi kebebasan kepada bawahan untuk memilih cara sendiri dalam penyelesaian tugas dan meminta bawahan untuk mempertanggungjawabkan hasilnya masing-masing."], [4, 4, "Cenderung enggan melakukan fungsi pengarahan, pengendalian dan pengawasan, kurang aktif memanfaatkan kapasitas bawahan secara optimal, cenderung bekerja sendiri dalam mencapai tujuan kelompok."], [5, 5, "Bertanggung jawab, akan melakukan fungsi pengarahan, pengendalian dan pengawasan, tapi tidak mendominasi."], [6, 7, "Dominan dan bertanggung jawab, akan melakukan fungsi pengarahan, pengendalian dan pengawasan"], [8, 9, "Sangat dominan, sangat mempengaruhi dan mengawasi orang lain, bertanggung jawab atas tindakan dan hasil kerja bawahan. Posesif, tidak ingin berada di bawah pimpinan orang lain, cemas bila tidak berada di posisi pemimpin, mungkin sulit untuk bekerja sama dengan rekan yang sejajar kedudukannya."]], "I": [[0, 1, "Sangat berhati-hati, memikirkan langkah-langkahnya secara bersungguh-sungguh. Lamban dalam mengambil keputusan, terlalu lama merenung, cenderung menghindar mengambil keputusan."], [2, 3, "Enggan mengambil keputusan."], [4, 5, "Berhati-hati dalam pengambilan keputusan."], [6, 7, "Cukup percaya diri dalam pengambilan keputusan, mau mengambil resiko, dapat memutuskan dengan cepat, mengikuti alur logika."], [8, 9, "Sangat yakin dalam mengambil keputusan, cepat tanggap terhadap situasi, berani mengambil resiko, mau memanfaatkan kesempatan. Impulsif, dapat membuat keputusan yang tidak praktis, cenderung lebih mementingkan kecepatan daripada akurasi, tidak sabar, cenderung meloncat pada keputusan."]], "S": [[0, 2, "Dapat bekerja sendiri, tidak membutuhkan kehadiran orang lain. Menarik diri, kaku dalam bergaul, canggung dalam situasi sosial, lebih memperhatikan hal-hal lain daripada manusia."], [3, 4, "Kurang percaya diri dan kurang aktif dalam menjalin hubungan sosial."], [5, 9, "Percaya diri dan sangat senang bergaul, menyukai interaksi sosial, bisa menciptakan suasana yang menyenangkan, mempunyai inisiatif dan mampu menjalin hubungan dan komunikasi, memperhatikan orang lain. Mungkin membuangbuang waktu untuk aktifitas sosial, kurang peduli akan penyelesaian tugas."]], "B": [[0, 2, "Mandiri (dari segi emosi), tidak mudah dipengaruhi oleh tekanan kelompok. Penyendiri, kurang peka akan sikap dan kebutuhan kelompok, mungkin sulit menyesuaikan diri."], [3, 5, "Selektif dalam bergabung dengan kelompok, hanya mau berhubungan dengan kelompok di lingkungan kerja apabila bernilai dan sesuai minat, tidak terlalu mudah dipengaruhi."], [6, 9, "Suka bergabung dalam kelompok, sadar akan sikap dan kebutuhan kelompok, suka bekerja sama, ingin menjadi bagian dari kelompok, ingin disukai dan diakui oleh lingkungan; sangat tergantung pada kelompok, lebih memperhatikan kebutuhan kelompok daripada pekerjaan."]], "O": [[0, 2, "Menjaga jarak, lebih memperhatikan hal-hal kedinasan, tidak mudah dipengaruhi oleh individu tertentu, objektif dan analitis. Tampil dingin, tidak acuh, tidak ramah, suka berahasia, mungkin tidak sadar akan perasaan orang lain, dan mungkin sulit menyesuaikan diri."], [3, 5, "Tidak mencari atau menghindari hubungan antar pribadi di lingkungan kerja, masih mampu menjaga jarak."], [6, 9, "Peka akan kebutuhan orang lain, sangat memikirkan hal-hal yang dibutuhkan orang lain, suka menjalin hubungan persahabatan yang hangat dan tulus. Sangat perasa, mudah tersinggung, cenderung subjektif, dapat terlibat terlalu dalam/intim dengan individu tertentu dalam pekerjaan, sangat tergantung pada individu tertentu."]], "X": [[0, 1, "Sederhana, rendah hati, tulus, tidak sombong dan tidak suka menampilkan diri. Terlalu sederhana, cenderung merendahkan kapasitas diri, tidak percaya diri, cenderung menarik diri dan pemalu."], [2, 3, "Sederhana, cenderung diam, cenderung pemalu, tidak suka menonjolkan diri."], [4, 5, "Mengharapkan pengakuan lingkungan dan tidak mau diabaikan tetapi tidak mencari-cari perhatian."], [6, 9, "Bangga akan diri dan gayanya sendiri, senang menjadi pusat perhatian, mengharapkan penghargaan dari lingkungan. Mencari-cari perhatian dan suka menyombongkan diri."]], "E": [[0, 1, "Sangat terbuka, terus terang, mudah terbaca (dari air muka, tindakan, perkataan, sikap). Tidak dapat mengendalikan emosi, cepat bereaksi, kurang mengindahkan/tidak mempunyai 'nilai' yang mengharuskannya menahan emosi."], [2, 3, "Terbuka, mudah mengungkap pendapat atau perasaannya mengenai suatu hal kepada orang lain."], [4, 6, "Mampu mengungkap atau menyimpan perasaan, dapat mengendalikan emosi."], [7, 9, "Mampu menyimpan pendapat atau perasaannya, tenang, dapat mengendalikan emosi, menjaga jarak. Tampil pasif dan tidak acuh, mungkin sulit mengungkapkan emosi/perasaan/pandangan."]], "K": [[0, 1, "Sabar, tidak menyukai konflik. Mengelak atau menghindar dari konflik, pasif, menekan atau menyembunyikan perasaan sesungguhnya, menghindari konfrontasi, lari dari konflik, tidak mau mengakui adanya konflik."], [2, 3, "Lebih suka menghindari konflik, akan mencari rasionalisasi untuk dapat menerima situasi dan melihat permasalahan dari sudut pandang orang lain."], [4, 5, "Tidak mencari atau menghindari konflik, mau mendengarkan pandangan orang lain tetapi dapat menjadi keras kepala saat mempertahankan pandangannya."], [6, 7, "Akan menghadapi konflik, mengungkapkan serta memaksakan pandangan dengan cara positif."], [8, 9, "Terbuka, jujur, terus terang, asertif, agresif, reaktif, mudah tersinggung, mudah meledak, curiga, berprasangka, suka berkelahi atau berkonfrontasi, berpikir negatif."]], "Z": [[0, 1, "Mudah beradaptasi dengan pekerjaan rutin tanpa merasa bosan, tidak membutuhkan variasi, menyukai lingkungan stabil dan tidak berubah. Konservatif, menolak perubahan, sulit menerima hal-hal baru, tidak dapat beradaptasi dengan situasi yang berbeda-beda."], [2, 3, "Enggan berubah, tidak siap untuk beradaptasi, hanya mau menerima perubahan jika alasannya jelas dan meyakinkan."], [4, 5, "Mudah beradaptasi, cukup menyukai perubahan."], [6, 7, "Antusias terhadap perubahan dan akan mencari hal-hal baru, tetapi masih selektif (menilai kemanfaatannya)."], [8, 9, "Sangat menyukai perubahan, gagasan baru/variasi, aktif mencari perubahan, antusias dengan hal-hal baru, fleksibel dalam berpikir, mudah beradaptasi pada situasi yang berbeda-beda. Gelisah, frustasi, mudah bosan, sangat membutuhkan variasi, tidak menyukai tugas/situasi yang rutin-monoton."]]};
+/* =========================================================
+   Psikotes PAPI Kostick (Personality and Preference Inventory)
+   Soal: PAPI_KOSTIK_Test_2026.pdf · Skoring: Skoring_PAPI_Kostick_V1-1.xls
+   ========================================================= */
+const PAPI_N = 90, PAPI_PER_PAGE = 10;
+const PAPI_SCALES = {
+  N: 'Kebutuhan menyelesaikan tugas', G: 'Peran pekerja keras', A: 'Kebutuhan berprestasi',
+  L: 'Peran kepemimpinan', P: 'Kebutuhan mengatur orang lain', I: 'Peran membuat keputusan',
+  T: 'Peran sibuk (tempo kerja)', V: 'Peran penuh semangat (aktivitas fisik)',
+  X: 'Kebutuhan untuk diperhatikan', S: 'Peran hubungan sosial', B: 'Kebutuhan diterima kelompok', O: 'Kebutuhan kedekatan dan kasih sayang',
+  R: 'Peran teoretis', D: 'Minat pada hal rinci', C: 'Peran mengatur (keteraturan)',
+  Z: 'Kebutuhan akan perubahan', E: 'Peran pengendalian emosi', K: 'Kebutuhan bersikap terus terang (agresif)',
+  F: 'Kebutuhan mendukung atasan', W: 'Kebutuhan akan aturan dan pengawasan'
+};
+const PAPI_GROUPS = [
+  { nm: 'Arah Kerja', s: ['N', 'G', 'A'] }, { nm: 'Kepemimpinan', s: ['L', 'P', 'I'] }, { nm: 'Aktivitas', s: ['T', 'V'] },
+  { nm: 'Pergaulan', s: ['X', 'S', 'B', 'O'] }, { nm: 'Gaya Kerja', s: ['R', 'D', 'C'] }, { nm: 'Sifat', s: ['Z', 'E', 'K'] }, { nm: 'Ketaatan', s: ['F', 'W'] }
+];
+const PAPI_WHEEL = ['G', 'A', 'L', 'P', 'I', 'T', 'V', 'X', 'S', 'B', 'O', 'R', 'D', 'C', 'Z', 'E', 'K', 'F', 'W', 'N'];
+const PAPI_GROUP_OF = Object.fromEntries(PAPI_GROUPS.flatMap((g, i) => g.s.map(k => [k, i])));
+const PAPI_GCOL = ['#2F5BEA', '#7C3AED', '#0E9F6E', '#E0730B', '#0891B2', '#DB2777', '#64748B'];
+
+/* jawaban: array 90 berisi 'a' | 'b' | null */
+function papiNorm(ans) { const a = Array.isArray(ans) ? ans : String(ans || '').split(''); return Array.from({ length: PAPI_N }, (_, i) => (a[i] === 'a' || a[i] === 'b') ? a[i] : null); }
+function papiScore(ans) {
+  const A = papiNorm(ans), sc = Object.fromEntries(Object.keys(PAPI_SCALES).map(k => [k, 0])); let n = 0;
+  A.forEach((v, i) => { if (!v) return; n++; const it = PAPI_ITEMS[i]; sc[v === 'a' ? it[2] : it[3]]++; });
+  return { sc, n, complete: n === PAPI_N };
+}
+const papiBand = (k, v) => (PAPI_BANDS[k] || []).find(b => v >= b[0] && v <= b[1]) || [0, 9, ''];
+const papiRange = b => b[0] === b[1] ? String(b[0]) : `${b[0]}–${b[1]}`;
+const papiLvl = v => v >= 7 ? ['Tinggi', 'acc'] : v >= 4 ? ['Sedang', 'info'] : ['Rendah', ''];
+const papiTop = (sc, n = 3) => Object.entries(sc).sort((a, b) => b[1] - a[1] || PAPI_WHEEL.indexOf(a[0]) - PAPI_WHEEL.indexOf(b[0])).slice(0, n);
+const papiCalc = r => papiScore(r.answers);
+
+/* ---------- grafik radar (20 skala, skor 0–9) ---------- */
+function papiRadar(sc, size = 380) {
+  const c = size / 2, R = c - 46, n = PAPI_WHEEL.length, ang = i => -Math.PI / 2 + i * 2 * Math.PI / n;
+  const pt = (i, v) => [c + Math.cos(ang(i)) * R * v / 9, c + Math.sin(ang(i)) * R * v / 9];
+  let g = '';
+  [3, 6, 9].forEach(v => { g += `<polygon class="pp-ring" points="${PAPI_WHEEL.map((_, i) => pt(i, v).join(',')).join(' ')}"/><text class="pp-rt" x="${c + 3}" y="${c - R * v / 9 + 11}">${v}</text>`; });
+  PAPI_WHEEL.forEach((k, i) => { const [x, y] = pt(i, 9); g += `<line class="pp-ax" x1="${c}" y1="${c}" x2="${x}" y2="${y}"/>`; });
+  g += `<polygon class="pp-poly" points="${PAPI_WHEEL.map((k, i) => pt(i, sc[k]).join(',')).join(' ')}"/>`;
+  PAPI_WHEEL.forEach((k, i) => {
+    const [x, y] = pt(i, sc[k]), [lx, ly] = pt(i, 11.3), col = PAPI_GCOL[PAPI_GROUP_OF[k]];
+    g += `<circle cx="${x}" cy="${y}" r="3.6" fill="${col}"/><text class="pp-lb" x="${lx}" y="${ly + 4}" text-anchor="middle" fill="${col}">${k}</text><text class="pp-lv" x="${lx}" y="${ly + 16}" text-anchor="middle">${sc[k]}</text>`;
+  });
+  return `<svg viewBox="0 0 ${size} ${size}" class="pp-radar" role="img" aria-label="Profil PAPI Kostick: ${PAPI_WHEEL.map(k => k + ' ' + sc[k]).join(', ')}">${g}</svg>`;
+}
+const papiLegend = () => `<div class="pp-legend">${PAPI_GROUPS.map((g, i) => `<span><i style="background:${PAPI_GCOL[i]}"></i>${esc(g.nm)} (${g.s.join(', ')})</span>`).join('')}</div>`;
+
+/* =====================  MESIN TES  ===================== */
+const Papi = {
+  saveT: null, vis: null,
+  newSess(extra) { return { stage: 'intro', page: 0, answers: Array(PAPI_N).fill(null), tabSwitch: 0, startedAt: null, ...extra }; },
+  startAccount() {
+    const a = S.user; let sess = Store.get('papi_sessions', a.id);
+    if (!sess) {
+      sess = this.newSess({ accountId: a.id, companyId: a.companyId, subject: { accountId: a.id, name: a.name, testDate: todayISO(), unit: a.unit || '', position: a.position || '' } });
+      Store.put('papi_sessions', a.id, sess).catch(() => {});
+    }
+    S.test = { kind: 'papi', id: a.id, admin: false, sess: { ...JSON.parse(JSON.stringify(sess)), answers: papiNorm(sess.answers) } };
+    this.begin();
+  },
+  startAdmin(subject, paper) {
+    S.test = { kind: 'papi', id: null, admin: true, paper: !!paper, sess: this.newSess({ companyId: S.companyId, subject, stage: paper ? 'run' : 'intro', startedAt: paper ? nowISO() : null }) };
+    audit(paper ? 'input lembar PAPI' : 'mulai tes PAPI (dipandu HRD)', subject.name); this.begin();
+  },
+  begin() {
+    this.stop();
+    this.vis = () => { const t = S.test; if (document.hidden && t && t.kind === 'papi' && !t.paper && t.sess.stage === 'run') { t.sess.tabSwitch = (t.sess.tabSwitch || 0) + 1; this.save(); } };
+    document.addEventListener('visibilitychange', this.vis);
+    App.render();
+  },
+  stop() { clearTimeout(this.saveT); if (this.vis) document.removeEventListener('visibilitychange', this.vis); this.vis = null; },
+  save() {
+    clearTimeout(this.saveT); const t = S.test; if (!t || !t.id) return; const snap = JSON.parse(JSON.stringify(t.sess));
+    this.saveT = setTimeout(() => { if (Store.cache.papi_sessions[t.id]) Store.put('papi_sessions', t.id, snap).catch(() => {}); }, 600);
+  },
+  done() { return S.test.sess.answers.filter(Boolean).length; },
+  top() {
+    const t = S.test, n = this.done();
+    return `<div class="test-top"><div class="brandmark" style="font-size:13px">${brandOf().logo}Tes PAPI Kostick</div>
+      <div class="progress" aria-label="Progres jawaban"><i style="width:${n / PAPI_N * 100}%"></i></div><span class="small muted mono" id="ppCnt">${n}/${PAPI_N} terjawab</span>
+      ${t.admin ? '<button class="btn sm" id="tCancel">Batal</button>' : ''}</div>`;
+  },
+  cancelBtn() { const c = $('#tCancel'); if (c) c.onclick = async () => { if (!(await confirmBox('Batalkan tes? Jawaban yang sudah diisi akan hilang.', 'Batalkan', true))) return; this.stop(); S.test = null; App.render(); }; },
+  render() { const s = S.test.sess; if (s.stage === 'intro') this.renderIntro(); else if (S.test.paper) this.renderPaper(); else this.renderRun(); },
+  renderIntro() {
+    $('#app').innerHTML = `${this.top()}<div class="test-body"><div class="card card-pad stack">
+      <div class="eyebrow">Psikotes kepribadian kerja</div><h1 style="margin:0">Tes PAPI Kostick</h1>
+      <div class="row small muted"><span>${PAPI_N} nomor</span><span>· Pilih A atau B</span><span>· Tidak ada jawaban benar/salah</span><span>· Tanpa batas waktu</span></div>
+      <div class="note"><b>Petunjuk.</b> Setiap nomor berisi dua pernyataan, A dan B. Pilih <b>satu</b> pernyataan yang <b>paling menggambarkan diri Anda</b> dalam bekerja. Bila keduanya terasa sesuai, atau keduanya tidak sesuai, tetap pilih yang paling mendekati. Semua nomor wajib dijawab.</div>
+      <div class="pp-ex"><div class="eyebrow">Contoh</div><div class="ist-q"><div class="ist-qn">0</div><div class="ist-qb"><div class="ist-opts"><span class="ist-o on" aria-hidden="true"><b>A</b><span>Saya suka bekerja dalam tim</span></span><span class="ist-o" aria-hidden="true"><b>B</b><span>Saya suka bekerja sendiri</span></span></div></div></div><div class="small muted">Bila Anda lebih suka bekerja dalam tim, pilih A.</div></div>
+      <div class="note warn">Jawablah dengan spontan dan jujur, sesuai keadaan Anda sebenarnya, bukan yang dianggap ideal. Jawaban tersimpan otomatis dan Anda bisa kembali ke nomor sebelumnya sebelum menekan Selesai.</div>
+      <div><button class="btn primary" id="ppGo" style="padding:11px 20px">Mulai mengerjakan</button></div></div></div>`;
+    $('#ppGo').onclick = () => { const s = S.test.sess; s.stage = 'run'; s.startedAt = s.startedAt || nowISO(); s.page = 0; if (S.test.id) audit('mulai tes PAPI'); this.save(); this.render(); window.scrollTo(0, 0); };
+    this.cancelBtn();
+  },
+  item(i) {
+    const v = S.test.sess.answers[i], it = PAPI_ITEMS[i];
+    return `<div class="ist-q" id="pq${i}"><div class="ist-qn">${i + 1}</div><div class="ist-qb"><div class="ist-opts">${['a', 'b'].map((o, j) => `<button type="button" class="ist-o ${v === o ? 'on' : ''}" data-q="${i}" data-o="${o}" aria-pressed="${v === o}"><b>${o.toUpperCase()}</b><span>${esc(it[j])}</span></button>`).join('')}</div></div></div>`;
+  },
+  pageDone(p) { const a = S.test.sess.answers; return a.slice(p * PAPI_PER_PAGE, (p + 1) * PAPI_PER_PAGE).filter(Boolean).length; },
+  renderRun() {
+    const s = S.test.sess, pages = Math.ceil(PAPI_N / PAPI_PER_PAGE), p = Math.min(s.page || 0, pages - 1), from = p * PAPI_PER_PAGE, to = Math.min(PAPI_N, from + PAPI_PER_PAGE);
+    $('#app').innerHTML = `${this.top()}<div class="test-body">
+      <div class="card card-pad stack" style="gap:10px"><div class="row" style="justify-content:space-between"><div><div class="eyebrow">Halaman ${p + 1} dari ${pages}</div><b>Nomor ${from + 1}–${to}</b></div><span class="small muted">Pilih satu: A atau B</span></div>
+        <div class="pp-pages" role="navigation" aria-label="Halaman soal">${Array.from({ length: pages }, (_, k) => { const d = this.pageDone(k), full = d === Math.min(PAPI_PER_PAGE, PAPI_N - k * PAPI_PER_PAGE); return `<button type="button" class="pp-pg ${k === p ? 'on' : ''} ${full ? 'full' : d ? 'part' : ''}" data-pg="${k}" aria-label="Halaman ${k + 1}${full ? ', lengkap' : ''}" ${k === p ? 'aria-current="page"' : ''}>${k + 1}</button>`; }).join('')}</div></div>
+      <div class="stack" id="ppItems">${Array.from({ length: to - from }, (_, k) => this.item(from + k)).join('')}</div>
+      <div class="card card-pad row" style="justify-content:space-between"><button class="btn" id="ppPrev" ${p === 0 ? 'disabled' : ''}>← Sebelumnya</button>
+        ${p < pages - 1 ? '<button class="btn primary" id="ppNext">Berikutnya →</button>' : '<button class="btn accent" id="ppDone">Selesai mengerjakan</button>'}</div></div>`;
+    const box = $('#ppItems');
+    box.addEventListener('click', e => {
+      const b = e.target.closest('[data-q]'); if (!b) return; const i = +b.dataset.q; s.answers[i] = b.dataset.o; this.save();
+      $$(`[data-q="${i}"]`, box).forEach(x => { const on = x.dataset.o === s.answers[i]; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); });
+      const n = this.done(), c = $('#ppCnt'); if (c) c.textContent = `${n}/${PAPI_N} terjawab`; const bar = $('.test-top .progress i'); if (bar) bar.style.width = n / PAPI_N * 100 + '%';
+      const pg = $(`.pp-pg[data-pg="${p}"]`); if (pg) { const d = this.pageDone(p), full = d === to - from; pg.classList.toggle('full', full); pg.classList.toggle('part', !full && d > 0); }
+      const nx = $(`#pq${i + 1}`); if (nx && !s.answers[i + 1] && nx.getBoundingClientRect().top > window.innerHeight * .75) nx.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    const go = k => { s.page = k; this.save(); this.renderRun(); window.scrollTo(0, 0); };
+    $$('[data-pg]').forEach(b => b.onclick = () => go(+b.dataset.pg));
+    $('#ppPrev').onclick = () => go(p - 1);
+    const nx = $('#ppNext'); if (nx) nx.onclick = () => go(p + 1);
+    const dn = $('#ppDone'); if (dn) dn.onclick = async () => {
+      const miss = s.answers.findIndex(v => !v);
+      if (miss >= 0) { toast(`Nomor ${miss + 1} belum dijawab. Semua nomor wajib diisi.`); go(Math.floor(miss / PAPI_PER_PAGE)); setTimeout(() => { const el = $(`#pq${miss}`); if (el) { el.scrollIntoView({ block: 'center' }); el.classList.add('shake'); setTimeout(() => el.classList.remove('shake'), 400); } }, 50); return; }
+      if (await confirmBox('Semua nomor sudah dijawab. Kirim jawaban? Jawaban tidak dapat diubah setelah dikirim.', 'Kirim jawaban') && S.test) this.submit();
+    };
+    this.cancelBtn();
+  },
+  /* input lembar jawaban kertas oleh HRD */
+  renderPaper() {
+    const s = S.test.sess, col = k => `<div class="pp-col">${Array.from({ length: 30 }, (_, j) => { const i = k * 30 + j, v = s.answers[i]; return `<div class="pp-row"><span class="pp-no">${i + 1}</span>${['a', 'b'].map(o => `<button type="button" class="pp-ab ${v === o ? 'on' : ''}" data-q="${i}" data-o="${o}" aria-pressed="${v === o}" aria-label="Nomor ${i + 1} pilihan ${o.toUpperCase()}">${o.toUpperCase()}</button>`).join('')}</div>`; }).join('')}</div>`;
+    $('#app').innerHTML = `${this.top()}<div class="test-body" style="max-width:900px">
+      <div class="card card-pad stack"><div class="eyebrow">Input lembar jawaban kertas</div><h1 style="margin:0">${esc(s.subject.name)}</h1>
+        <p class="small muted" style="margin:0">Klik A atau B sesuai lingkaran pada lembar jawaban peserta. Keyboard: ketik <b>a</b> atau <b>b</b> untuk mengisi nomor yang aktif lalu otomatis pindah ke nomor berikutnya.</p></div>
+      <div class="card card-pad"><div class="pp-sheet" id="ppSheet">${[0, 1, 2].map(col).join('')}</div></div>
+      <div class="card card-pad row" style="justify-content:space-between"><span class="small muted">Nomor aktif: <b id="ppCur">1</b></span><button class="btn accent" id="ppDone">Hitung &amp; simpan hasil</button></div></div>`;
+    let cur = Math.max(0, s.answers.findIndex(v => !v)); const mark = () => { $$('.pp-row').forEach((r, i) => r.classList.toggle('cur', i === cur)); const e = $('#ppCur'); if (e) e.textContent = cur + 1; };
+    const set = (i, o) => { s.answers[i] = s.answers[i] === o ? null : o; $$(`[data-q="${i}"]`).forEach(x => { const on = x.dataset.o === s.answers[i]; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); }); const n = this.done(), c = $('#ppCnt'); if (c) c.textContent = `${n}/${PAPI_N} terjawab`; const bar = $('.test-top .progress i'); if (bar) bar.style.width = n / PAPI_N * 100 + '%'; };
+    $('#ppSheet').addEventListener('click', e => { const b = e.target.closest('[data-q]'); if (!b) return; cur = +b.dataset.q; set(cur, b.dataset.o); cur = Math.min(PAPI_N - 1, cur + 1); mark(); });
+    this.key = e => { if (!S.test || S.test.kind !== 'papi' || !S.test.paper || /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || '')) return; const k = e.key.toLowerCase();
+      if (k === 'a' || k === 'b') { e.preventDefault(); s.answers[cur] = null; set(cur, k); cur = Math.min(PAPI_N - 1, cur + 1); mark(); }
+      else if (e.key === 'ArrowDown') { e.preventDefault(); cur = Math.min(PAPI_N - 1, cur + 1); mark(); } else if (e.key === 'ArrowUp' || e.key === 'Backspace') { e.preventDefault(); cur = Math.max(0, cur - 1); mark(); } };
+    document.removeEventListener('keydown', Papi._k || (() => {})); Papi._k = this.key; document.addEventListener('keydown', this.key);
+    mark();
+    $('#ppDone').onclick = async () => {
+      const left = PAPI_N - this.done();
+      if (left && !(await confirmBox(`Masih ada <b>${left} nomor</b> kosong. Skor skala terkait akan lebih rendah dan hasil sebaiknya dianggap tidak lengkap. Tetap simpan?`, 'Tetap simpan'))) return;
+      this.submit();
+    };
+    this.cancelBtn();
+  },
+  async submit() {
+    const t = S.test; if (!t || t.submitting) return; t.submitting = true; this.stop(); if (Papi._k) { document.removeEventListener('keydown', Papi._k); Papi._k = null; }
+    const s = t.sess, sj = s.subject || {}, a = S.user, id = uid('pr'), cid = t.admin ? S.companyId : a.companyId;
+    const body = { companyId: cid, accountId: sj.accountId || null, name: sj.name || a.name, age: sj.age || null, gender: sj.gender || '', unit: sj.unit || '', position: sj.position || '', testDate: sj.testDate || todayISO(),
+      mode: t.paper ? 'Input lembar jawaban' : t.admin ? 'Online (dipandu HRD)' : 'Online (mandiri)', administeredBy: t.admin ? S.user.username : null,
+      answers: papiNorm(s.answers), startedAt: s.startedAt, finishedAt: nowISO(), durationSec: t.paper || !s.startedAt ? null : Math.round((Date.now() - new Date(s.startedAt)) / 1000), tabSwitch: t.paper ? 0 : (s.tabSwitch || 0), decision: '', note: '' };
+    try {
+      await Store.put('papi_results', id, body);
+      if (sj.accountId && Store.get('accounts', sj.accountId)) await Store.put('accounts', sj.accountId, { ...Store.get('accounts', sj.accountId), papiAllowed: false });
+      if (t.id) await Store.remove('papi_sessions', t.id);
+      audit('selesai tes PAPI', body.name);
+    } catch (e) { t.submitting = false; toast('Gagal mengirim. Periksa koneksi lalu coba lagi.'); this.begin(); return; }
+    S.user = Store.get('accounts', a.id) || S.user;
+    S.test = null;
+    if (t.admin) { S.route = 'papiresult'; S.params = { id }; App.render(); window.scrollTo(0, 0); toast('Hasil PAPI tersimpan'); return; }
+    S.route = 'mytests'; App.render();
+  }
+};
+
+/* =====================  DAFTAR HASIL  ===================== */
+Views.papi = () => {
+  const f = S.params || {};
+  let rows = Store.all('papi_results', inScope).map(r => ({ r, C: papiCalc(r) }));
+  if (f.q) rows = rows.filter(x => (x.r.name || '').toLowerCase().includes(f.q.toLowerCase()));
+  if (f.unit) rows = rows.filter(x => x.r.unit === f.unit);
+  rows.sort((a, b) => (b.r.finishedAt || b.r.testDate || '').localeCompare(a.r.finishedAt || a.r.testDate || ''));
+  const prog = Store.all('papi_sessions', x => x.startedAt && inScope(x));
+  return `<div class="page-head"><div><h1>Hasil Psikotes PAPI Kostick</h1><p>Profil kepribadian kerja 20 skala dalam 7 aspek: arah kerja, kepemimpinan, aktivitas, pergaulan, gaya kerja, sifat, dan ketaatan. Untuk mengerjakan tes, buka menu Kerjakan Psikotes.</p></div>
+    <div class="row"><button class="btn" data-go="kerjakan" data-p='{"tab":"papi"}'>Kerjakan / input lembar jawaban</button></div></div>
+  <div class="card"><div class="card-head"><div class="row"><input class="input" id="fq" placeholder="Cari nama…" value="${esc(f.q || '')}" style="width:200px"><select class="input" id="fu" style="width:auto">${unitOptions(S.companyId, f.unit).replace('– pilih unit –', 'Semua unit')}</select></div><span class="small muted">${rows.length} peserta</span></div>
+  ${rows.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th class="num">No</th><th>Peserta</th><th>Unit / posisi</th><th>Tanggal</th><th>Skala menonjol</th><th>Kelengkapan</th><th>Cara</th></tr></thead><tbody>
+    ${rows.map(({ r, C }, i) => `<tr class="click" data-open="${r.id}"><td class="num no-col">${i + 1}</td><td><b>${esc(r.name)}</b>${sampleTag(r)}</td><td>${esc(r.unit || '–')}<div class="small muted">${esc(r.position || '')}</div></td><td class="small">${fmtDate(r.testDate)}</td>
+      <td>${papiTop(C.sc).map(([k, v]) => `<span class="pill acc" title="${esc(PAPI_SCALES[k])}">${k} ${v}</span>`).join(' ')}</td><td>${C.complete ? '<span class="pill ok">90/90</span>' : `<span class="pill warn">${C.n}/90</span>`}</td><td class="small">${esc(r.mode || '–')}</td></tr>`).join('')}</tbody></table></div>`
+    : '<div class="empty">Belum ada hasil PAPI. Buka menu <b>Kerjakan Psikotes</b>, pilih tab PAPI Kostick, lalu buka tes untuk peserta atau input lembar jawaban.</div>'}</div>
+  ${prog.length ? `<div class="card"><div class="card-head"><h3>Sedang mengerjakan</h3></div><div class="tbl-wrap"><table class="tbl no-stack"><tbody>${prog.map(s => { const a = Store.get('accounts', s.accountId); return `<tr><td>${esc(a?.name || s.accountId)}</td><td class="small">Mulai ${fmtDT(s.startedAt)}</td><td class="small">${papiNorm(s.answers).filter(Boolean).length}/90 terjawab</td></tr>`; }).join('')}</tbody></table></div></div>` : ''}`;
+};
+Views.papiMount = c => {
+  $$('[data-open]', c).forEach(tr => tr.onclick = () => App.go('papiresult', { id: tr.dataset.open }));
+  let t; const q = $('#fq', c); if (q) q.oninput = e => { clearTimeout(t); t = setTimeout(() => { S.params = { ...S.params, q: e.target.value }; App.renderContent(); const i = $('#fq'); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }, 300); };
+  const u = $('#fu', c); if (u) u.onchange = e => { S.params = { ...S.params, unit: e.target.value }; App.renderContent(); };
+};
+
+/* =====================  HASIL PER PESERTA  ===================== */
+Views.papiresult = () => {
+  const r = Store.get('papi_results', (S.params || {}).id);
+  if (!r || !inScope(r)) return '<div class="card card-pad">Hasil tidak ditemukan. <button class="btn sm" data-go="papi">Kembali</button></div>';
+  const C = papiCalc(r), comp = Store.get('companies', r.companyId) || {}, st = settingsOf(r.companyId), A = papiNorm(r.answers);
+  const top = papiTop(C.sc, 3), low = Object.entries(C.sc).sort((a, b) => a[1] - b[1]).slice(0, 3);
+  return `<div class="page-head"><div><button class="btn ghost sm" data-go="papi">← Hasil Psikotes PAPI</button><h1 style="margin-top:6px">${esc(r.name)}${sampleTag(r)}</h1>
+    <p>${esc(r.position || '')}${r.unit ? ' · Unit ' + esc(r.unit) : ''}${r.age ? ' · Usia ' + r.age + ' th' : ''} · Tes ${fmtDate(r.testDate)} · ${esc(r.mode || '')}${r.durationSec ? ' · ' + Math.round(r.durationSec / 60) + ' menit' : ''}</p></div>
+    <div class="row"><button class="btn primary" id="bPdf">Cetak / Unduh PDF</button>${r.accountId && Store.get('accounts', r.accountId) ? '<button class="btn" id="bRetake">Izinkan tes ulang</button>' : ''}<button class="btn danger" id="bDel">Hapus</button></div></div>
+  ${C.complete ? '' : `<div class="note warn">Baru <b>${C.n} dari 90</b> nomor yang terjawab. Skor skala yang terkait nomor kosong menjadi lebih rendah, jadi hasil ini sebaiknya dianggap tidak lengkap.</div>`}
+  ${r.tabSwitch ? `<div class="note warn">Peserta meninggalkan halaman tes ${r.tabSwitch} kali selama pengerjaan.</div>` : ''}
+  <div class="grid g2" style="align-items:start">
+    <div class="card card-pad stack"><div class="eyebrow">Profil 20 skala (skor 0–9)</div>${papiRadar(C.sc)}${papiLegend()}</div>
+    <div class="stack"><div class="card card-pad stack"><div class="eyebrow">Ringkasan</div>
+      <div><div class="small muted">Skor tertinggi</div><div class="pp-chips">${top.map(([k, v]) => `<span class="pill acc"><b>${k} ${v}</b> · ${esc(PAPI_SCALES[k])}</span>`).join('')}</div></div>
+      <div><div class="small muted">Skor terendah</div><div class="pp-chips">${low.map(([k, v]) => `<span class="pill"><b>${k} ${v}</b> · ${esc(PAPI_SCALES[k])}</span>`).join('')}</div></div>
+      <p class="small muted" style="margin:0">PAPI Kostick bersifat ipsatif: total skor selalu 90 karena tiap nomor memberi satu poin ke salah satu skala. Skor tinggi pada satu skala berarti skala lain lebih rendah, sehingga hasil dibaca sebagai pola, bukan nilai lulus atau gagal. Interpretasi akhir sebaiknya dilakukan oleh psikolog.</p></div>
+      <div class="card"><div class="card-head"><h3>Skor per aspek</h3></div><div class="tbl-wrap"><table class="tbl no-stack"><tbody>
+        ${PAPI_GROUPS.map((g, gi) => g.s.map((k, j) => `<tr>${j === 0 ? `<td rowspan="${g.s.length}" style="vertical-align:top;border-left:3px solid ${PAPI_GCOL[gi]}"><b>${esc(g.nm)}</b></td>` : ''}<td class="mono"><b>${k}</b></td><td class="small">${esc(PAPI_SCALES[k])}</td><td class="num"><b>${C.sc[k]}</b></td><td><div class="pp-bar"><i style="width:${C.sc[k] / 9 * 100}%;background:${PAPI_GCOL[gi]}"></i></div></td></tr>`).join('')).join('')}
+      </tbody></table></div></div></div></div>
+  <div class="card"><div class="card-head"><h3>Interpretasi per skala</h3><span class="small muted">Pedoman dari file skoring</span></div><div class="pp-int">
+    ${PAPI_GROUPS.map((g, gi) => `<div class="pp-ig"><div class="pp-ign" style="color:${PAPI_GCOL[gi]}">${esc(g.nm)}</div>${g.s.map(k => { const b = papiBand(k, C.sc[k]); return `<div class="pp-ir"><div class="pp-irh"><span class="pp-k" style="background:${PAPI_GCOL[gi]}">${k}</span><b>${esc(PAPI_SCALES[k])}</b><span class="pill">${k} = ${C.sc[k]}</span><span class="small faint">rentang ${papiRange(b)}</span></div><p>${esc(b[2])}</p></div>`; }).join('')}</div>`).join('')}
+  </div></div>
+  <div class="card"><details><summary class="card-head" style="cursor:pointer"><h3>Lembar jawaban</h3><span class="small muted">klik untuk membuka</span></summary><div class="card-pad"><div class="pp-ans">${A.map((v, i) => `<span class="${v ? '' : 'nil'}" title="No. ${i + 1}: ${v ? v.toUpperCase() + ' (' + PAPI_ITEMS[i][v === 'a' ? 2 : 3] + ')' : 'kosong'}"><small>${i + 1}</small>${v ? v.toUpperCase() : '–'}</span>`).join('')}</div></div></details></div>
+  <div class="sig-wrap"><div class="sig"><div class="small muted">Dicetak: ${fmtDateLong(todayISO())}</div><div><b>HRD ${esc(comp.name || '')}</b></div><div class="sig-line"></div><div><b>${esc(st.signerName || 'Nama dan tanda tangan')}</b></div><div class="small muted">${esc(st.signerTitle || 'HR Perusahaan')}</div></div></div>
+  <div class="card card-pad stack"><div class="eyebrow">Keputusan HR</div><div class="form-grid"><label class="f">Status<select class="input" id="dec">${['', 'Lanjut wawancara', 'Lanjut tes kesehatan', 'Diterima', 'Cadangan', 'Tidak dilanjutkan'].map(x => `<option ${x === (r.decision || '') ? 'selected' : ''} value="${x}">${x || '– belum diputuskan –'}</option>`).join('')}</select></label></div>
+    <label class="f">Catatan HR / psikolog<textarea class="input" id="note">${esc(r.note || '')}</textarea></label><div><button class="btn primary" id="bSave">Simpan keputusan</button></div></div>`;
+};
+Views.papiresultMount = c => {
+  const r = Store.get('papi_results', (S.params || {}).id); if (!r) return;
+  $('#bPdf', c).onclick = async e => { const b = e.currentTarget; b.disabled = true; const t = b.textContent; b.textContent = 'Membuat PDF…'; await exportPapiPdf(Store.get('papi_results', r.id)); b.disabled = false; b.textContent = t; };
+  $('#bDel', c).onclick = async () => { if (!(await confirmBox(`Hapus hasil PAPI ${esc(r.name)} secara permanen?`, 'Hapus', true))) return; await Store.remove('papi_results', r.id); audit('hapus hasil PAPI', r.name); App.go('papi'); };
+  $('#bSave', c).onclick = async () => { await Store.put('papi_results', r.id, { ...Store.get('papi_results', r.id), decision: $('#dec', c).value, note: $('#note', c).value }); audit('keputusan PAPI', r.name + ': ' + $('#dec', c).value); toast('Keputusan disimpan'); };
+  const rt = $('#bRetake', c); if (rt) rt.onclick = async () => { if (!(await confirmBox(`Buka kembali tes PAPI untuk ${esc(r.name)}? Hasil lama tetap tersimpan.`))) return; const a = Store.get('accounts', r.accountId); await Store.put('accounts', a.id, { ...a, papiAllowed: true }); audit('izinkan tes ulang PAPI', r.name); toast('Peserta dapat mengerjakan ulang'); };
+};
+
+/* =====================  MASTER DATA  ===================== */
+function papiMasterTab() {
+  const sub = (S.params || {}).sub === 'int' ? 'int' : 'soal';
+  const nav = `<div class="ist-chipnav"><button class="chip ${sub === 'soal' ? 'on' : ''}" data-psub="soal">Soal &amp; kunci<small>90 nomor</small></button><button class="chip ${sub === 'int' ? 'on' : ''}" data-psub="int">Interpretasi<small>20 skala</small></button></div>`;
+  if (sub === 'int') return nav + `<div class="card card-pad stack"><div class="eyebrow">Aturan skoring</div><ul class="ist-notes">
+      <li>Setiap nomor punya dua pernyataan. Pilihan A memberi 1 poin ke skala kunci A, pilihan B memberi 1 poin ke skala kunci B.</li>
+      <li>Ada 20 skala, masing-masing muncul tepat 9 kali, sehingga skor tiap skala 0–9 dan totalnya 90.</li>
+      <li>Interpretasi memakai rentang skor per skala sesuai lembar URAIAN PAPIKOSTIK. Label rendah/sedang/tinggi di aplikasi (0–3, 4–6, 7–9) hanya penanda visual.</li>
+      <li>Di file Excel, skor Z dan K dibalik (9 − skor) khusus untuk menggambar roda PAPI. Uraian memakai skor asli, dan aplikasi juga memakai skor asli.</li></ul></div>
+    ${PAPI_GROUPS.map((g, gi) => `<div class="card"><div class="card-head"><h3 style="color:${PAPI_GCOL[gi]}">${esc(g.nm)}</h3></div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Skala</th><th>Rentang</th><th>Interpretasi</th></tr></thead><tbody>
+      ${g.s.map(k => PAPI_BANDS[k].map((b, j) => `<tr>${j === 0 ? `<td rowspan="${PAPI_BANDS[k].length}" style="vertical-align:top"><b class="mono">${k}</b><div class="small muted">${esc(PAPI_SCALES[k])}</div></td>` : ''}<td class="mono">${papiRange(b)}</td><td class="small">${esc(b[2])}</td></tr>`).join('')).join('')}</tbody></table></div></div>`).join('')}`;
+  return nav + `<div class="card"><div class="card-head"><h3>Lembar soal dan kunci PAPI Kostick</h3><span class="small muted">90 nomor · kolom kunci = skala yang mendapat poin</span></div><div class="tbl-wrap"><table class="tbl no-stack"><thead><tr><th class="num">No</th><th>Pernyataan A</th><th>Kunci</th><th>Pernyataan B</th><th>Kunci</th></tr></thead><tbody>
+    ${PAPI_ITEMS.map((it, i) => `<tr><td class="num"><b>${i + 1}</b></td><td>${esc(it[0])}</td><td class="mono"><b>${it[2]}</b></td><td>${esc(it[1])}</td><td class="mono"><b>${it[3]}</b></td></tr>`).join('')}</tbody></table></div></div>
+    <div class="note"><b>Urutan sudah dikoreksi.</b> Di PDF sumber, nomor 42 tercetak dua kali dan ada satu pernyataan tambahan di akhir (“Fokus perhatian saya mudah teralihkan / Saya mempelajari hal-hal baru…”). Urutan di sini mengikuti kunci skoring Excel dan lembar jawaban PAPI (kisi 1–90): “Orang lain beranggapan… pemimpin yang baik” = nomor 42, “Seringkali saya memanfaatkan peluang” = nomor 43, dan seterusnya sampai nomor 90 “Saya senang diberi petunjuk… / Saya harus menyelesaikan…”. Pernyataan tambahan tidak dipakai karena tidak ada di kunci.</div>`;
+}
+
+/* =====================  PDF  ===================== */
+function buildPapiPdf(r, jsPDF) {
+  const C = papiCalc(r), doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
+  const W = 210, H = 297, M = 14, CW = W - 2 * M, BOT = 20;
+  const comp = Store.get('companies', r.companyId) || {}, st = settingsOf(r.companyId);
+  const T = s => String(s ?? '').replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/[–—−]/g, '-').replace(/…/g, '...').replace(/[^\x20-\x7E\xA0-\xFF]/g, '');
+  const P = { ink: '#141E78', text: '#0F1530', muted: '#48527C', line: '#B9C5E8', soft: '#E6ECFF', acc: '#FF9F0A' };
+  const rgb = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+  const fillC = h => doc.setFillColor(...rgb(h)), drawC = h => doc.setDrawColor(...rgb(h)), textC = h => doc.setTextColor(...rgb(h));
+  const font = (size, style = 'normal', col = P.text) => { doc.setFont('helvetica', style); doc.setFontSize(size); textC(col); };
+  const wrap = (s, w) => doc.splitTextToSize(T(s), w);
+  const fit = (s, w) => { const l = wrap(s, w); return l.length > 1 ? l[0].replace(/\s+\S*$/, '') + '...' : (l[0] || ''); };
+  let y = 0; const need = h => { if (y + h > H - BOT) { doc.addPage(); y = M + 4; } };
+  const h2 = t => { need(16); fillC(P.ink); doc.rect(M, y - 3.8, 1.8, 5.4, 'F'); font(11, 'bold', P.ink); doc.text(T(t), M + 4.5, y); y += 6.5; };
+  fillC(P.ink); doc.rect(0, 0, W, 30, 'F'); fillC(P.acc); doc.rect(0, 30, W, 2.2, 'F');
+  try { fillC('#FFFFFF'); doc.roundedRect(M, 5, 20, 20, 3, 3, 'F'); doc.addImage(LOGO_LX_MARK, 'PNG', M + 2, 7, 16, 16); } catch (e) {}
+  font(13.5, 'bold', '#FFFFFF'); doc.text('LAPORAN HASIL PSIKOTES PAPI KOSTICK', M + 25, 14); font(9, 'normal', '#C9D3FF'); doc.text('Personality and Preference Inventory', M + 25, 21);
+  font(9.5, 'bold', '#FFFFFF'); doc.text(fit(comp.name || '', 52), W - M, 13, { align: 'right' }); font(7.5, 'normal', '#C9D3FF'); doc.text(fit(comp.address || '', 52), W - M, 19, { align: 'right' });
+  y = 41;
+  const idL = [['Nama', r.name], ['Usia', r.age ? r.age + ' tahun' : '-'], ['Jenis Kelamin', r.gender || '-'], ['Tanggal Tes', fmtDateLong(r.testDate)]];
+  const idR = [['Unit', r.unit || '-'], ['Posisi', r.position || '-'], ['Cara pengerjaan', r.mode || '-'], ['Jawaban terisi', C.n + ' dari 90']];
+  idL.forEach(([k, v], i) => { font(8.5, 'normal', P.muted); doc.text(k, M, y + i * 5.6); font(9.5, 'bold'); doc.text(': ' + fit(v, 62), M + 28, y + i * 5.6); });
+  idR.forEach(([k, v], i) => { font(8.5, 'normal', P.muted); doc.text(k, M + 100, y + i * 5.6); font(9.5, 'bold'); doc.text(': ' + fit(v, 46), M + 128, y + i * 5.6); });
+  y += 4 * 5.6 + 4;
+  /* radar + tabel skor berdampingan */
+  h2('Profil 20 skala');
+  const top0 = y, cx = M + 44, cy = y + 44, R = 36, n = PAPI_WHEEL.length, ang = i => -Math.PI / 2 + i * 2 * Math.PI / n, pt = (i, v) => [cx + Math.cos(ang(i)) * R * v / 9, cy + Math.sin(ang(i)) * R * v / 9];
+  doc.setLineWidth(.2);
+  [3, 6, 9].forEach(v => { drawC('#C9D2EE'); for (let i = 0; i < n; i++) { const a = pt(i, v), b = pt((i + 1) % n, v); doc.line(a[0], a[1], b[0], b[1]); } font(6, 'normal', P.muted); doc.text(String(v), cx + 1, cy - R * v / 9 + 2.6); });
+  for (let i = 0; i < n; i++) { const a = pt(i, 9); drawC('#DCE2F5'); doc.line(cx, cy, a[0], a[1]); }
+  drawC('#2F5BEA'); doc.setLineWidth(.7); for (let i = 0; i < n; i++) { const a = pt(i, C.sc[PAPI_WHEEL[i]]), b = pt((i + 1) % n, C.sc[PAPI_WHEEL[(i + 1) % n]]); doc.line(a[0], a[1], b[0], b[1]); }
+  PAPI_WHEEL.forEach((k, i) => { const col = PAPI_GCOL[PAPI_GROUP_OF[k]], a = pt(i, C.sc[k]), l = pt(i, 10.6); fillC(col); doc.circle(a[0], a[1], .9, 'F'); font(7.5, 'bold', col); doc.text(k + ' ' + C.sc[k], l[0], l[1] + 1.2, { align: 'center' }); });
+  /* tabel ringkas */
+  let ty = top0, tx = M + 96; const tw = CW - 96;
+  PAPI_GROUPS.forEach((g, gi) => { font(8, 'bold', PAPI_GCOL[gi]); doc.text(T(g.nm), tx, ty + 3); ty += 4.6;
+    g.s.forEach(k => { font(7.8, 'bold', P.text); doc.text(k, tx + 1, ty + 2.6); font(7.5, 'normal', P.muted); doc.text(fit(PAPI_SCALES[k], tw - 34), tx + 6, ty + 2.6); fillC('#EEF1FA'); doc.rect(tx + tw - 26, ty, 20, 3, 'F'); fillC(PAPI_GCOL[gi]); doc.rect(tx + tw - 26, ty, 20 * C.sc[k] / 9, 3, 'F'); font(8, 'bold', P.text); doc.text(String(C.sc[k]), tx + tw, ty + 2.6, { align: 'right' }); ty += 3.9; });
+    ty += 1.2; });
+  y = Math.max(cy + R + 12, ty) + 4;
+  if (!C.complete) { need(10); font(8.5, 'bold', '#B36A00'); doc.text(T(`Catatan: baru ${C.n} dari 90 nomor terjawab, hasil sebaiknya dianggap tidak lengkap.`), M, y); y += 7; }
+  h2('Interpretasi per skala');
+  PAPI_GROUPS.forEach((g, gi) => {
+    need(12); font(9.5, 'bold', PAPI_GCOL[gi]); doc.text(T(g.nm), M, y); y += 5;
+    g.s.forEach(k => { const b = papiBand(k, C.sc[k]), lines = wrap(b[2], CW - 8); need(6 + lines.length * 4.2);
+      font(8.8, 'bold', P.text); doc.text(T(`${k} = ${C.sc[k]}  ${PAPI_SCALES[k]}`), M + 2, y); font(7.5, 'normal', P.muted); doc.text(T('rentang ' + papiRange(b)), W - M, y, { align: 'right' }); y += 4.4;
+      font(8.5, 'normal', P.text); lines.forEach(l => { doc.text(l, M + 6, y); y += 4.2; }); y += 1.8; });
+    y += 1.5; });
+  need(50); y += 3; font(7.8, 'normal', P.muted); wrap('PAPI Kostick bersifat ipsatif: total skor selalu 90. Hasil dibaca sebagai pola kecenderungan kerja, bukan nilai lulus atau gagal. Interpretasi akhir sebaiknya dilakukan oleh psikolog.', CW).forEach(l => { doc.text(l, M, y); y += 3.8; });
+  y += 4; const sw = 70, sx = W - M - sw, sTop = y;
+  font(8.5, 'normal', P.muted); doc.text('Dicetak: ' + fmtDateLong(todayISO()), sx, sTop + 1);
+  font(9.5, 'bold', P.ink); let sy = sTop + 6; wrap('HRD ' + (comp.name || ''), sw).forEach(l => { doc.text(l, sx, sy); sy += 4.6; });
+  drawC(P.text); doc.setLineWidth(.35); doc.line(sx, sTop + 30, sx + sw, sTop + 30);
+  font(9.5, 'bold', P.text); doc.text(fit(st.signerName || 'Nama dan tanda tangan', sw), sx, sTop + 35); font(8.5, 'normal', P.muted); doc.text(fit(st.signerTitle || 'HR Perusahaan', sw), sx, sTop + 39.5);
+  const np = doc.getNumberOfPages();
+  for (let i = 1; i <= np; i++) { doc.setPage(i); drawC(P.line); doc.setLineWidth(.25); doc.line(M, H - 13, W - M, H - 13); font(7.5, 'normal', P.muted); doc.text('Rahasia - hanya untuk keperluan seleksi ' + T(comp.name || ''), M, H - 9); doc.text('Halaman ' + i + ' dari ' + np, W - M, H - 9, { align: 'right' }); }
+  return doc;
+}
+async function exportPapiPdf(r) {
+  let jsPDF; try { jsPDF = await loadPdfLib(); } catch (e) { toast('Pustaka PDF tidak dapat dimuat. Periksa koneksi internet lalu coba lagi.'); return; }
+  try { const doc = buildPapiPdf(r, jsPDF); const slug = String(r.name || 'peserta').toLowerCase().replace(/\(contoh\)/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); await download(`Hasil-PAPI-${slug}-${(r.testDate || todayISO()).slice(0, 10)}.pdf`, doc.output('blob')); audit('unduh PDF hasil PAPI', r.name); }
+  catch (e) { console.error(e); toast('Gagal membuat PDF'); }
+}
+
+/* =====================  CONTOH DATA (mode lokal)  ===================== */
+async function papiEnsureSamples() {
+  try {
+    if (Store.get('papi_sessions', '__seeded') || Store.all('papi_results').length) return;
+    const cid = Store.all('companies')[0]?.id; if (!cid) return;
+    let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const prof = [
+      { name: 'Rina Kartika (contoh)', unit: 'Keperawatan', position: 'Perawat Pelaksana', like: 'NGOSBWDC', date: '2026-10-06' },
+      { name: 'Dimas Pratama (contoh)', unit: 'Customer Service & Marketing', position: 'Staf Marketing', like: 'XSLPZIVT', date: '2026-10-08' },
+      { name: 'Eka Rahmawati (contoh)', unit: 'Laboratorium', position: 'Analis Laboratorium', like: 'DCRNWEGA', date: '2026-10-09' }
+    ];
+    for (const [n, p] of prof.entries()) {
+      const answers = PAPI_ITEMS.map(it => { const la = p.like.includes(it[2]), lb = p.like.includes(it[3]); const pa = la && !lb ? .8 : lb && !la ? .2 : .5; return rnd() < pa ? 'a' : 'b'; });
+      await Store.put('papi_results', 'pr_sample' + n, { companyId: cid, accountId: null, name: p.name, unit: p.unit, position: p.position, testDate: p.date, mode: 'Online (dipandu HRD)', answers, finishedAt: p.date + 'T10:30:00+07:00', durationSec: 900 + n * 120, tabSwitch: 0, decision: '', note: '', sample: true });
+    }
+    await Store.put('papi_sessions', '__seeded', { v: 1 });
+  } catch (e) { console.warn('papi sample', e); }
+}
 /* ---------------- boot ---------------- */
 App.start().catch(e => { console.error(e); $('#app').innerHTML = `<div id="boot">Gagal memuat aplikasi: ${esc(e.message || e)}</div>`; });
 </script>
