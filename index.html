@@ -1055,6 +1055,7 @@ fieldset.hr-fs legend{text-transform:none;letter-spacing:0}
 @media (max-width:640px){.card-pad{padding:16px}.card-head{padding:14px 16px}.modal-head,.modal-body,.modal-foot{padding-left:16px;padding-right:16px}.content{padding:16px 14px 40px}.card>.tbl-wrap .tbl th:first-child,.card>.tbl-wrap .tbl td:first-child{padding-left:14px}}
 .login-wrap [style*="ink-muted"],.welcome [style*="ink-muted"]{color:#FFFFFF!important}
 body[data-role] .side{background:#FFFFFF}
+.bad-t{color:#A3060B}
 @media print{body{background:#FFFFFF}.card{border:1px solid #E8EAEF}}
 </style>
 </head>
@@ -3289,7 +3290,7 @@ Views.overtimeMount = c => {
 Views.accounts = () => {
   const isSA = S.user.role === SA;
   const list = Store.all('accounts', x => isSA ? (x.companyId === S.companyId || x.role === SA) : (x.companyId === S.user.companyId && x.role !== SA)).sort((a, b) => ['superadmin', 'company', 'user'].indexOf(a.role) - ['superadmin', 'company', 'user'].indexOf(b.role) || a.name.localeCompare(b.name));
-  return `<div class="page-head"><div><h1>Akun Pengguna</h1><p>${isSA ? 'Super admin dapat membuat semua jenis akun.' : 'Admin perusahaan dapat membuat akun peserta untuk perusahaannya sendiri.'} Peserta hanya bisa membuka psikotes dan tes kemampuan yang ditugaskan.</p></div><button class="btn primary" id="addA">+ Akun baru</button></div>
+  return `<div class="page-head"><div><h1>Akun Pengguna</h1><p>${isSA ? 'Super admin dapat membuat semua jenis akun.' : 'Admin perusahaan dapat membuat akun peserta untuk perusahaannya sendiri.'} Peserta hanya bisa membuka psikotes dan tes kemampuan yang ditugaskan.</p></div><div class="row"><button class="btn" id="impA">Impor dari Excel</button><button class="btn primary" id="addA">+ Akun baru</button></div></div>
   ${reqPanel()}
   <div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Nama</th><th>Username</th><th>Peran</th><th>Unit / posisi</th><th>Tes ditugaskan</th><th>Status</th><th></th></tr></thead><tbody>
     ${list.map(a => { const hasRes = Store.all('disc_results', r => r.accountId === a.id).length; return `<tr><td><b>${esc(a.name)}</b>${sampleTag(a)}</td><td class="mono small">${esc(a.username)}</td><td><span class="pill ${a.role === SA ? 'acc' : a.role === CO ? 'info' : ''}">${ROLE_LABEL[a.role]}</span></td>
@@ -3301,8 +3302,8 @@ Views.accounts = () => {
 };
 /* operasi akun: mode Supabase lewat Edge Function, mode lain langsung ke Store */
 const Acct = {
-  async create(body, pw) {
-    if (Supa.on) { const r = await Supa.fn('create_account', { account: body, password: pw }); await Store.pull(true, true); return r.id; }
+  async create(body, pw, opt = {}) {
+    if (Supa.on) { const r = await Supa.fn('create_account', { account: body, password: pw }); if (!opt.noPull) await Store.pull(true, true); return r.id; }
     const id = uid('u'); const b = { ...body, salt: randSalt() }; b.passHash = await sha256(b.salt + ':' + pw); b.initPass = pw; await Store.put('accounts', id, b); return id;
   },
   async setPassword(a, pw) {
@@ -3362,6 +3363,7 @@ function accountForm(a = {}) {
 }
 Views.accountsMount = c => {
   $('#addA', c).onclick = () => accountForm();
+  $('#impA', c).onclick = () => { if (!S.companyId) { toast('Pilih perusahaan terlebih dahulu'); return; } accImportDialog(); };
   $$('[data-edit]', c).forEach(b => b.onclick = () => accountForm(Store.get('accounts', b.dataset.edit)));
   $$('[data-tog]', c).forEach(b => b.onclick = async () => { const a = Store.get('accounts', b.dataset.tog); await Store.put('accounts', a.id, { ...a, active: !a.active, pending: false }); audit(a.active ? 'nonaktifkan akun' : 'aktifkan akun', a.username); App.renderContent(); });
   reqMount(c);
@@ -6805,6 +6807,130 @@ Views.hrreportsMount = c => {
   const bc = $('#bCsv', c); if (bc) bc.onclick = () => { S.params = { ...S.params, ...read() }; const COLS = [...EMP_COLS.filter(x => !['grade', 'location'].includes(x[0])), ['location', 'Lokasi kerja'], ['grade', 'Golongan'], ['_service', 'Masa kerja'], ['_age', 'Usia'], ['_edu', 'Pendidikan terakhir'], ['_sup', 'Atasan langsung'], ['_emg', 'Kontak darurat']];
     const r = hrrBuild(S.params, COLS), q = v => `"${String(v ?? '').replace(/"/g, '""')}"`; download(`laporan-karyawan-${todayISO()}.csv`, '﻿' + [r.head.map(q).join(';'), ...r.rows.map(x => x.map(q).join(';'))].join('\n')); audit('unduh laporan HR'); };
 };
+
+/* =========================================================
+   Akun Pengguna · Impor dari Excel / CSV
+   Satu baris = satu akun. Password kosong → dibuat otomatis.
+   ========================================================= */
+const ACC_COLS = [
+  ['name', 'Nama Lengkap', true], ['username', 'Username', true], ['pw', 'Password Awal', false], ['role', 'Peran', false],
+  ['unit', 'Unit', false], ['position', 'Posisi / Jabatan', false], ['disc', 'DISC', false], ['ist', 'IST', false], ['papi', 'PAPI Kostick', false]
+];
+const accYes = (v, def) => { const s = String(v ?? '').trim().toLowerCase(); if (!s) return def; return ['ya', 'y', 'yes', '1', 'buka', 'dibuka', 'true', 'iya'].includes(s); };
+
+async function accTemplate() {
+  const isSA = S.user.role === SA, units = (settingsOf(S.companyId).units || []).map(u => u.name);
+  const head = ACC_COLS.map(c => c[1] + (c[2] ? ' *' : ''));
+  const ex = [
+    ['Contoh Peserta Satu', 'peserta.satu', '', 'Peserta', units[0] || 'Keperawatan', 'Staff', 'Ya', 'Ya', 'Tidak'],
+    ['Contoh Peserta Dua', 'peserta.dua', 'Rahasia2026', 'Peserta', units[1] || units[0] || 'Farmasi', 'Staff', 'Ya', 'Tidak', 'Ya']
+  ];
+  const help = [['Petunjuk pengisian'], ['Kolom bertanda * wajib diisi. Satu baris = satu akun. Hapus baris contoh sebelum mengunggah.'],
+    ['Username: 3–30 karakter, huruf/angka/titik/garis bawah/tanda minus, tanpa spasi. Harus unik.'],
+    ['Password Awal: kosongkan agar dibuat otomatis. Jika diisi: minimal 8 karakter, ada huruf besar, huruf kecil, dan angka.'],
+    [isSA ? 'Peran: Peserta atau Admin Perusahaan (kosong = Peserta).' : 'Peran: hanya Peserta (admin perusahaan hanya dapat membuat akun peserta).'],
+    ['Unit: harus sama dengan nama unit di Pengaturan Perusahaan: ' + (units.join(', ') || '(belum ada unit)') + '. Tes kemampuan unit tersebut otomatis ditugaskan.'],
+    ['Posisi / Jabatan: ' + POSISI.join(', ') + ' (boleh diisi jabatan lain).'],
+    ['DISC, IST, PAPI Kostick: Ya / Tidak (kosong: DISC = Ya, IST = Tidak, PAPI = Tidak).']];
+  try {
+    const X = await skLoadXlsx(), wb = X.utils.book_new();
+    const ws = X.utils.aoa_to_sheet([head, ...ex]); ws['!cols'] = [28, 18, 16, 18, 18, 20, 8, 8, 13].map(w => ({ wch: w }));
+    X.utils.book_append_sheet(wb, ws, 'Akun');
+    const ws2 = X.utils.aoa_to_sheet(help); ws2['!cols'] = [{ wch: 110 }]; X.utils.book_append_sheet(wb, ws2, 'Petunjuk');
+    const out = X.write(wb, { bookType: 'xlsx', type: 'array' });
+    await download('template-akun-pengguna.xlsx', new Blob([out], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+  } catch (e) {
+    const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    await download('template-akun-pengguna.csv', '﻿' + [head, ...ex].map(r => r.map(q).join(';')).join('\n'));
+    toast('Template dibuat dalam format CSV (bisa dibuka di Excel)');
+  }
+}
+
+function accImportPlan(rows) {
+  const isSA = S.user.role === SA, norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const hi = rows.findIndex(r => r.some(c => norm(c) === 'namalengkap') && r.some(c => norm(c) === 'username'));
+  if (hi < 0) return { err: 'Kolom "Nama Lengkap" dan "Username" tidak ditemukan. Pakai template dari tombol Unduh template.' };
+  const H = rows[hi].map(norm), col = {};
+  ACC_COLS.forEach(([k, label]) => { const i = H.indexOf(norm(label)); if (i >= 0) col[k] = i; });
+  ['password', 'passwordawal', 'katasandi'].forEach(n => { if (col.pw == null && H.indexOf(n) >= 0) col.pw = H.indexOf(n); });
+  ['posisi', 'jabatan', 'posisijabatan'].forEach(n => { if (col.position == null && H.indexOf(n) >= 0) col.position = H.indexOf(n); });
+  ['papi'].forEach(n => { if (col.papi == null && H.indexOf(n) >= 0) col.papi = H.indexOf(n); });
+  const units = (settingsOf(S.companyId).units || []).map(u => u.name), unitOf = v => units.find(u => u.toLowerCase() === String(v).trim().toLowerCase());
+  const taken = new Set(Store.all('accounts').map(a => String(a.username || '').toLowerCase()));
+  const seen = new Set(), ok = [], bad = [], warn = [];
+  const tests = Store.all('skill_tests', x => x.companyId === S.companyId && x.active !== false);
+  rows.slice(hi + 1).forEach((r, i) => {
+    const line = hi + i + 2, g = k => col[k] == null ? '' : String(r[col[k]] ?? '').trim();
+    if (!r.some(c => String(c ?? '').trim())) return;
+    const name = g('name'), username = g('username').toLowerCase();
+    if (!name && !username) return;
+    if (/^contoh peserta/i.test(name)) { warn.push(`Baris ${line}: baris contoh dilewati`); return; }
+    if (!name) { bad.push(`Baris ${line}: Nama Lengkap kosong`); return; }
+    if (!/^[a-z0-9._-]{3,30}$/.test(username)) { bad.push(`Baris ${line} (${name}): username "${g('username')}" tidak valid (3–30 huruf/angka/titik/garis bawah, tanpa spasi)`); return; }
+    if (seen.has(username)) { bad.push(`Baris ${line} (${name}): username "${username}" dobel di file`); return; }
+    if (taken.has(username)) { bad.push(`Baris ${line} (${name}): username "${username}" sudah dipakai`); return; }
+    let pw = g('pw'), auto = false;
+    if (pw) { const iss = pwIssues(pw); if (iss.length) { bad.push(`Baris ${line} (${name}): password belum memenuhi ${iss.join(', ')}`); return; } }
+    else { pw = tmpPw(); auto = true; }
+    const rv = norm(g('role')); let role = US;
+    if (rv && !['peserta', 'user', 'pelamar', 'karyawan'].includes(rv)) {
+      if (['adminperusahaan', 'admin', 'company', 'hrd'].includes(rv)) { if (!isSA) { bad.push(`Baris ${line} (${name}): hanya Super Admin yang dapat membuat akun Admin Perusahaan`); return; } role = CO; }
+      else { bad.push(`Baris ${line} (${name}): peran "${g('role')}" tidak dikenal (pakai Peserta${isSA ? ' atau Admin Perusahaan' : ''})`); return; }
+    }
+    let unit = '';
+    if (g('unit')) { unit = unitOf(g('unit')) || ''; if (!unit) warn.push(`Baris ${line} (${name}): unit "${g('unit')}" tidak ada di daftar unit, dikosongkan`); }
+    seen.add(username);
+    ok.push({ line, auto, pw, body: { name, username, role, companyId: S.user.role === SA ? S.companyId : S.user.companyId, unit, position: g('position'), discAllowed: role === US ? accYes(g('disc'), true) : false, istAllowed: role === US && accYes(g('ist'), false), papiAllowed: role === US && accYes(g('papi'), false), tests: role === US && unit ? tests.filter(t => t.unit === unit).map(t => t.id) : [], active: true, createdAt: todayISO(), sample: false } });
+  });
+  return { ok, bad, warn };
+}
+
+function accImportDialog() {
+  openModal({ title: 'Impor akun pengguna dari Excel', wide: true, body: `<div class="stack">
+    <p class="small muted" style="margin:0">Unduh template, isi satu akun per baris, lalu unggah kembali (Excel .xlsx atau CSV). Password yang dikosongkan akan dibuat otomatis. Setelah impor, daftar username dan password bisa diunduh untuk dibagikan.</p>
+    <div class="row"><button class="btn" type="button" id="aiTpl">Unduh template Excel</button><label class="btn primary" style="cursor:pointer">Pilih file<input type="file" id="aiFile" accept=".xlsx,.xls,.csv,.txt" hidden></label><span class="small muted" id="aiName"></span></div>
+    <div id="aiPrev"></div></div>`, foot: '<button class="btn" data-close>Tutup</button><button class="btn primary" id="aiGo" disabled>Buat akun</button>',
+    onMount: r => {
+      let plan = null;
+      $('#aiTpl', r).onclick = accTemplate;
+      $('#aiFile', r).onchange = async ev => {
+        const f = ev.target.files[0]; if (!f) return; $('#aiName', r).textContent = f.name; let rows;
+        try { rows = await skReadFile(f); } catch (e) { $('#aiPrev', r).innerHTML = `<div class="note warn">File tidak dapat dibaca: ${esc(e.message || e)}</div>`; return; }
+        plan = accImportPlan(rows);
+        const role = x => ROLE_LABEL[x.body.role];
+        $('#aiPrev', r).innerHTML = plan.err ? `<div class="note warn">${esc(plan.err)}</div>` : `<div class="note">${plan.ok.length} akun siap dibuat${plan.bad.length ? `, <b>${plan.bad.length} baris bermasalah dilewati</b>` : ''}.</div>
+          ${plan.bad.length || plan.warn.length ? `<ul class="small" style="margin:0">${[...plan.bad.map(b => `<li class="bad-t">${esc(b)}</li>`), ...plan.warn.map(b => `<li>${esc(b)}</li>`)].slice(0, 20).join('')}${plan.bad.length + plan.warn.length > 20 ? `<li>dan ${plan.bad.length + plan.warn.length - 20} lainnya</li>` : ''}</ul>` : ''}
+          ${plan.ok.length ? `<div class="tbl-wrap" style="max-height:280px"><table class="tbl no-stack"><thead><tr><th>Nama</th><th>Username</th><th>Peran</th><th>Unit / posisi</th><th>Psikotes</th><th>Password</th></tr></thead><tbody>${plan.ok.slice(0, 200).map(x => `<tr><td><b>${esc(x.body.name)}</b></td><td>${esc(x.body.username)}</td><td>${role(x)}</td><td>${esc(x.body.unit || '–')}<div class="small muted">${esc(x.body.position || '')}</div></td><td class="small">${[x.body.discAllowed && 'DISC', x.body.istAllowed && 'IST', x.body.papiAllowed && 'PAPI'].filter(Boolean).join(', ') || '–'}${x.body.tests.length ? `<div class="muted">${x.body.tests.length} tes unit</div>` : ''}</td><td class="small">${x.auto ? 'dibuat otomatis' : 'dari file'}</td></tr>`).join('')}</tbody></table></div>` : ''}`;
+        $('#aiGo', r).disabled = !!plan.err || !plan.ok.length;
+      };
+      $('#aiGo', r).onclick = async () => {
+        const b = $('#aiGo', r); b.disabled = true; $('#aiFile', r).disabled = true;
+        const done = [], fail = [];
+        for (let i = 0; i < plan.ok.length; i++) {
+          const x = plan.ok[i]; b.textContent = `Membuat ${i + 1} dari ${plan.ok.length}…`;
+          try { await Acct.create({ ...x.body }, x.pw, { noPull: true }); done.push(x); }
+          catch (e) { fail.push(`${x.body.username}: ${Supa.on ? supaErr(e) : (e && e.message || 'gagal')}`); }
+        }
+        if (Supa.on) { try { await Store.pull(true, true); } catch (e) {} }
+        audit('impor akun pengguna', `${done.length} dibuat${fail.length ? ', ' + fail.length + ' gagal' : ''}`);
+        closeModal(); App.renderContent(); accImportResult(done, fail);
+      };
+    }
+  });
+}
+function accImportResult(done, fail) {
+  const csv = () => { const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`; return '﻿' + [['Nama', 'Username', 'Password', 'Peran', 'Unit'].map(q).join(';'), ...done.map(x => [x.body.name, x.body.username, x.pw, ROLE_LABEL[x.body.role], x.body.unit].map(q).join(';'))].join('\n'); };
+  openModal({ title: 'Impor akun selesai', wide: true, body: `<div class="stack">
+    <div class="note ${fail.length ? 'warn' : ''}">${done.length} akun berhasil dibuat${fail.length ? `, ${fail.length} gagal` : ''}.</div>
+    ${fail.length ? `<ul class="small" style="margin:0">${fail.slice(0, 20).map(f => `<li>${esc(f)}</li>`).join('')}</ul>` : ''}
+    ${done.length ? `<p class="small" style="margin:0">Unduh daftar login lalu bagikan ke masing-masing orang lewat saluran pribadi. <b>Password hanya ditampilkan sekarang</b>; hapus file setelah dibagikan.</p>
+    <div class="tbl-wrap" style="max-height:300px"><table class="tbl no-stack"><thead><tr><th>Nama</th><th>Username</th><th>Password</th></tr></thead><tbody>${done.map(x => `<tr><td>${esc(x.body.name)}</td><td>${esc(x.body.username)}</td><td>${esc(x.pw)}</td></tr>`).join('')}</tbody></table></div>` : ''}</div>`,
+    foot: `${done.length ? '<button class="btn" id="arCpy">Salin semua</button><button class="btn" id="arCsv">Unduh daftar login</button>' : ''}<button class="btn primary" data-close>Selesai</button>`,
+    onMount: m => {
+      const c = $('#arCsv', m); if (c) c.onclick = () => download(`login-akun-${todayISO()}.csv`, csv());
+      const p = $('#arCpy', m); if (p) p.onclick = () => copyText(done.map(x => `${x.body.name}\nUsername: ${x.body.username}\nPassword: ${x.pw}`).join('\n\n'));
+    } });
+}
 
 /* ---------------- boot ---------------- */
 App.start().catch(e => { console.error(e); $('#app').innerHTML = `<div id="boot">Gagal memuat aplikasi: ${esc(e.message || e)}</div>`; });
