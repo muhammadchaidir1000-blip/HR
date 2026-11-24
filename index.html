@@ -1064,6 +1064,9 @@ body[data-role] .side{background:#FFFFFF}
 @media (prefers-reduced-motion:reduce){.busy-spin{animation-duration:2s}}
 .org-units{gap:16px}
 
+.st-day{display:grid;grid-template-columns:70px auto 1fr;gap:10px;align-items:center;padding:8px 10px;border:1px solid #E8EAEF;border-radius:.65rem}
+.st-day.today{border-color:#D35A0C;background:rgba(255,123,29,.06)}
+.st-dd{font-size:13px}
 @media print{body{background:#FFFFFF}.card{border:1px solid #E8EAEF}}
 </style>
 </head>
@@ -1537,7 +1540,7 @@ const IST_SAMPLE_DATA=[{"id":"ir_excel","d":{"name":"Mochammad Rizki Firmansyah"
    ========================================================= */
 const F = ['D','I','S','C'];
 const FNAME = {D:'Dominance',I:'Influence',S:'Steadiness',C:'Compliance'};
-const COLS = ['companies','accounts','disc_results','disc_sessions','ist_results','ist_sessions','papi_results','papi_sessions','skill_tests','skill_results','skill_sessions','meetings','employees','overtime','leaves','payroll_runs','hr_config','att_month','hr_claims','hr_reviews','hr_news','audit','initpass'];
+const COLS = ['companies','accounts','disc_results','disc_sessions','ist_results','ist_sessions','papi_results','papi_sessions','skill_tests','skill_results','skill_sessions','meetings','employees','overtime','leaves','payroll_runs','hr_config','att_month','hr_claims','hr_reviews','hr_news','pay_slips','audit','initpass'];
 const $ = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => [...r.querySelectorAll(s)];
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1930,7 +1933,14 @@ const ICON = {
   chart: '<rect x="4" y="11" width="4" height="9" rx="1"/><rect x="10" y="4" width="4" height="16" rx="1"/><rect x="16" y="8" width="4" height="12" rx="1"/>'
 };
 const NAV = [
-  { id: 'mytests', label: 'Tes Saya', icon: 'test', roles: [US] },
+  { id: 'me', label: 'Beranda Saya', icon: 'home', roles: [US], staff: true, group: 'Kepegawaian Saya' },
+  { id: 'myprofile', label: 'Profil & Status', icon: 'idcard', roles: [US], staff: true, group: 'Kepegawaian Saya' },
+  { id: 'myschedule', label: 'Jadwal & Absensi', icon: 'clock', roles: [US], staff: true, group: 'Kepegawaian Saya' },
+  { id: 'myleave', label: 'Cuti Saya', icon: 'cal', roles: [US], staff: true, group: 'Kepegawaian Saya' },
+  { id: 'mypay', label: 'Slip Gaji', icon: 'money', roles: [US], staff: true, group: 'Kepegawaian Saya' },
+  { id: 'myclaim', label: 'Klaim Saya', icon: 'receipt', roles: [US], staff: true, group: 'Kepegawaian Saya' },
+  { id: 'mynews', label: 'Pengumuman', icon: 'mega', roles: [US], staff: true, group: 'Kepegawaian Saya' },
+  { id: 'mytests', label: 'Tes Saya', icon: 'test', roles: [US], group: 'Tes' },
   { id: 'dash', label: 'Beranda', icon: 'home', roles: [SA, CO] },
   { id: 'exec', label: 'Dashboard Eksekutif', icon: 'chart', roles: [SA, CO] },
   { id: 'participants', label: 'Daftar Peserta', icon: 'users', roles: [SA, CO], group: 'Rekrutmen' },
@@ -1978,6 +1988,7 @@ const menuOn = (id, cid) => { const co = Store.get('companies', cid || (S.user &
 const HIDDEN_ROUTES = { 'employee': [SA, CO], 'company': [SA], 'candidate': [SA, CO], 'disc-take': [US], 'skill-take': [US], 'test-edit': [SA, CO], 'test-results': [SA, CO], 'istresult': [SA, CO], 'papi': [SA, CO], 'papiresult': [SA, CO], 'myresult': [US], 'candidates': [SA, CO], 'ist': [SA, CO], 'kerjakan': [SA, CO] };
 function canRoute(r) {
   const n = NAV.find(x => x.id === r); const roles = n ? n.roles : HIDDEN_ROUTES[r]; if (!(roles && S.user && roles.includes(S.user.role))) return false;
+  if (n && typeof navStaffOk === 'function' && !navStaffOk(n)) return false;
   const mid = ROUTE_MENU[r] || r;
   if (MENU_TOGGLE.includes(mid) && (S.user.role === CO || (S.user.role === SA && S.inCompany)) && !menuOn(mid)) return false;
   return true;
@@ -2080,7 +2091,7 @@ const App = {
   setUser(a, cid, inCo) {
     S.user = a; S.inCompany = a.role === SA ? !!inCo : true;
     S.companyId = a.role === SA ? (cid && Store.get('companies', cid) ? cid : (Store.all('companies')[0]?.id || null)) : a.companyId;
-    S.route = a.role === US ? 'mytests' : a.role === SA && !S.inCompany ? 'companies' : 'dash';
+    S.route = a.role === US ? (typeof myEmp === 'function' && myEmp() ? 'me' : 'mytests') : a.role === SA && !S.inCompany ? 'companies' : 'dash';
     S.ws = 'rek'; try { if (localStorage.getItem('hrs:ws:' + a.id) === 'hr' && S.route === 'dash' && canRoute('hrdash')) { S.ws = 'hr'; S.route = 'hrdash'; } } catch (e) {}
     this.saveSession();
   },
@@ -2114,7 +2125,7 @@ const App = {
     document.body.classList.toggle('has-user', !!S.user); document.body.dataset.role = S.user ? S.user.role : 'guest';
     if (!S.user) { app.innerHTML = Views.login(); Views.loginMount(); return; }
     if (S.test) { this.renderTest(); return; }
-    const groups = []; NAV.filter(n => n.roles.includes(S.user.role) && (S.user.role === CO || (S.user.role === SA && S.inCompany) ? navWs(n) : true) && (S.user.role === SA ? (S.inCompany ? !SETTINGS_IDS.includes(n.id) && n.id !== 'menuaccess' && n.id !== 'skillmaster' : SA_OUTSIDE.includes(n.id)) : true) && (!MENU_TOGGLE.includes(n.id) || S.user.role === US || (S.user.role === SA && !S.inCompany) || menuOn(n.id))).forEach(n => { const g = n.group || ''; let grp = groups.find(x => x.g === g); if (!grp) groups.push(grp = { g, items: [] }); grp.items.push(n); });
+    const groups = []; NAV.filter(n => n.roles.includes(S.user.role) && navStaffOk(n) && (S.user.role === CO || (S.user.role === SA && S.inCompany) ? navWs(n) : true) && (S.user.role === SA ? (S.inCompany ? !SETTINGS_IDS.includes(n.id) && n.id !== 'menuaccess' && n.id !== 'skillmaster' : SA_OUTSIDE.includes(n.id)) : true) && (!MENU_TOGGLE.includes(n.id) || S.user.role === US || (S.user.role === SA && !S.inCompany) || menuOn(n.id))).forEach(n => { const g = n.group || ''; let grp = groups.find(x => x.g === g); if (!grp) groups.push(grp = { g, items: [] }); grp.items.push(n); });
     const navHtml = groups.map(g => `<div class="nav-group">${g.g ? `<div class="eyebrow">${esc(g.g)}</div>` : ''}${g.items.map(n => `<button class="nav-item ${navOn(n) ? 'on' : ''}" data-go="${n.id}" title="${esc(n.label)}" aria-label="${esc(n.label)}">${icon(n.icon)}<span>${esc(n.label)}</span></button>`).join('')}</div>`).join('');
     const comps = Store.all('companies');
     const compSel = S.user.role === SA && !S.inCompany ? '<span class="pill info">Pilih perusahaan untuk dilihat</span>' : S.user.role === SA ? `<button class="btn sm" data-go="companies">\u2190 Daftar Perusahaan</button><label class="row small muted" style="gap:6px">Perusahaan aktif <select class="input" id="compSel" style="width:auto;padding:6px 10px">${comps.map(c => `<option value="${c.id}" ${c.id === S.companyId ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select></label>`
@@ -2123,14 +2134,14 @@ const App = {
     app.innerHTML = `<div class="shell">
       <div class="side-backdrop" id="sideBg" hidden></div>
       <aside class="side" id="side" aria-label="Menu utama"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><div class="brandmark">${brandOf().logo}<span class="brand-text">${esc(brandOf().name)}</span></div><button class="nav-close" id="sideClose" aria-label="Tutup menu">✕</button></div>${wsSwitchHtml()}${navHtml}
-        <div class="side-foot"><div><b style="color:var(--ink-text)">${esc(S.user.name)}</b><br>${ROLE_LABEL[S.user.role]}</div>
+        <div class="side-foot"><div><b style="color:var(--ink-text)">${esc(S.user.name)}</b><br>${(typeof myEmp === 'function' && myEmp() ? 'Staf' : ROLE_LABEL[S.user.role])}</div>
           <div class="row"><button class="btn sm side-btn" id="btnPw">Ganti password</button><button class="btn sm side-btn" id="btnOut">Keluar</button></div></div></aside>
       <div class="main">
         <header class="mbar"><button class="mbar-btn" id="mMenu" aria-label="Buka menu" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
           <div class="mbar-title"><span class="small">${esc(brandOf().name)}</span><b>${esc(cur.label)}</b></div><a class="mbar-lx" href="https://lyrionx.com" target="_blank" rel="noopener" aria-label="lyrionx.com"><img src="${LOGO_LX_MARK}" alt=""><span data-clock="short"></span></a></header>
         <div class="topbar ${S.user.role === SA ? '' : 'co-sm'}">${compSel}<div class="grow"></div>
           <span class="small muted hide-sm">${Store.mode === 'db' ? 'Tersimpan di server' : 'Tersimpan di browser ini'}</span>
-          <div class="acct hide-sm"><button class="acct-btn" id="acctBtn" aria-haspopup="menu" aria-expanded="false"><span class="acct-av" aria-hidden="true">${esc((S.user.name || '?').trim().charAt(0).toUpperCase())}</span><span class="acct-tx"><b>${esc(S.user.name)}</b><small>${ROLE_LABEL[S.user.role]}</small></span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+          <div class="acct hide-sm"><button class="acct-btn" id="acctBtn" aria-haspopup="menu" aria-expanded="false"><span class="acct-av" aria-hidden="true">${esc((S.user.name || '?').trim().charAt(0).toUpperCase())}</span><span class="acct-tx"><b>${esc(S.user.name)}</b><small>${(typeof myEmp === 'function' && myEmp() ? 'Staf' : ROLE_LABEL[S.user.role])}</small></span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
             <div class="acct-menu" id="acctMenu" role="menu" hidden><button role="menuitem" id="btnPw2">Ganti password</button><button role="menuitem" id="btnOut2" class="danger">Keluar</button></div></div>
           <div class="lx-block hide-sm"><a class="lx-link" href="https://lyrionx.com" target="_blank" rel="noopener"><img src="${LOGO_LX_MARK}" alt="LyrionX.Co"><span>lyrionx.com</span></a><span class="lx-clock" data-clock></span></div></div>
         <main class="content" id="content"></main>
@@ -2168,7 +2179,7 @@ const App = {
       c.insertAdjacentHTML('afterbegin', `<div class="note info" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px"><b>Perusahaan:</b><select class="input" id="outCo" style="width:auto;min-width:220px">${cs.map(x => `<option value="${x.id}" ${x.id === S.companyId ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select><span class="small muted">Pengaturan di bawah berlaku untuk perusahaan yang dipilih.</span></div>`);
       const oc = $('#outCo', c); if (oc) oc.onchange = () => { S.companyId = oc.value; this.saveSession(); this.renderContent(); };
     }
-    { const home = S.ws === 'hr' && canRoute('hrdash') ? 'hrdash' : 'dash'; if (S.route !== home && !(S.user.role === SA && !S.inCompany)) c.insertAdjacentHTML('afterbegin', `<div class="back-row"><button class="btn sm back-home" data-go="${home}" aria-label="Kembali ke Beranda">\u2190 Kembali ke Beranda${home === 'hrdash' ? ' HRIS' : ''}</button></div>`); }
+    { const home = S.user.role === US ? (myEmp() ? 'me' : 'mytests') : S.ws === 'hr' && canRoute('hrdash') ? 'hrdash' : 'dash'; if (S.route !== home && !(S.user.role === SA && !S.inCompany)) c.insertAdjacentHTML('afterbegin', `<div class="back-row"><button class="btn sm back-home" data-go="${home}" aria-label="Kembali ke Beranda">\u2190 Kembali ke ${home === 'hrdash' ? 'Beranda HRIS' : home === 'me' ? 'Beranda Saya' : home === 'mytests' ? 'Tes Saya' : 'Beranda'}</button></div>`); }
     const m = Views[S.route.replace(/-(\w)/g, (_, x) => x.toUpperCase()) + 'Mount']; m && m(c);
     $$('[data-go]', c).forEach(b => b.onclick = () => this.go(b.dataset.go, b.dataset.p ? JSON.parse(b.dataset.p) : {}));
     stackTables(c);
@@ -3308,7 +3319,7 @@ Views.accounts = () => {
   return `<div class="page-head"><div><h1>Akun Pengguna</h1><p>${isSA ? 'Super admin dapat membuat semua jenis akun.' : 'Admin perusahaan dapat membuat akun peserta untuk perusahaannya sendiri.'} Peserta hanya bisa membuka psikotes dan tes kemampuan yang ditugaskan.</p></div><div class="row"><button class="btn" id="impA">Impor dari Excel</button><button class="btn primary" id="addA">+ Akun baru</button></div></div>
   ${reqPanel()}
   <div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Nama</th><th>Username</th><th>Peran</th><th>Unit / posisi</th><th>Tes ditugaskan</th><th>Status</th><th></th></tr></thead><tbody>
-    ${list.map(a => { const hasRes = Store.all('disc_results', r => r.accountId === a.id).length; return `<tr><td><b>${esc(a.name)}</b>${sampleTag(a)}</td><td class="mono small">${esc(a.username)}</td><td><span class="pill ${a.role === SA ? 'acc' : a.role === CO ? 'info' : ''}">${ROLE_LABEL[a.role]}</span></td>
+    ${list.map(a => { const hasRes = Store.all('disc_results', r => r.accountId === a.id).length; return `<tr><td><b>${esc(a.name)}</b>${sampleTag(a)}</td><td class="mono small">${esc(a.username)}</td><td>${(() => { const em = a.role === US && Store.all('employees', e => e.accountId === a.id)[0]; return em ? `<span class="pill ok">Staf</span><div class="small muted">${esc(em.name)}</div>` : `<span class="pill ${a.role === SA ? 'acc' : a.role === CO ? 'info' : ''}">${ROLE_LABEL[a.role]}</span>`; })()}</td>
       <td>${esc(a.unit || '–')}<div class="small muted">${esc(a.position || '')}</div></td>
       <td class="small">${a.role === US ? `DISC ${a.discAllowed ? '<span class="pill ok">dibuka</span>' : hasRes ? '<span class="pill">selesai</span>' : '<span class="pill">tertutup</span>'}${(a.tests || []).map(t => Store.get('skill_tests', t)).filter(Boolean).map(t => `<div>${esc(t.title)}</div>`).join('')}` : '–'}</td>
       <td>${a.pending ? '<span class="pill">Menunggu</span>' : a.active ? '<span class="pill ok">Aktif</span>' : '<span class="pill bad">Nonaktif</span>'}</td>
@@ -3339,6 +3350,9 @@ function accountForm(a = {}) {
     <label class="f">${a.id ? 'Password baru (kosongkan jika tidak diubah)' : 'Password awal'}<input class="input" name="pw" type="text" autocomplete="new-password" ${a.id ? '' : 'required'} placeholder="min. 8, huruf besar/kecil & angka"></label>
     <label class="f">Unit (peserta)<select class="input" name="unit">${unitOptions(cid, a.unit)}</select></label>
     <label class="f">Posisi yang dilamar / jabatan${posSelect(a.position || '')}</label>
+    ${(() => { const linked = a.id ? Store.all('employees', e => e.accountId === a.id)[0] : null, cur = a.employeeId || linked?.id || '';
+      const E = Store.all('employees', e => e.companyId === cid && e.active !== false && (!e.accountId || e.accountId === a.id || e.id === cur)).sort((x, y) => x.name.localeCompare(y.name));
+      return `<label class="f" id="aEmpW" style="grid-column:1/-1">Akses HRIS staf — tautkan ke data karyawan<select class="input" name="employeeId"><option value="">Tidak ditautkan (hanya peserta tes)</option>${E.map(e => `<option value="${e.id}" ${e.id === cur ? 'selected' : ''}>${esc(e.name)}${e.nik ? ' · ' + esc(e.nik) : ''}${e.unit ? ' · ' + esc(e.unit) : ''}</option>`).join('')}</select><span class="small muted">Bila ditautkan, akun ini bisa melihat jadwal, absensi, status, slip gaji, serta mengajukan cuti dan klaim miliknya sendiri.</span></label>`; })()}
     <label class="f">Psikotes IST<select class="input" name="istAllowed"><option value="0" ${!a.istAllowed ? 'selected' : ''}>Ditutup</option><option value="1" ${a.istAllowed ? 'selected' : ''}>Dibuka</option></select></label>
     <label class="f">Psikotes PAPI Kostick<select class="input" name="papiAllowed"><option value="0" ${!a.papiAllowed ? 'selected' : ''}>Ditutup</option><option value="1" ${a.papiAllowed ? 'selected' : ''}>Dibuka</option></select></label>
     <label class="f">Psikotes DISC<select class="input" name="discAllowed"><option value="1" ${a.discAllowed !== false ? 'selected' : ''}>Dibuka</option><option value="0" ${a.discAllowed === false ? 'selected' : ''}>Ditutup</option></select></label>
@@ -3346,6 +3360,7 @@ function accountForm(a = {}) {
     <div id="aErr" class="note bad" hidden style="grid-column:1/-1"></div></form>`,
     foot: `${a.id && a.role === US ? '<button class="btn danger" id="aDel" style="margin-right:auto">Hapus akun</button>' : ''}<button class="btn" data-close>Batal</button><button class="btn primary" form="aF">Simpan</button>`,
     onMount: r => {
+      { const rs = $('[name=role]', r), w = $('#aEmpW', r), tg = () => { if (w) w.style.display = rs.value === US ? '' : 'none'; }; rs.addEventListener('change', tg); tg(); }
       /* tes kemampuan mengikuti unit peserta: pilih unit -> tes unit tersebut otomatis tercentang */
       const sel = new Set(a.tests || []);
       const row = t => `<label class="row small" style="gap:6px"><input type="checkbox" name="t_${t.id}" data-tid="${t.id}" ${sel.has(t.id) ? 'checked' : ''}> ${esc(t.title)} <span class="faint">(${esc(t.unit)}, ${t.questions.length} soal)</span>${t.active === false ? ' <span class="pill">Nonaktif</span>' : ''}</label>`;
@@ -3364,12 +3379,13 @@ function accountForm(a = {}) {
         if (!a.id && !Supa.on && Store.all('accounts', x => x.username.toLowerCase() === username).length) { er.textContent = 'Username sudah dipakai.'; er.hidden = false; return; }
         if (d.pw) { const iss = pwIssues(d.pw); if (iss.length) { er.textContent = 'Password belum memenuhi: ' + iss.join(', ') + '.'; er.hidden = false; return; } }
         const role = isSA ? d.role : US;
-        const body = { ...(a.id ? Store.get('accounts', a.id) : { active: true, createdAt: todayISO() }), name: d.name, username, role, companyId: role === SA ? null : (isSA ? d.companyId : S.user.companyId), unit: d.unit || '', position: d.position || '', discAllowed: d.discAllowed === '1', istAllowed: d.istAllowed === '1', papiAllowed: d.papiAllowed === '1', tests: tests.filter(t => f['t_' + t.id]?.checked).map(t => t.id), sample: false };
+        const body = { ...(a.id ? Store.get('accounts', a.id) : { active: true, createdAt: todayISO() }), name: d.name, username, role, companyId: role === SA ? null : (isSA ? d.companyId : S.user.companyId), unit: d.unit || '', position: d.position || '', discAllowed: d.discAllowed === '1', istAllowed: d.istAllowed === '1', papiAllowed: d.papiAllowed === '1', tests: tests.filter(t => f['t_' + t.id]?.checked).map(t => t.id), sample: false, employeeId: (isSA ? d.role : US) === US ? (d.employeeId || '') : '' };
         let id = a.id;
         try {
           if (!a.id) { if (!d.pw) { er.textContent = 'Password awal wajib diisi.'; er.hidden = false; return; } delete body.id; id = await Acct.create(body, d.pw); }
           else { await Store.put('accounts', id, body); if (d.pw) await Acct.setPassword(Store.get('accounts', id), d.pw); }
         } catch (e) { er.textContent = Supa.on ? supaErr(e) : (e && e.message || 'Gagal menyimpan akun.'); er.hidden = false; return; }
+        try { await linkAccountEmployee(id, body.employeeId); } catch (e) { toast('Akun tersimpan, tetapi gagal menautkan ke karyawan: ' + (e.message || e)); }
         audit(a.id ? 'ubah akun' : 'buat akun', username + ' (' + role + ')');
         closeModal(); App.renderContent(); toast('Akun disimpan');
         if (!a.id) openModal({ title: 'Akun dibuat', body: `<p style="margin:0">Kirimkan data login ini kepada ${esc(d.name)} melalui saluran yang aman:</p><div class="card card-pad mono" style="white-space:pre-wrap">Username : ${esc(username)}\nPassword : ${esc(d.pw)}</div>`, foot: `<button class="btn" id="cpy">Salin</button><button class="btn primary" data-close>Selesai</button>`, onMount: rr => $('#cpy', rr).onclick = () => copyText(`Username: ${username}\nPassword: ${d.pw}`) });
@@ -4596,8 +4612,9 @@ function renderPeserta() {
 }
 (() => {
   const r0 = App.render, rc0 = App.renderContent;
-  App.render = function () { if (S.user && S.user.role === US && !S.test) { renderPeserta(); return; } pzClear(); return r0.call(this); };
-  App.renderContent = function () { if (S.user && S.user.role === US && !S.test) { renderPeserta(); return; } return rc0.call(this); };
+  const pz = () => S.user && S.user.role === US && !S.test && !(typeof myEmp === 'function' && myEmp());
+  App.render = function () { if (pz()) { renderPeserta(); return; } pzClear(); return r0.call(this); };
+  App.renderContent = function () { if (pz()) { renderPeserta(); return; } return rc0.call(this); };
 })();
 /* =====================================================================
    MENU LAPORAN
@@ -5623,7 +5640,7 @@ function employeeForm(e = {}) {
       if (d.contractEnd && d.contractEnd < d.joinDate) { toast('Tanggal kontrak berakhir sebelum tanggal masuk'); return; }
       const compsV = {}; comps.forEach(k => { const v = d['comp_' + k.code]; if (v !== '' && v != null) compsV[k.code] = +v; delete d['comp_' + k.code]; });
       const id = e.id || uid('e'), prev = e.id ? Store.get('employees', e.id) : {};
-      const body = { ...prev, ...d, history: empHistoryDiff(prev, { ...d, basic: +d.basic || 0 }), companyId: S.companyId, basic: +d.basic || 0, fixedAllow: +d.fixedAllow || 0, varAllow: +d.varAllow || 0, pph: +d.pph || 0, bpjs: d.bpjs !== '0', comps: { ...(prev.comps || {}), ...compsV }, active: prev.active !== false, updatedAt: nowISO() };
+      const body = { ...prev, ...d, supervisorName: d.supervisorId ? empName(d.supervisorId) : '', history: empHistoryDiff(prev, { ...d, basic: +d.basic || 0 }), companyId: S.companyId, basic: +d.basic || 0, fixedAllow: +d.fixedAllow || 0, varAllow: +d.varAllow || 0, pph: +d.pph || 0, bpjs: d.bpjs !== '0', comps: { ...(prev.comps || {}), ...compsV }, active: prev.active !== false, updatedAt: nowISO() };
       delete body.id; await Store.put('employees', id, body);
       audit(e.id ? 'ubah karyawan' : 'tambah karyawan', d.name); closeModal(); toast('Data karyawan disimpan');
       if (!e.id) App.go('employee', { id }); else App.renderContent();
@@ -5641,7 +5658,10 @@ Views.employee = () => {
     <div class="card card-pad stack"><div class="eyebrow">Kepegawaian</div>${row('NIK karyawan', esc(e.nik))}${row('Unit', esc(e.unit))}${row('Jabatan', esc(e.position))}${row('Level', esc(e.level))}${row('Status', esc(e.status))}
       ${row('Tanggal masuk', e.joinDate ? fmtDate(e.joinDate) + ' · ' + hrServiceText(e.joinDate) : '')}${row('Kontrak berakhir', e.contractEnd ? fmtDate(e.contractEnd) : '')}${row('Kategori / golongan', [esc(job?.cat || ''), esc(e.grade || job?.grade || '')].filter(Boolean).join(' · '))}${row('Lokasi kerja', esc(e.location))}${row('Profesi', esc(e.profession))}${row('Atasan langsung', sup ? `<a href="#" data-emp="${sup.id}">${esc(sup.name)}</a>` : '')}${row('Bawahan langsung', subs.map(x => `<a href="#" data-emp="${x.id}">${esc(x.name)}</a>`).join(', '))}
       ${e.active === false ? row('Nonaktif sejak', fmtDate(e.endDate) + (e.endReason ? ' · ' + esc(e.endReason) : '')) : ''}</div>
-    <div class="stack"><div class="card card-pad stack"><div class="eyebrow">Absensi</div>${row('PIN mesin absensi', e.pin ? `<span class="mono">${esc(e.pin)}</span>` : '<span class="pill warn">belum diisi</span>')}${row('Jenis kerja', e.workType === 'shift' ? 'Shift (ikut jadwal bulanan)' : `Non-shift (shift ${esc(cfg.defaultShift)} pada hari kerja)`)}</div>
+    <div class="stack"><div class="card card-pad stack"><div class="eyebrow">Akun HRIS staf</div>${(() => { const ac = e.accountId && Store.get('accounts', e.accountId);
+        return ac ? row('Akun login', `${esc(ac.username)} ${ac.active ? '<span class="pill ok">aktif</span>' : '<span class="pill bad">nonaktif</span>'}`) + '<div class="row"><button class="btn sm" id="eAcc">Ubah akun</button><button class="btn sm danger" id="eAccUn">Lepas tautan</button></div>'
+          : '<p class="small muted" style="margin:0">Belum punya akun. Dengan akun staf, karyawan bisa melihat jadwal, absensi, status, slip gaji, serta mengajukan cuti dan klaim sendiri.</p><div class="row"><button class="btn sm primary" id="eAccNew">Buat akun staf</button></div>'; })()}</div>
+      <div class="card card-pad stack"><div class="eyebrow">Absensi</div>${row('PIN mesin absensi', e.pin ? `<span class="mono">${esc(e.pin)}</span>` : '<span class="pill warn">belum diisi</span>')}${row('Jenis kerja', e.workType === 'shift' ? 'Shift (ikut jadwal bulanan)' : `Non-shift (shift ${esc(cfg.defaultShift)} pada hari kerja)`)}</div>
       <div class="card card-pad stack"><div class="eyebrow">Legalitas tenaga kesehatan</div>${row('STR', e.strNo ? esc(e.strNo) + (e.strUntil ? ' · s.d. ' + fmtDate(e.strUntil) : ' · seumur hidup') : '')}${row('SIP', e.sipNo ? esc(e.sipNo) + (e.sipUntil ? ' · s.d. ' + fmtDate(e.sipUntil) : '') : '')}</div></div>
     <div class="card card-pad stack"><div class="eyebrow">Data pribadi</div>${row('Jenis kelamin', e.gender === 'L' ? 'Laki-laki' : e.gender === 'P' ? 'Perempuan' : '')}${row('Tempat, tanggal lahir', [esc(e.birthPlace), e.birthDate ? fmtDate(e.birthDate) : ''].filter(Boolean).join(', '))}${row('NIK KTP', esc(e.nikKtp))}${row('No HP', esc(e.phone))}${row('Email', esc(e.email))}${row('Alamat', esc(e.address))}</div>
     <div class="card card-pad stack"><div class="eyebrow">Pajak, BPJS & rekening</div>${row('NPWP', esc(e.npwp))}${row('Status PTKP', esc(e.ptkp))}${row('BPJS Kesehatan', esc(e.bpjsKesNo))}${row('BPJS Ketenagakerjaan', esc(e.bpjsTkNo))}${row('Rekening', [esc(e.bankName), esc(e.bankAcc), e.bankHolder ? 'a.n. ' + esc(e.bankHolder) : ''].filter(Boolean).join(' · '))}</div></div>`;
@@ -5673,6 +5693,9 @@ Views.employeeMount = c => {
       foot: '<button class="btn" data-close>Batal</button><button class="btn primary" form="laF">Simpan</button>',
       onMount: r => $('#laF', r).onsubmit = async ev => { ev.preventDefault(); const d = formData(ev.target), x = Store.get('employees', e.id);
         await Store.put('employees', e.id, { ...x, leaveAdj: { ...(x.leaveAdj || {}), [y]: +d.v || 0 }, leaveAdjNote: { ...(x.leaveAdjNote || {}), [y]: d.note } }); audit('sesuaikan saldo cuti', e.name); closeModal(); App.renderContent(); } }); };
+  { const ac = $('#eAcc', c); if (ac) ac.onclick = () => accountForm(Store.get('accounts', e.accountId));
+    const an = $('#eAccNew', c); if (an) an.onclick = () => accountForm({ role: US, companyId: e.companyId, name: e.name, unit: e.unit, position: e.position, employeeId: e.id, discAllowed: false });
+    const au = $('#eAccUn', c); if (au) au.onclick = async () => { if (!(await confirmBox('Lepas tautan akun dari karyawan ini? Akun tetap ada, tetapi tidak bisa membuka menu HRIS staf.', 'Lepas', true))) return; const x = Store.get('employees', e.id), o = { ...x, accountId: '' }; delete o.id; await Store.put('employees', e.id, o); const a = Store.get('accounts', e.accountId); if (a) await Store.put('accounts', a.id, { ...a, employeeId: '' }); audit('lepas akun staf', e.name); App.renderContent(); }; }
   $$('[data-elist]', c).forEach(b => b.onclick = () => empListEdit(Store.get('employees', e.id), b.dataset.elist));
   $$('[data-emp]', c).forEach(a => a.onclick = ev => { ev.preventDefault(); App.go('employee', { id: a.dataset.emp }); });
   $('#eEdit', c).onclick = () => employeeForm(e);
@@ -5904,13 +5927,13 @@ function attRecap(A) {
 }
 const attRecapChips = R => `<div class="row hr-chips"><span class="pill info">Jadwal kerja ${R.sched} hari</span><span class="pill ok">Hadir ${R.hadir}</span><span class="pill ${R.late ? 'warn' : ''}">Terlambat ${R.late}× (${R.lateMin} mnt)</span><span class="pill ${R.early ? 'warn' : ''}">Pulang cepat ${R.early}×</span><span class="pill ${R.noOut + R.noIn ? 'warn' : ''}">Scan tidak lengkap ${R.noOut + R.noIn}</span><span class="pill ${R.alpa ? 'bad' : ''}">Alpa ${R.alpa}</span><span class="pill">Cuti ${R.cuti} · Sakit ${R.sakit} · Izin ${R.izin}</span>${R.belum ? `<span class="pill warn">Belum dijadwalkan ${R.belum}</span>` : ''}${R.nodata ? `<span class="pill">Belum ada data mesin ${R.nodata} hari</span>` : ''}</div>`;
 const attShiftChip = (cfg, code, auto) => { if (!code) return '<span class="faint">–</span>'; if (code === 'L') return `<span class="sh-chip off${auto ? ' auto' : ''}">L</span>`; const s = hrShift(cfg, code); return `<span class="sh-chip${auto ? ' auto' : ''}" style="--c:${s ? s.color : '#888'}" title="${esc(s ? `${s.name} ${s.start}–${s.end}` : 'Kode tidak terdaftar')}">${esc(code)}</span>`; };
-function attDaysTable(e, A) {
+function attDaysTable(e, A, ro) {
   const cfg = hrCfg(e.companyId);
-  return `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Tanggal</th><th>Jadwal</th><th>Masuk</th><th>Pulang</th><th class="num">Terlambat</th><th class="num">Pulang cepat</th><th>Status</th><th>Scan mesin</th><th></th></tr></thead><tbody>
+  return `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Tanggal</th><th>Jadwal</th><th>Masuk</th><th>Pulang</th><th class="num">Terlambat</th><th class="num">Pulang cepat</th><th>Status</th><th>Scan mesin</th>${ro ? '' : '<th></th>'}</tr></thead><tbody>
     ${A.map(d => `<tr class="${d.code === 'L' ? 'hr-off' : ''}"><td class="small"><b>${HARI3[dow(d.iso)]}</b> ${+d.dd}${d.holiday ? `<div class="small muted">${esc(d.holiday.name)}</div>` : ''}</td><td>${attShiftChip(cfg, d.code, d.auto)}${d.shift ? `<div class="small faint">${d.shift.start}–${d.shift.end}</div>` : ''}</td>
       <td class="mono">${d.in || '–'}</td><td class="mono">${d.out || '–'}</td><td class="num">${d.late ? d.late + ' mnt' : ''}</td><td class="num">${d.early ? d.early + ' mnt' : ''}</td>
       <td>${d.status ? `<span class="pill ${d.late && d.status === 'Hadir' ? 'warn' : ATT_PILL[d.status] || ''}">${esc(d.late && d.status === 'Hadir' ? 'Terlambat' : d.status)}</span>` : ''}${d.fix ? ' <span class="pill info" title="Dikoreksi manual">koreksi</span>' : ''}${d.note ? `<div class="small muted">${esc(d.note)}</div>` : ''}</td>
-      <td class="small mono">${esc(d.scans.join(' · '))}</td><td><button class="btn sm" data-attfix="${d.iso}" aria-label="Koreksi ${fmtDate(d.iso)}">Koreksi</button></td></tr>`).join('')}</tbody></table></div>`;
+      <td class="small mono">${esc(d.scans.join(' · '))}</td>${ro ? '' : `<td><button class="btn sm" data-attfix="${d.iso}" aria-label="Koreksi ${fmtDate(d.iso)}">Koreksi</button></td>`}</tr>`).join('')}</tbody></table></div>`;
 }
 function attDaysWire(c, e) { $$('[data-attfix]', c).forEach(b => b.onclick = () => attFixDialog(e, b.dataset.attfix)); }
 function attFixDialog(e, iso) {
@@ -6341,7 +6364,7 @@ Views.payroll = () => {
   const line = (r, re) => r.ded.filter(([k]) => re.test(k)).reduce((s, x) => s + x[1], 0);
   return `<div class="page-head"><div><h1>Penggajian</h1><p>Gaji ${fmtMonth(month)}. Lembur, cuti tidak dibayar, dan potongan absensi diambil otomatis dari modulnya masing-masing. Komponen dan aturan potongan diatur di Aturan Absensi & Gaji.</p></div>
     <div class="row"><input class="input" type="month" id="pm" value="${month}" style="width:auto"><button class="btn" id="pCsv" ${rows.length ? '' : 'disabled'}>Unduh rekap (CSV)</button><button class="btn" id="pBank" ${rows.length ? '' : 'disabled'}>File transfer bank</button><button class="btn" id="pPdf" ${rows.length ? '' : 'disabled'}>Slip semua (PDF)</button>
-      ${locked ? '<button class="btn" id="pUnlock">Buka kunci periode</button>' : `<button class="btn primary" id="pLock" ${rows.length ? '' : 'disabled'}>Kunci periode</button>`}</div></div>
+      ${locked && Store.all('pay_slips', x => x.companyId === S.companyId && x.month === month).length < rows.length ? '<button class="btn" id="pPub">Terbitkan slip ke akun staf</button>' : ''}${locked ? '<button class="btn" id="pUnlock">Buka kunci periode</button>' : `<button class="btn primary" id="pLock" ${rows.length ? '' : 'disabled'}>Kunci periode</button>`}</div></div>
   ${locked ? `<div class="note ok"><b>Periode terkunci</b> sejak ${fmtDT(run.savedAt)} oleh ${esc(run.savedBy)}. Angka di bawah adalah arsip saat dikunci dan tidak berubah meskipun data karyawan, absensi, atau lembur diubah.</div>` : `<div class="note">Angka masih <b>sementara</b> dan ikut berubah bila data absensi, lembur, atau cuti diubah. Kunci periode setelah semua data final.</div>`}
   ${noBank ? `<div class="note warn">${noBank} karyawan belum punya nomor rekening di Data Karyawan.</div>` : ''}
   <div class="grid g4">
@@ -6376,9 +6399,11 @@ Views.payrollMount = c => {
   $('#pPdf', c).onclick = () => paySlipPdf(rows(), month);
   const lk = $('#pLock', c); if (lk) lk.onclick = async () => { const rs = rows(); if (!(await confirmBox(`Kunci penggajian ${fmtMonth(month)} untuk ${rs.length} karyawan? Angka akan diarsipkan dan tidak berubah lagi.`, 'Kunci periode'))) return;
     await Store.put('payroll_runs', runId, { companyId: S.companyId, month, locked: true, savedAt: nowISO(), savedBy: S.user.username, totalNet: rs.reduce((s, r) => s + r.net, 0), rows: rs }); audit('kunci penggajian', month);
+    try { await payPublishSlips(S.companyId, month, rs); } catch (e) { toast('Slip staf gagal diterbitkan: ' + (e.message || e)); }
     for (const x of Store.all('hr_claims', x => x.companyId === S.companyId && x.status === 'approved' && x.payVia === 'payroll' && x.payMonth === month)) await claimLog(x, { status: 'paid', paidAt: todayISO() }, 'dibayar lewat gaji ' + month);
     toast('Periode dikunci'); App.renderContent(); };
-  const ul = $('#pUnlock', c); if (ul) ul.onclick = async () => { if (!(await confirmBox(`Buka kunci ${fmtMonth(month)}? Angka akan dihitung ulang dari data terbaru.`, 'Buka kunci', true))) return; await Store.put('payroll_runs', runId, { ...run, locked: false, unlockedAt: nowISO(), unlockedBy: S.user.username }); audit('buka kunci penggajian', month); App.renderContent(); };
+  const pb = $('#pPub', c); if (pb) pb.onclick = async () => { pb.disabled = true; await payPublishSlips(S.companyId, month, run.rows); audit('terbitkan slip gaji', month); toast('Slip diterbitkan'); App.renderContent(); };
+  const ul = $('#pUnlock', c); if (ul) ul.onclick = async () => { if (!(await confirmBox(`Buka kunci ${fmtMonth(month)}? Angka akan dihitung ulang dari data terbaru.`, 'Buka kunci', true))) return; await Store.put('payroll_runs', runId, { ...run, locked: false, unlockedAt: nowISO(), unlockedBy: S.user.username }); audit('buka kunci penggajian', month); try { await payRetractSlips(S.companyId, month); } catch (e) {} App.renderContent(); };
 };
 async function paySlipPdf(rs, month) {
   let jsPDF; try { jsPDF = await loadPdfLib(); } catch (e) { toast('Pustaka PDF tidak dapat dimuat. Periksa koneksi internet lalu coba lagi.'); return; }
@@ -6451,12 +6476,12 @@ async function claimLog(x, patch, action, note) {
   const cur = Store.get('hr_claims', x.id), log = [...(cur.log || []), { at: nowISO(), by: S.user.name, action, note: note || '' }];
   const o = { ...cur, ...patch, log }; delete o.id; await Store.put('hr_claims', x.id, o); audit('klaim ' + action, empName(x.employeeId));
 }
-function claimForm() {
-  const types = hrMaster('claimTypes'), E = empList(e => e.active !== false);
+function claimForm(me) {
+  const types = hrMaster('claimTypes'), E = me ? [me] : empList(e => e.active !== false);
   if (!E.length) { toast('Belum ada karyawan aktif'); return; }
   const itemRow = () => `<tr><td><input class="input" type="date" data-k="date" value="${todayISO()}" aria-label="Tanggal"></td><td><input class="input" data-k="desc" placeholder="mis. Kuitansi apotek" aria-label="Uraian"></td><td><input class="input" type="number" min="0" step="500" data-k="amount" aria-label="Nominal"></td><td><button type="button" class="btn sm danger" data-rmrow aria-label="Hapus">✕</button></td></tr>`;
   openModal({ title: 'Ajukan klaim', wide: true, body: `<form id="cF" class="stack"><div class="form-grid">
-      <label class="f">Karyawan *<select class="input" name="employeeId" required><option value="">– pilih –</option>${E.map(e => `<option value="${e.id}">${esc(e.name)} · ${esc(e.unit || '')}</option>`).join('')}</select></label>
+      <label class="f">Karyawan *<select class="input" name="employeeId" required>${me ? '' : '<option value="">– pilih –</option>'}${E.map(e => `<option value="${e.id}">${esc(e.name)} · ${esc(e.unit || '')}</option>`).join('')}</select></label>
       <label class="f">Jenis klaim *<select class="input" name="type" required>${types.map(t => `<option>${esc(t.name)}</option>`).join('')}</select></label>
       <label class="f">Tanggal pengajuan<input class="input" type="date" name="date" value="${todayISO()}" required></label>
       <label class="f">Keterangan<input class="input" name="note" placeholder="mis. kontrol gigi, seminar PPI"></label></div>
@@ -6475,7 +6500,7 @@ function claimForm() {
       $('#cF', r).onsubmit = async ev => { ev.preventDefault(); const d = formData(ev.target), items = hrRowsRead(r, 'cItems').filter(i => +i.amount > 0);
         if (!items.length) { toast('Isi minimal satu rincian biaya'); return; }
         const id = uid('cl'); await Store.put('hr_claims', id, { ...d, companyId: S.companyId, items, total: items.reduce((s, i) => s + i.amount, 0), status: 'submitted', createdAt: nowISO(), log: [{ at: nowISO(), by: S.user.name, action: 'diajukan', note: '' }] });
-        audit('ajukan klaim', empName(d.employeeId)); closeModal(); toast('Klaim diajukan'); App.go('claims', { st: 'submitted' }); };
+        audit('ajukan klaim', empName(d.employeeId)); closeModal(); toast('Klaim diajukan'); me ? App.renderContent() : App.go('claims', { st: 'submitted' }); };
     } });
 }
 function claimProcess(x) {
@@ -6829,7 +6854,7 @@ Views.hrreportsMount = c => {
    ========================================================= */
 const ACC_COLS = [
   ['name', 'Nama Lengkap', true], ['username', 'Username', true], ['pw', 'Password Awal', false], ['role', 'Peran', false],
-  ['unit', 'Unit', false], ['position', 'Posisi / Jabatan', false], ['disc', 'DISC', false], ['ist', 'IST', false], ['papi', 'PAPI Kostick', false]
+  ['unit', 'Unit', false], ['position', 'Posisi / Jabatan', false], ['disc', 'DISC', false], ['ist', 'IST', false], ['papi', 'PAPI Kostick', false], ['nik', 'NIK Karyawan (akses HRIS staf)', false]
 ];
 const accYes = (v, def) => { const s = String(v ?? '').trim().toLowerCase(); if (!s) return def; return ['ya', 'y', 'yes', '1', 'buka', 'dibuka', 'true', 'iya'].includes(s); };
 
@@ -6837,8 +6862,8 @@ async function accTemplate() {
   const isSA = S.user.role === SA, units = (settingsOf(S.companyId).units || []).map(u => u.name);
   const head = ACC_COLS.map(c => c[1] + (c[2] ? ' *' : ''));
   const ex = [
-    ['Contoh Peserta Satu', 'peserta.satu', '', 'Peserta', units[0] || 'Keperawatan', 'Staff', 'Ya', 'Ya', 'Tidak'],
-    ['Contoh Peserta Dua', 'peserta.dua', 'Rahasia2026', 'Peserta', units[1] || units[0] || 'Farmasi', 'Staff', 'Ya', 'Tidak', 'Ya']
+    ['Contoh Peserta Satu', 'peserta.satu', '', 'Peserta', units[0] || 'Keperawatan', 'Staff', 'Ya', 'Ya', 'Tidak', ''],
+    ['Contoh Peserta Dua', 'peserta.dua', 'Rahasia2026', 'Peserta', units[1] || units[0] || 'Farmasi', 'Staff', 'Tidak', 'Tidak', 'Tidak', 'K-0001']
   ];
   const help = [['Petunjuk pengisian'], ['Kolom bertanda * wajib diisi. Satu baris = satu akun. Hapus baris contoh sebelum mengunggah.'],
     ['Username: 3–30 karakter, huruf/angka/titik/garis bawah/tanda minus, tanpa spasi. Harus unik.'],
@@ -6846,10 +6871,11 @@ async function accTemplate() {
     [isSA ? 'Peran: Peserta atau Admin Perusahaan (kosong = Peserta).' : 'Peran: hanya Peserta (admin perusahaan hanya dapat membuat akun peserta).'],
     ['Unit: harus sama dengan nama unit di Pengaturan Perusahaan: ' + (units.join(', ') || '(belum ada unit)') + '. Tes kemampuan unit tersebut otomatis ditugaskan.'],
     ['Posisi / Jabatan: ' + POSISI.join(', ') + ' (boleh diisi jabatan lain).'],
-    ['DISC, IST, PAPI Kostick: Ya / Tidak (kosong: DISC = Ya, IST = Tidak, PAPI = Tidak).']];
+    ['DISC, IST, PAPI Kostick: Ya / Tidak (kosong: DISC = Ya, IST = Tidak, PAPI = Tidak).'],
+    ['NIK Karyawan: isi bila akun ini untuk karyawan (staf). Akun akan ditautkan ke data karyawan dengan NIK tersebut sehingga bisa membuka menu HRIS staf: jadwal, absensi, status, slip gaji, cuti, klaim.']];
   try {
     const X = await skLoadXlsx(), wb = X.utils.book_new();
-    const ws = X.utils.aoa_to_sheet([head, ...ex]); ws['!cols'] = [28, 18, 16, 18, 18, 20, 8, 8, 13].map(w => ({ wch: w }));
+    const ws = X.utils.aoa_to_sheet([head, ...ex]); ws['!cols'] = [28, 18, 16, 18, 18, 20, 8, 8, 13, 26].map(w => ({ wch: w }));
     X.utils.book_append_sheet(wb, ws, 'Akun');
     const ws2 = X.utils.aoa_to_sheet(help); ws2['!cols'] = [{ wch: 110 }]; X.utils.book_append_sheet(wb, ws2, 'Petunjuk');
     const out = X.write(wb, { bookType: 'xlsx', type: 'array' });
@@ -6870,6 +6896,9 @@ function accImportPlan(rows) {
   ['password', 'passwordawal', 'katasandi'].forEach(n => { if (col.pw == null && H.indexOf(n) >= 0) col.pw = H.indexOf(n); });
   ['posisi', 'jabatan', 'posisijabatan'].forEach(n => { if (col.position == null && H.indexOf(n) >= 0) col.position = H.indexOf(n); });
   ['papi'].forEach(n => { if (col.papi == null && H.indexOf(n) >= 0) col.papi = H.indexOf(n); });
+  ['nikkaryawan', 'nik'].forEach(n => { if (col.nik == null && H.indexOf(n) >= 0) col.nik = H.indexOf(n); });
+  const cidI = S.user.role === SA ? S.companyId : S.user.companyId, empBy = {}; Store.all('employees', e => e.companyId === cidI).forEach(e => { if (e.nik) empBy[String(e.nik).trim().toLowerCase()] = e; });
+  const usedEmp = new Set();
   const units = (settingsOf(S.companyId).units || []).map(u => u.name), unitOf = v => units.find(u => u.toLowerCase() === String(v).trim().toLowerCase());
   const taken = new Set(Store.all('accounts').map(a => String(a.username || '').toLowerCase()));
   const seen = new Set(), ok = [], bad = [], warn = [];
@@ -6894,8 +6923,14 @@ function accImportPlan(rows) {
     }
     let unit = '';
     if (g('unit')) { unit = unitOf(g('unit')) || ''; if (!unit) warn.push(`Baris ${line} (${name}): unit "${g('unit')}" tidak ada di daftar unit, dikosongkan`); }
+    let employeeId = '';
+    if (g('nik')) { const em = empBy[g('nik').toLowerCase()];
+      if (!em) warn.push(`Baris ${line} (${name}): NIK karyawan "${g('nik')}" tidak ditemukan, akun tidak ditautkan`);
+      else if (role !== US) warn.push(`Baris ${line} (${name}): hanya akun Peserta yang bisa ditautkan ke karyawan`);
+      else if ((em.accountId && Store.get('accounts', em.accountId)) || usedEmp.has(em.id)) warn.push(`Baris ${line} (${name}): karyawan ${em.name} sudah punya akun, tidak ditautkan`);
+      else { employeeId = em.id; usedEmp.add(em.id); } }
     seen.add(username);
-    ok.push({ line, auto, pw, body: { name, username, role, companyId: S.user.role === SA ? S.companyId : S.user.companyId, unit, position: g('position'), discAllowed: role === US ? accYes(g('disc'), true) : false, istAllowed: role === US && accYes(g('ist'), false), papiAllowed: role === US && accYes(g('papi'), false), tests: role === US && unit ? tests.filter(t => t.unit === unit).map(t => t.id) : [], active: true, createdAt: todayISO(), sample: false } });
+    ok.push({ line, auto, pw, body: { name, username, role, companyId: S.user.role === SA ? S.companyId : S.user.companyId, unit, position: g('position'), discAllowed: role === US ? accYes(g('disc'), true) : false, istAllowed: role === US && accYes(g('ist'), false), papiAllowed: role === US && accYes(g('papi'), false), tests: role === US && unit ? tests.filter(t => t.unit === unit).map(t => t.id) : [], active: true, createdAt: todayISO(), sample: false, employeeId } });
   });
   return { ok, bad, warn };
 }
@@ -6915,7 +6950,7 @@ function accImportDialog() {
         const role = x => ROLE_LABEL[x.body.role];
         $('#aiPrev', r).innerHTML = plan.err ? `<div class="note warn">${esc(plan.err)}</div>` : `<div class="note">${plan.ok.length} akun siap dibuat${plan.bad.length ? `, <b>${plan.bad.length} baris bermasalah dilewati</b>` : ''}.</div>
           ${plan.bad.length || plan.warn.length ? `<ul class="small" style="margin:0">${[...plan.bad.map(b => `<li class="bad-t">${esc(b)}</li>`), ...plan.warn.map(b => `<li>${esc(b)}</li>`)].slice(0, 20).join('')}${plan.bad.length + plan.warn.length > 20 ? `<li>dan ${plan.bad.length + plan.warn.length - 20} lainnya</li>` : ''}</ul>` : ''}
-          ${plan.ok.length ? `<div class="tbl-wrap" style="max-height:280px"><table class="tbl no-stack"><thead><tr><th>Nama</th><th>Username</th><th>Peran</th><th>Unit / posisi</th><th>Psikotes</th><th>Password</th></tr></thead><tbody>${plan.ok.slice(0, 200).map(x => `<tr><td><b>${esc(x.body.name)}</b></td><td>${esc(x.body.username)}</td><td>${role(x)}</td><td>${esc(x.body.unit || '–')}<div class="small muted">${esc(x.body.position || '')}</div></td><td class="small">${[x.body.discAllowed && 'DISC', x.body.istAllowed && 'IST', x.body.papiAllowed && 'PAPI'].filter(Boolean).join(', ') || '–'}${x.body.tests.length ? `<div class="muted">${x.body.tests.length} tes unit</div>` : ''}</td><td class="small">${x.auto ? 'dibuat otomatis' : 'dari file'}</td></tr>`).join('')}</tbody></table></div>` : ''}`;
+          ${plan.ok.length ? `<div class="tbl-wrap" style="max-height:280px"><table class="tbl no-stack"><thead><tr><th>Nama</th><th>Username</th><th>Peran</th><th>Unit / posisi</th><th>Psikotes</th><th>Password</th></tr></thead><tbody>${plan.ok.slice(0, 200).map(x => `<tr><td><b>${esc(x.body.name)}</b></td><td>${esc(x.body.username)}</td><td>${role(x)}</td><td>${esc(x.body.unit || '–')}<div class="small muted">${esc(x.body.position || '')}</div></td><td class="small">${[x.body.discAllowed && 'DISC', x.body.istAllowed && 'IST', x.body.papiAllowed && 'PAPI'].filter(Boolean).join(', ') || '–'}${x.body.tests.length ? `<div class="muted">${x.body.tests.length} tes unit</div>` : ''}</td><td class="small">${x.auto ? 'dibuat otomatis' : 'dari file'}${x.body.employeeId ? `<div><span class="pill ok">Staf</span> ${esc(empName(x.body.employeeId))}</div>` : ''}</td></tr>`).join('')}</tbody></table></div>` : ''}`;
         $('#aiGo', r).disabled = !!plan.err || !plan.ok.length;
       };
       $('#aiGo', r).onclick = async () => {
@@ -6923,7 +6958,7 @@ function accImportDialog() {
         const done = [], fail = [];
         for (let i = 0; i < plan.ok.length; i++) {
           const x = plan.ok[i]; b.textContent = `Membuat ${i + 1} dari ${plan.ok.length}…`;
-          try { await Acct.create({ ...x.body }, x.pw, { noPull: true }); done.push(x); }
+          try { const id = await Acct.create({ ...x.body }, x.pw, { noPull: true }); if (x.body.employeeId) await linkAccountEmployee(id, x.body.employeeId); done.push(x); }
           catch (e) { fail.push(`${x.body.username}: ${Supa.on ? supaErr(e) : (e && e.message || 'gagal')}`); }
         }
         if (Supa.on) { try { await Store.pull(true, true); } catch (e) {} }
@@ -6945,6 +6980,183 @@ function accImportResult(done, fail) {
       const c = $('#arCsv', m); if (c) c.onclick = () => download(`login-akun-${todayISO()}.csv`, csv());
       const p = $('#arCpy', m); if (p) p.onclick = () => copyText(done.map(x => `${x.body.name}\nUsername: ${x.body.username}\nPassword: ${x.pw}`).join('\n\n'));
     } });
+}
+
+/* =========================================================
+   Portal Staf (HRIS untuk akun karyawan)
+   Akun peserta yang ditautkan admin ke data karyawan mendapat menu
+   "Kepegawaian Saya". Keamanan di server: RLS 003_staff.sql — staf hanya
+   bisa membaca data miliknya, dan hanya bisa mengajukan/membatalkan cuti
+   & klaim yang masih menunggu.
+   ========================================================= */
+const myEmp = () => S.user && S.user.role === US ? Store.all('employees', e => e.accountId === S.user.id && e.companyId === S.user.companyId)[0] || null : null;
+const STAFF_ROUTES = ['me', 'myprofile', 'myschedule', 'myleave', 'mypay', 'myclaim', 'mynews'];
+function navStaffOk(n) {
+  if (!S.user || S.user.role !== US) return true;
+  if (n.staff) return !!myEmp();
+  if (n.id === 'mytests' && myEmp()) { const a = S.user; return !!(a.discAllowed || a.istAllowed || a.papiAllowed || (a.tests || []).length); }
+  return true;
+}
+const stKv = (k, v) => v === '' || v == null ? '' : `<div class="hr-kv"><span>${esc(k)}</span><b>${v}</b></div>`;
+const stNews = e => Store.all('hr_news', n => n.companyId === e.companyId && (!n.unit || n.unit === e.unit) && (!n.until || n.until >= todayISO())).sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || (b.at || '').localeCompare(a.at || ''));
+const stSlips = e => Store.all('pay_slips', x => x.employeeId === e.id).sort((a, b) => b.month.localeCompare(a.month));
+const stNoEmp = () => `<div class="card card-pad"><h3 style="margin:0">Akun belum ditautkan</h3><p class="muted">Akun Anda belum dihubungkan dengan data karyawan. Hubungi HRD.</p></div>`;
+function stDays(e, from, n) {
+  const cfg = hrCfg(e.companyId), out = [];
+  for (let i = 0; i < n; i++) { const iso = addDays(from, i), c = attCode(e, iso, cfg, attDoc(e.id, iso.slice(0, 7)) || null); out.push({ iso, code: c.code, auto: c.auto, shift: c.code && c.code !== 'L' ? hrShift(cfg, c.code) : null, holiday: hrHoliday(cfg, iso) }); }
+  return out;
+}
+const stDayRow = (e, d) => { const cfg = hrCfg(e.companyId); return `<div class="st-day${d.iso === todayISO() ? ' today' : ''}"><span class="st-dd"><b>${HARI3[dow(d.iso)]}</b> ${+d.iso.slice(8)}</span>${attShiftChip(cfg, d.code, d.auto)}<span class="small">${d.code === 'L' ? 'Libur' : d.shift ? `${esc(d.shift.name)} · ${d.shift.start}–${d.shift.end}` : '<span class="faint">belum dijadwalkan</span>'}${d.holiday ? ` · <span class="muted">${esc(d.holiday.name)}</span>` : ''}</span></div>`; };
+
+/* ---------- Beranda Saya ---------- */
+Views.me = () => {
+  const e = myEmp(); if (!e) return stNoEmp();
+  const t = todayISO(), y = +t.slice(0, 4), b = leaveBalance(e, y), A = attMonth(e, t.slice(0, 7)), R = attRecap(A.filter(d => d.iso <= t));
+  const slip = stSlips(e)[0], news = stNews(e).slice(0, 3), al = hrAlerts(e);
+  const lv = Store.all('leaves', l => l.employeeId === e.id).sort((a, b2) => (b2.createdAt || '').localeCompare(a.createdAt || '')).slice(0, 3);
+  const week = stDays(e, t, 7);
+  return `<div class="page-head"><div><div class="eyebrow">${esc(Store.get('companies', e.companyId)?.name || '')}</div><h1>Halo, ${esc(e.name.split(' ')[0])}</h1><p>${esc(e.position || '')}${e.unit ? ' · ' + esc(e.unit) : ''} · ${fmtDate(t)}</p></div>
+    <div class="row"><button class="btn" data-go="myclaim">Ajukan klaim</button><button class="btn primary" data-go="myleave" data-p='{"new":1}'>Ajukan cuti</button></div></div>
+  ${al.length ? `<div class="note warn">${al.map(x => esc(x.t)).join(' · ')}. Segera perbarui ke HRD.</div>` : ''}
+  <div class="grid g4">
+    <button class="card kpi hr-kpibtn" data-go="myprofile"><span class="eyebrow">Status kepegawaian</span><b style="font-size:20px">${esc(e.status || '–')}</b><span class="small">${e.contractEnd && hrIsContract(e.status, e.companyId) ? 'berakhir ' + fmtDate(e.contractEnd) : 'masa kerja ' + esc(hrServiceText(e.joinDate) || '–')}</span></button>
+    <button class="card kpi hr-kpibtn" data-go="myleave"><span class="eyebrow">Sisa cuti tahunan ${y}</span><b>${b.type ? b.left + ' hari' : '–'}</b><span class="small">${b.type ? (b.eligible ? `dari ${b.quota} hari${b.pending ? ` · ${b.pending} menunggu` : ''}` : 'berhak mulai ' + fmtDate(b.eligDate)) : 'belum diatur HRD'}</span></button>
+    <button class="card kpi hr-kpibtn" data-go="myschedule"><span class="eyebrow">Kehadiran bulan ini</span><b>${R.hadir} hari</b><span class="small">terlambat ${R.late}× · alpa ${R.alpa}</span></button>
+    <button class="card kpi hr-kpibtn" data-go="mypay"><span class="eyebrow">Slip gaji terakhir</span><b style="font-size:20px">${slip ? rp(slip.slip.net) : '–'}</b><span class="small">${slip ? fmtMonth(slip.month) : 'belum ada slip terbit'}</span></button>
+  </div>
+  <div class="grid g2" style="align-items:start">
+    <div class="card"><div class="card-head"><h3 style="margin:0">Jadwal 7 hari ke depan</h3><button class="btn sm" data-go="myschedule">Lihat bulan ini</button></div><div class="card-pad stack" style="gap:6px">${week.map(d => stDayRow(e, d)).join('')}</div></div>
+    <div class="stack">
+      <div class="card"><div class="card-head"><h3 style="margin:0">Pengumuman</h3><button class="btn sm" data-go="mynews">Semua</button></div><div class="card-pad stack">${news.length ? news.map(n => `<div class="news-item">${n.pinned ? '<span class="pill info">Disematkan</span> ' : ''}<b>${esc(n.title)}</b><div class="small muted">${fmtDate((n.at || '').slice(0, 10))}</div><div class="small news-body">${esc(n.body || '').slice(0, 200)}${(n.body || '').length > 200 ? '…' : ''}</div></div>`).join('') : '<div class="small muted">Belum ada pengumuman.</div>'}</div></div>
+      <div class="card"><div class="card-head"><h3 style="margin:0">Pengajuan cuti terakhir</h3><button class="btn sm" data-go="myleave">Cuti saya</button></div><div class="card-pad stack" style="gap:8px">${lv.length ? lv.map(l => `<div class="row" style="justify-content:space-between"><span><b>${esc(l.type)}</b><div class="small muted">${fmtDate(l.start)} – ${fmtDate(l.end)}</div></span>${leaveStatusPill(l)}</div>`).join('') : '<div class="small muted">Belum ada pengajuan.</div>'}</div></div>
+    </div></div>`;
+};
+
+/* ---------- Profil & Status ---------- */
+Views.myprofile = () => {
+  const e = myEmp(); if (!e) return stNoEmp();
+  const sup = e.supervisorName || (e.supervisorId && Store.get('employees', e.supervisorId)?.name) || '';
+  const ro = html => html.replace(/<button class="btn sm" data-elist="[^"]+">Ubah<\/button>/g, '');
+  return `<div class="page-head"><div><h1>Profil & Status Saya</h1><p>Data kepegawaian Anda yang tercatat di HRD. Bila ada yang salah, sampaikan ke HRD untuk diperbaiki.</p></div></div>
+  <div class="grid g2" style="align-items:start">
+    <div class="card card-pad stack" style="gap:0"><h3 style="margin:0 0 8px">Pekerjaan</h3>
+      ${stKv('NIK karyawan', esc(e.nik))}${stKv('Jabatan', esc(e.position))}${stKv('Unit', esc(e.unit))}${stKv('Level', esc(e.level))}${stKv('Status kepegawaian', esc(e.status))}
+      ${stKv('Tanggal masuk', e.joinDate ? fmtDate(e.joinDate) : '')}${stKv('Masa kerja', esc(hrServiceText(e.joinDate)))}${hrIsContract(e.status, e.companyId) ? stKv('Kontrak berakhir', e.contractEnd ? fmtDate(e.contractEnd) : '') : ''}
+      ${stKv('Jenis kerja', e.workType === 'shift' ? 'Shift' : 'Non-shift')}${stKv('Lokasi kerja', esc(e.location))}${stKv('Atasan langsung', esc(sup))}${stKv('PIN mesin absensi', esc(e.pin))}</div>
+    <div class="card card-pad stack" style="gap:0"><h3 style="margin:0 0 8px">Data pribadi & legalitas</h3>
+      ${stKv('Nama', esc(e.name))}${stKv('Jenis kelamin', e.gender === 'P' ? 'Perempuan' : e.gender === 'L' ? 'Laki-laki' : '')}${stKv('Tanggal lahir', e.birthDate ? fmtDate(e.birthDate) : '')}
+      ${stKv('No HP', esc(e.phone))}${stKv('Email', esc(e.email))}${stKv('Alamat', esc(e.address))}${stKv('Profesi', esc(e.profession))}
+      ${stKv('STR', e.strNo ? esc(e.strNo) + (e.strUntil ? ' · s.d. ' + fmtDate(e.strUntil) : ' · seumur hidup') : '')}${stKv('SIP', e.sipNo ? esc(e.sipNo) + (e.sipUntil ? ' · s.d. ' + fmtDate(e.sipUntil) : '') : '')}
+      ${stKv('Bank', [esc(e.bankName), esc(e.bankAcc)].filter(Boolean).join(' · '))}${stKv('NPWP', esc(e.npwp))}${stKv('BPJS Kesehatan', esc(e.bpjsKesNo))}${stKv('BPJS Ketenagakerjaan', esc(e.bpjsTkNo))}</div>
+  </div>
+  ${['emergency', 'dependents', 'edu', 'licenses', 'history', 'docs'].filter(k => (e[k] || []).length).map(k => ro(empListTable(e, k))).join('')}`;
+};
+
+/* ---------- Jadwal & Absensi ---------- */
+Views.myschedule = () => {
+  const e = myEmp(); if (!e) return stNoEmp();
+  const month = (S.params || {}).month || monthISO(), A = attMonth(e, month), R = attRecap(A);
+  return `<div class="page-head"><div><h1>Jadwal & Absensi Saya</h1><p>Jadwal shift dan catatan scan mesin absensi. Bila ada yang keliru (lupa scan, dinas luar), laporkan ke HRD untuk dikoreksi.</p></div>
+    <div class="row"><button class="btn sm" data-sm="${prevMonth(month)}" aria-label="Bulan sebelumnya">‹</button><b>${fmtMonth(month)}</b><button class="btn sm" data-sm="${nextMonth(month)}" aria-label="Bulan berikutnya">›</button></div></div>
+  <div class="card card-pad">${attRecapChips(R)}</div>
+  <div class="card">${attDaysTable(e, A, true)}</div>`;
+};
+Views.myscheduleMount = c => $$('[data-sm]', c).forEach(b => b.onclick = () => { S.params = { month: b.dataset.sm }; App.renderContent(); });
+
+/* ---------- Cuti Saya ---------- */
+Views.myleave = () => {
+  const e = myEmp(); if (!e) return stNoEmp();
+  const y = new Date().getFullYear(), b = leaveBalance(e, y), L = Store.all('leaves', l => l.employeeId === e.id).sort((a, b2) => (b2.start || '').localeCompare(a.start || ''));
+  return `<div class="page-head"><div><h1>Cuti Saya</h1><p>Ajukan cuti dan pantau persetujuannya. Pengajuan yang masih menunggu bisa dibatalkan.</p></div><button class="btn primary" id="stLv">+ Ajukan cuti</button></div>
+  <div class="grid g4"><div class="card kpi"><span class="eyebrow">Hak cuti tahunan ${y}</span><b>${b.type ? b.quota : '–'}</b><span class="small">hari</span></div>
+    <div class="card kpi"><span class="eyebrow">Terpakai</span><b>${b.used || 0}</b><span class="small">hari disetujui</span></div>
+    <div class="card kpi"><span class="eyebrow">Menunggu</span><b>${b.pending || 0}</b><span class="small">hari</span></div>
+    <div class="card kpi"><span class="eyebrow">Sisa</span><b>${b.type ? b.left : '–'}</b><span class="small">${b.type && !b.eligible ? 'berhak mulai ' + fmtDate(b.eligDate) : 'hari'}</span></div></div>
+  <div class="card">${L.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Jenis</th><th>Tanggal</th><th class="num">Hari</th><th>Alasan</th><th>Status</th><th></th></tr></thead><tbody>${L.map(l => `<tr><td><b>${esc(l.type)}</b></td><td class="small">${fmtDate(l.start)} – ${fmtDate(l.end)}</td><td class="num">${leaveDays(e, l.start, l.end)}</td><td class="small">${esc(l.reason || '')}</td><td>${leaveStatusPill(l)}</td>
+    <td>${leaveFinal(l) === 'Menunggu' && (l.steps || []).every(s => s.status === 'Menunggu') ? `<button class="btn sm danger" data-lcan="${l.id}">Batalkan</button>` : ''}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">Belum ada pengajuan cuti.</div>'}</div>`;
+};
+Views.myleaveMount = c => {
+  const e = myEmp(); if (!e) return;
+  $('#stLv', c).onclick = () => stLeaveForm(e);
+  $$('[data-lcan]', c).forEach(b => b.onclick = async () => { if (!(await confirmBox('Batalkan pengajuan cuti ini?', 'Batalkan', true))) return; try { await Store.remove('leaves', b.dataset.lcan); audit('batalkan pengajuan cuti', e.name); toast('Pengajuan dibatalkan'); } catch (x) { toast('Gagal membatalkan: ' + (x.message || x)); } App.renderContent(); });
+  if ((S.params || {}).new) { S.params = {}; stLeaveForm(e); }
+};
+function stLeaveForm(e) {
+  const cfg = hrCfg(e.companyId), types = cfg.leaveTypes || [];
+  if (!types.length) { toast('Jenis cuti belum diatur HRD'); return; }
+  openModal({ title: 'Ajukan cuti', body: `<form id="slF" class="form-grid">
+    <label class="f">Jenis cuti<select class="input" name="type" required>${types.map(t => `<option>${esc(t.name)}</option>`).join('')}</select></label><span></span>
+    <label class="f">Mulai<input class="input" type="date" name="start" required value="${todayISO()}"></label>
+    <label class="f">Sampai<input class="input" type="date" name="end" required value="${todayISO()}"></label>
+    <label class="f" style="grid-column:1/-1">Alasan<input class="input" name="reason" required placeholder="mis. acara keluarga"></label>
+    <label class="f">Pengganti selama cuti (nama)<input class="input" name="substituteName" placeholder="opsional"></label>
+    <label class="f">No. surat / dokumen pendukung<input class="input" name="docRef" placeholder="mis. surat dokter"></label>
+    <div id="slPrev" class="note" style="grid-column:1/-1"></div></form>
+    <p class="small muted" style="margin:0">Alur persetujuan: ${cfg.approvals.map(esc).join(' → ')}.</p>`,
+    foot: '<button class="btn" data-close>Batal</button><button class="btn primary" form="slF">Ajukan</button>',
+    onMount: r => {
+      const f = $('#slF', r);
+      const check = () => { const d = formData(f), T = leaveType(cfg, d.type), msg = []; if (!d.start || !d.end) return { ok: false, msg: '' }; if (d.end < d.start) return { ok: false, msg: 'Tanggal selesai tidak boleh sebelum tanggal mulai.' };
+        const n = leaveDays(e, d.start, d.end); msg.push(`<b>${n}</b> hari kerja/jadwal.`);
+        if (T?.annual) { const b = leaveBalance(e, +d.start.slice(0, 4)); msg.push(`Sisa cuti tahunan: <b>${b.left}</b> hari.`); if (!b.eligible) msg.push(`Belum berhak cuti tahunan sampai ${fmtDate(b.eligDate)}.`); if (n > b.left) msg.push('<b>Melebihi sisa cuti.</b>'); }
+        else if (T && +T.quota > 0 && n > +T.quota) msg.push(`<b>Melebihi kuota ${esc(T.name)} (${T.quota} hari).</b>`);
+        if (T && T.paid === false) msg.push('Cuti ini tidak dibayar.');
+        const clash = Store.all('leaves', l => l.employeeId === e.id && leaveFinal(l) !== 'Ditolak' && l.start <= d.end && l.end >= d.start);
+        if (clash.length) msg.push(`<b>Bentrok</b> dengan pengajuan ${esc(clash[0].type)} ${fmtDate(clash[0].start)} – ${fmtDate(clash[0].end)}.`);
+        return { ok: !clash.length && n > 0, n, msg: msg.join(' ') }; };
+      const prev = () => { $('#slPrev', r).innerHTML = check().msg; }; f.oninput = prev; f.onchange = prev; prev();
+      f.onsubmit = async ev => { ev.preventDefault(); const d = formData(f), k = check();
+        if (!k.n) { toast('Tidak ada hari kerja/jadwal pada tanggal tersebut'); return; } if (!k.ok) { toast('Periksa peringatan pada formulir'); return; }
+        const body = { companyId: e.companyId, employeeId: e.id, type: d.type, start: d.start, end: d.end, reason: d.reason, docRef: d.docRef, substituteName: d.substituteName, steps: cfg.approvals.map(name => ({ name, status: 'Menunggu' })), status: 'Menunggu', createdAt: nowISO(), createdBy: S.user.username, bySelf: true };
+        try { await Store.put('leaves', uid('l'), body); } catch (x) { toast('Gagal mengajukan: ' + (x.message || x)); return; }
+        audit('ajukan cuti (staf)', `${e.name} · ${d.type}`); closeModal(); toast('Pengajuan cuti terkirim ke HRD'); App.renderContent(); };
+    } });
+}
+
+/* ---------- Slip Gaji ---------- */
+Views.mypay = () => {
+  const e = myEmp(); if (!e) return stNoEmp();
+  const P = stSlips(e);
+  return `<div class="page-head"><div><h1>Slip Gaji Saya</h1><p>Slip terbit setelah HRD mengunci penggajian bulan tersebut.</p></div></div>
+  <div class="card">${P.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Periode</th><th class="num">Pendapatan</th><th class="num">Potongan</th><th class="num">Gaji bersih</th><th></th></tr></thead><tbody>${P.map(x => `<tr class="click" data-slip="${x.id}" tabindex="0"><td><b>${fmtMonth(x.month)}</b></td><td class="num">${rp(x.slip.gross)}</td><td class="num">${rp(x.slip.dedT)}</td><td class="num"><b>${rp(x.slip.net)}</b></td><td><button class="btn sm">Lihat</button></td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">Belum ada slip gaji yang terbit.</div>'}</div>`;
+};
+Views.mypayMount = c => $$('[data-slip]', c).forEach(tr => { const open = () => { const x = Store.get('pay_slips', tr.dataset.slip);
+  openModal({ title: `Slip gaji · ${fmtMonth(x.month)}`, wide: true, body: payslipHtml(x.slip, x.month), foot: '<button class="btn" data-close>Tutup</button><button class="btn primary" id="stPdf">Unduh PDF</button>', onMount: m => $('#stPdf', m).onclick = () => paySlipPdf([x.slip], x.month) }); };
+  tr.onclick = open; tr.onkeydown = ev => { if (ev.key === 'Enter') open(); }; });
+
+/* ---------- Klaim Saya ---------- */
+Views.myclaim = () => {
+  const e = myEmp(); if (!e) return stNoEmp();
+  const C = Store.all('hr_claims', x => x.employeeId === e.id).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  return `<div class="page-head"><div><h1>Klaim Saya</h1><p>Ajukan penggantian biaya (rawat jalan, transport dinas, pelatihan). Klaim yang disetujui dibayar lewat gaji atau transfer.</p></div><button class="btn primary" id="stCl">+ Ajukan klaim</button></div>
+  <div class="card">${C.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Tanggal</th><th>Jenis</th><th>Keterangan</th><th class="num">Diajukan</th><th class="num">Disetujui</th><th>Status</th><th></th></tr></thead><tbody>${C.map(x => `<tr><td class="small">${fmtDate(x.date)}</td><td>${esc(x.type)}</td><td class="small">${esc(x.note || '')}</td><td class="num">${rp(x.total)}</td><td class="num">${x.approvedTotal != null ? rp(x.approvedTotal) : '–'}</td><td>${clmPill(x)}${x.status === 'approved' && x.payVia === 'payroll' ? `<div class="small muted">dibayar lewat gaji ${fmtMonth(x.payMonth)}</div>` : ''}</td>
+    <td>${x.status === 'submitted' ? `<button class="btn sm danger" data-ccan="${x.id}">Batalkan</button>` : ''}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">Belum ada klaim.</div>'}</div>`;
+};
+Views.myclaimMount = c => {
+  const e = myEmp(); if (!e) return;
+  $('#stCl', c).onclick = () => claimForm(e);
+  $$('[data-ccan]', c).forEach(b => b.onclick = async () => { if (!(await confirmBox('Batalkan klaim ini?', 'Batalkan', true))) return; try { await Store.remove('hr_claims', b.dataset.ccan); toast('Klaim dibatalkan'); } catch (x) { toast('Gagal: ' + (x.message || x)); } App.renderContent(); });
+};
+
+/* ---------- Pengumuman ---------- */
+Views.mynews = () => {
+  const e = myEmp(); if (!e) return stNoEmp();
+  const N = stNews(e);
+  return `<div class="page-head"><div><h1>Pengumuman</h1><p>Informasi dari HRD untuk ${e.unit ? 'unit ' + esc(e.unit) + ' dan ' : ''}seluruh karyawan.</p></div></div>
+  ${N.length ? `<div class="stack">${N.map(n => `<div class="card card-pad stack"><div><b style="font-size:16px">${esc(n.title)}</b>${n.pinned ? ' <span class="pill info">Disematkan</span>' : ''}<div class="small muted">${fmtDate((n.at || '').slice(0, 10))} · ${esc(n.by || 'HRD')}</div></div><div class="news-body">${esc(n.body || '')}</div></div>`).join('')}</div>` : '<div class="card"><div class="empty">Belum ada pengumuman.</div></div>'}`;
+};
+
+/* ---------- Admin: terbitkan slip ke akun staf ---------- */
+async function payPublishSlips(cid, month, rows) {
+  for (const r of rows) await Store.put('pay_slips', `${cid}__${month}__${r.employeeId}`, { companyId: cid, employeeId: r.employeeId, month, slip: r, at: nowISO() });
+}
+async function payRetractSlips(cid, month) {
+  for (const x of Store.all('pay_slips', x => x.companyId === cid && x.month === month)) await Store.remove('pay_slips', x.id);
+}
+/* tautkan akun ⇄ karyawan (employees.accountId menentukan akses di server) */
+async function linkAccountEmployee(accountId, empId) {
+  for (const x of Store.all('employees', x => x.accountId === accountId && x.id !== empId)) { const o = { ...x, accountId: '' }; delete o.id; await Store.put('employees', x.id, o); }
+  if (empId) { const x = Store.get('employees', empId); if (x && x.accountId !== accountId) { const o = { ...x, accountId }; delete o.id; await Store.put('employees', empId, o); } }
 }
 
 /* ---------------- boot ---------------- */
