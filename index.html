@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#1B29A3">
+<meta name="theme-color" content="#FF7B1D">
 <title>LyrionX HR Suite</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&display=swap">
 <style>
 :root{
   --bg:#E8EEFF; --surface:#FFFFFF; --surface-2:#F2F5FF; --line:#B4C1E8; --line-2:#D3DCF5;
@@ -814,6 +814,246 @@ tr.hr-off td{background:var(--surface-2)}
 .pf-scale button:hover{border-color:var(--brand)}.pf-scale button.on{background:var(--brand);border-color:var(--brand);color:#fff}
 .pf-scale button:focus-visible{outline:2px solid var(--accent)}.pf-scale button:disabled{cursor:default;opacity:.7}
 @media print{.side,.mbar,.topbar,.page-head .row,.tabs{display:none!important}.shell{display:block}}
+
+/* =====================================================================
+   TEMA "OrangeHRM 5" — disamakan dengan OrangeHRM (Nunito Sans, #64728C,
+   kartu putih radius 1.2rem, tombol pill, tabel bergaris tipis).
+   Lapisan terakhir: menimpa gaya lama tanpa mengubah markup.
+   ===================================================================== */
+:root,:root[data-theme="dark"]{
+  color-scheme:light;
+  --bg:#F6F5FB; --surface:#FFFFFF; --surface-2:#F6F7F9; --line:#E8EAEF; --line-2:#E8EAEF;
+  --text:#64728C; --muted:#64728C; --faint:#929BAA; --strong:#38455D;
+  --brand:#FF7B1D; --brand-2:#FF6C04; --brand-soft:rgba(255,123,29,.1); --brand-text:#E5650A; --on-brand:#FFFFFF;
+  --green:#76BC21; --green-2:#84D225; --green-3:#68A61D;
+  --side-bg:#FFFFFF; --ink:#38455D; --ink-2:#E8EAEF; --ink-text:#64728C; --ink-muted:#64728C;
+  --accent:#FF7B1D; --accent-soft:#FFF1E6; --accent-text:#B9520A;
+  --ok:#2E8B36; --ok-soft:rgba(52,188,64,.12); --warn:#B36B00; --warn-soft:rgba(255,166,47,.16); --bad:#EB0910; --bad-soft:rgba(235,9,16,.1); --info:#1E6CEB; --info-soft:rgba(30,108,235,.1);
+  --radius:1.2rem; --shadow:none;
+  --font:"Nunito Sans",-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"Nunito Sans",-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:light;
+    --bg:#F6F5FB; --surface:#FFFFFF; --surface-2:#F6F7F9; --line:#E8EAEF; --line-2:#E8EAEF;
+    --text:#64728C; --muted:#64728C; --faint:#929BAA;
+    --brand:#FF7B1D; --brand-2:#FF6C04; --brand-soft:rgba(255,123,29,.1); --brand-text:#E5650A; --on-brand:#FFFFFF;
+    --side-bg:#FFFFFF; --ink:#38455D; --ink-2:#E8EAEF; --ink-text:#64728C; --ink-muted:#64728C;
+    --accent:#FF7B1D; --accent-soft:#FFF1E6; --accent-text:#B9520A;
+    --ok:#2E8B36; --ok-soft:rgba(52,188,64,.12); --warn:#B36B00; --warn-soft:rgba(255,166,47,.16); --bad:#EB0910; --bad-soft:rgba(235,9,16,.1); --info:#1E6CEB; --info-soft:rgba(30,108,235,.1);
+    --shadow:none;
+  }
+}
+/* ---------- dasar ---------- */
+body{font-family:var(--font);font-size:14px;line-height:1.5;color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{color:var(--text);letter-spacing:0;text-wrap:initial}
+h1{font-size:21px;font-weight:700}
+h2{font-size:16px;font-weight:700}
+h3{font-size:16px;font-weight:700}
+.small{font-size:12px}
+.muted{color:var(--muted)} .faint{color:var(--faint)}
+a{color:var(--brand);font-weight:600;text-decoration:none} a:hover{text-decoration:underline}
+.num,td.num,.mono{font-family:var(--font);font-variant-numeric:tabular-nums}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--muted)}
+/* tanpa efek dekoratif */
+body.has-user::before,body.has-user::after{display:none}
+.content>*{animation:none}
+/* ---------- kerangka ---------- */
+.content{padding:24px 20px 48px;gap:16px;max-width:none}
+.page-head{align-items:center;padding:0 2px}
+.page-head h1{border-left:0;padding-left:0}
+.page-head p{font-size:14px;color:var(--muted);margin-top:2px}
+.back-row{margin-bottom:-8px}
+.back-home{font-weight:600}
+.topbar{background:#FFFFFF;backdrop-filter:none;border-bottom:1px solid #F1F2F3;padding:8px 20px;min-height:52px}
+.topbar .pill.info{background:var(--brand-soft);color:var(--brand)}
+.lx-link{color:var(--text);font-weight:600;font-size:12px}
+.lx-clock{color:var(--faint);font-weight:600}
+.acct-btn{border:0;background:transparent;padding:4px 6px}
+.acct-btn:hover,.acct-btn[aria-expanded="true"]{box-shadow:none;background:var(--surface-2)}
+.acct-av{background:var(--brand);font-size:13px;font-weight:700}
+.acct-tx b{font-size:14px;font-weight:600;color:var(--strong)}
+.acct-tx small{font-size:12px;font-weight:400}
+.acct-menu{border:0;border-radius:.65rem;box-shadow:0 5px 15px -8px rgba(0,0,0,.25),0 0 0 1px #E8EAEF;padding:4px}
+.acct-menu button{font-size:14px;font-weight:400;color:var(--text);border-radius:.65rem;padding:8px 12px}
+.acct-menu button:hover,.acct-menu button:focus-visible{background:#F6F7F9;color:var(--strong)}
+/* ---------- menu kiri (oxd-sidepanel) ---------- */
+.side{background:#FFFFFF;color:var(--text);border-top-right-radius:35px;border-bottom-right-radius:35px;box-shadow:0 25px 35px rgba(0,0,0,.08);padding:16px 10px 16px 0}
+.side .brandmark{padding:4px 16px 14px 20px;color:var(--strong);font-weight:700}
+.brand-logo{box-shadow:none;border:1px solid #E8EAEF;border-radius:10px}
+.nav-group{gap:0}
+.nav-group .eyebrow{color:#929BAA;font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:none;padding:12px 16px 4px 24px}
+.nav-item{color:var(--text);font-weight:400;font-size:14px;padding:8px 16px 8px 24px;border-radius:0 50px 50px 0;gap:14px}
+.nav-item:hover{background:rgba(255,123,29,.1);color:var(--text)}
+.nav-item.on{background:linear-gradient(90deg,#FF920B 0,#F35C17 90%);color:#FFFFFF;box-shadow:none;font-weight:600}
+.nav-item svg{color:var(--text);stroke-width:1.7}
+.nav-item.on svg,.nav-item.on:hover svg{color:#FFFFFF}
+.nav-item:hover svg{color:var(--text)}
+.nav-item:focus-visible{outline:2px solid #FF7B1D;outline-offset:-2px}
+.side-foot{border-top:1px solid #E8EAEF;color:var(--text);margin-left:16px}
+.side-foot b{color:var(--strong)!important}
+.side-btn{background:transparent;border:1px solid var(--green);color:var(--green)}
+.nav-close{color:var(--text)}
+@media (min-width:901px){
+  .shell{padding-left:72px}
+  .side{width:72px;padding:16px 8px 16px 0;box-shadow:0 25px 35px rgba(0,0,0,.08)}
+  .side:hover,.side:focus-within{width:270px;box-shadow:0 25px 35px rgba(0,0,0,.18)}
+  .side .brandmark{padding:4px 6px 14px 16px}
+  .nav-item{padding:9px 16px 9px 24px;gap:16px}
+  .nav-item svg{width:18px;height:18px}
+  .nav-group .eyebrow{padding:12px 16px 4px 24px}
+  .side-foot{border-top-color:#E8EAEF}
+}
+/* pengalih ruang kerja */
+.ws-switch{margin-left:16px;background:#F6F7F9;border:0;border-radius:.85rem;padding:3px}
+.ws-btn{color:var(--faint);border-radius:.85rem;padding:6px 10px}
+.ws-btn b{font-size:12px;font-weight:700}.ws-btn small{font-size:11px}
+.ws-btn:hover{background:rgba(255,123,29,.1);color:var(--brand)}
+.ws-btn.on{background:#FFFFFF;color:var(--brand);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.ws-btn.on small{opacity:.8}
+/* bar atas ponsel */
+@media (max-width:900px){
+  .mbar{background:#FFFFFF;color:var(--strong);border-bottom:1px solid #F1F2F3}
+  .mbar-title span{color:var(--faint)}
+  .mbar-lx{color:var(--faint)}
+  .mbar-btn{color:var(--text)}
+  .side{border-radius:0 35px 35px 0}
+}
+/* ---------- kartu (orangehrm-paper-container / oxd-table-filter) ---------- */
+.card{background:#FFFFFF;border:0;border-radius:1.2rem;box-shadow:none}
+.card-pad{padding:25px}
+.card-head{padding:18px 25px;border-bottom:1px solid #E8EAEF}
+.card-head h3,.card h3{font-size:16px;font-weight:700;color:var(--text)}
+.grid{gap:16px}
+.empty{padding:32px 16px;color:var(--faint);font-size:14px}
+.note{border-radius:.65rem;border-left:0;font-size:13px;color:var(--strong);background:rgba(30,108,235,.08)}
+.note.warn{background:rgba(255,166,47,.14)} .note.bad{background:rgba(235,9,16,.08)}
+/* KPI = widget dasbor putih */
+.kpi{background:#FFFFFF!important;color:var(--text);border:0;padding:18px 22px;gap:2px}
+.kpi::after{display:none}
+.kpi .eyebrow{color:var(--muted);font-size:14px;font-weight:700}
+.kpi .small{color:var(--faint)!important}
+.kpi b{color:var(--strong);font-family:var(--font);font-size:24px!important;font-weight:700;letter-spacing:0}
+@media (max-width:640px){.kpi b{font-size:19px!important}}
+.kpi.k-blue{box-shadow:inset 4px 0 0 #1E6CEB}
+.kpi.k-teal{box-shadow:inset 4px 0 0 #76BC21}
+.kpi.k-orange{box-shadow:inset 4px 0 0 #FF7B1D}
+.kpi.k-purple{box-shadow:inset 4px 0 0 #929BAA}
+.hr-kpibtn:hover{background:#F1F2F5!important}
+/* ---------- tombol (oxd-button) ---------- */
+.btn{font-family:var(--font);font-size:14px;font-weight:600;line-height:1;border-radius:3em;padding:10px 24px;min-height:38px;border:1px solid var(--green);background:transparent;color:var(--green);transition:color .15s,background-color .15s,border-color .15s}
+.btn:hover{border-color:var(--green-2);color:var(--green-2);background:transparent}
+.btn.primary{background:var(--green);border-color:var(--green);color:#FFFFFF}
+.btn.primary:hover{background:var(--green-2);border-color:var(--green-2);color:#FFFFFF}
+.btn.primary:active{background:var(--green-3)}
+.btn.accent{background:#FF7B1D;border-color:#FF7B1D;color:#FFFFFF}
+.btn.danger{background:rgba(235,9,16,.1);border-color:transparent;color:#EB0910}
+.btn.danger:hover{background:#EB0910;color:#FFFFFF;border-color:#EB0910}
+.btn.ghost{background:rgba(100,114,140,.1);border-color:transparent;color:var(--text)}
+.btn.ghost:hover{background:rgba(100,114,140,.15);color:var(--text)}
+.btn.sm{font-size:12px;padding:6px 14px;min-height:28px}
+.btn[disabled]{background:#E8EAEF;border-color:#E8EAEF;color:#FFFFFF;opacity:1}
+.btn:focus-visible{outline:0;box-shadow:0 0 0 3px rgba(118,188,33,.3)}
+.link-btn{color:var(--brand);font-weight:600}
+/* ---------- formulir (oxd-input) ---------- */
+label.f,div.f>label{font-size:12px;font-weight:600;color:var(--muted);gap:6px}
+.input,select.input,textarea.input{font-family:var(--font);font-size:14px;font-weight:400;color:var(--text);border:1px solid #E8EAEF;border-radius:.65rem;padding:9px 10px;min-height:40px;background:#FFFFFF}
+textarea.input{min-height:80px}
+.input:hover,select.input:hover{border-color:#CFD3DE}
+.input:focus,select.input:focus,textarea.input:focus,.input:focus-visible,select:focus-visible,textarea:focus-visible{outline:0;border-color:#929BAA;box-shadow:1px 1px 6px rgba(35,35,36,.12)}
+.input::placeholder{color:#A6AEBB}
+.input:disabled{background:#F0F0FC}
+input[type=checkbox],input[type=radio]{accent-color:#FF7B1D}
+.form-grid{gap:16px 20px}
+fieldset.hr-fs{border:0;border-top:1px solid #E8EAEF;border-radius:0;padding:16px 0 4px;margin:0}
+fieldset.hr-fs legend{font-size:14px;font-weight:700;color:var(--text);padding:0 8px 0 0}
+/* ---------- tabel (oxd-table) ---------- */
+table.tbl{font-size:14px;color:var(--text);border-collapse:separate;border-spacing:0}
+.tbl th{background:#FFFFFF;color:var(--text);font-size:14px;font-weight:700;letter-spacing:0;text-transform:none;padding:12px 14px;border-bottom:1px solid #E8EAEF;white-space:nowrap}
+.tbl td{font-size:14px;padding:12px 14px;border-bottom:1px solid #E8EAEF;color:var(--text)}
+.tbl td b{color:var(--strong);font-weight:600}
+.tbl tbody tr:nth-child(even) td{background:transparent}
+.tbl tbody tr:last-child td{border-bottom:0}
+.tbl tbody tr:hover td{background:#F1F2F5;color:var(--strong)}
+.tbl tr.click:hover td,.tbl tr.click:focus-visible td{background:#F1F2F5}
+.tbl tr.click:focus-visible{outline:2px solid rgba(255,123,29,.5);outline-offset:-2px}
+.tbl tfoot td{background:#F6F7F9;color:var(--strong);font-weight:700}
+.tbl td.no-col{color:var(--faint);font-weight:600}
+.card>.tbl-wrap,.card>.tbl-wrap>table{border-radius:0 0 1.2rem 1.2rem}
+.card>.tbl-wrap:first-child{border-radius:1.2rem}
+.card>.tbl-wrap .tbl th:first-child,.card>.tbl-wrap .tbl td:first-child{padding-left:25px}
+.card>.tbl-wrap .tbl th:last-child,.card>.tbl-wrap .tbl td:last-child{padding-right:25px}
+.hr-edit th{font-size:12px;font-weight:600;color:var(--muted);background:#FFFFFF}
+.hr-edit td{padding:6px 8px}
+.hr-edit tbody tr:hover td{background:transparent}
+.chev{color:var(--faint)}
+/* ---------- label status (oxd-chip) ---------- */
+.pill{font-size:12px;font-weight:600;padding:4px 10px;border-radius:3em;background:#E8EAEF;color:var(--text)}
+.pill.ok{background:rgba(52,188,64,.12);color:#2E8B36}
+.pill.warn{background:rgba(255,166,47,.16);color:#A86200}
+.pill.bad{background:rgba(235,9,16,.1);color:#D2080E}
+.pill.info{background:rgba(30,108,235,.1);color:#1E6CEB}
+.tag-sample{background:#F6F7F9;color:var(--faint);font-weight:600;letter-spacing:0;text-transform:none;font-size:11px}
+/* ---------- tab (oxd-topbar-body-nav-tab) ---------- */
+.tabs{border-bottom:0;gap:8px;padding:2px 0}
+.tab{height:35px;display:inline-flex;align-items:center;padding:0 14px;border-radius:.85rem;border:0;font-size:12px;font-weight:600;color:#929BAA;background:#F8F9FA}
+.tab:hover{color:#FF7B1D;background:rgba(255,123,29,.1)}
+.tab.on{color:#FF7B1D;background:rgba(255,123,29,.1);border:0}
+.tab:focus-visible{outline:2px solid rgba(255,123,29,.5)}
+.hrm-nav{border:0;border-radius:1.2rem;padding:10px}
+.hrm-nav button{font-size:14px;font-weight:400;color:var(--text);border-radius:.85rem}
+.hrm-nav button:hover{background:rgba(255,123,29,.1)}
+.hrm-nav button.on{background:rgba(255,123,29,.1);color:#FF7B1D;font-weight:700}
+.hrm-nav button.on span{color:#FF7B1D}
+/* ---------- dialog ---------- */
+.modal-bg{background:rgba(0,0,0,.25)}
+.modal{border-radius:1.2rem;box-shadow:0 6px 30px rgba(0,0,0,.12)}
+.modal-head{padding:20px 25px;border-bottom:1px solid #E8EAEF}
+.modal-head h2{font-size:16px;font-weight:700;color:var(--text)}
+.modal-body{padding:20px 25px;gap:16px}
+.modal-foot{padding:16px 25px;border-top:1px solid #E8EAEF;gap:10px}
+.toast{background:#FFFFFF;color:var(--strong);border-radius:.65rem;box-shadow:0 5px 15px rgba(0,0,0,.15);border-left:4px solid #76BC21;font-size:14px;font-weight:600}
+/* ---------- modul HRIS ---------- */
+.hr-kv{font-size:14px;border-bottom:1px solid #E8EAEF}
+.hr-kv span{color:var(--faint)} .hr-kv b{color:var(--strong);font-weight:600}
+.hr-task{border:1px solid #E8EAEF;border-radius:.85rem;font-size:14px}
+.hr-task b{color:#FF7B1D;font-weight:700}
+.hr-task:hover{border-color:#E8EAEF;background:#F1F2F5}
+.hr-bar i{background:#FF7B1D;height:8px}
+.hr-bar b{color:var(--strong);font-weight:600}
+.org-node{border:1px solid #E8EAEF;border-radius:.85rem}
+.org-node:hover{border-color:#CFD3DE;background:#F1F2F5;box-shadow:none}
+.org-node b{color:var(--strong);font-weight:600}
+.emp-av{font-weight:700}
+.dir-card b{color:var(--strong)}
+.pf-scale button{border:1px solid #E8EAEF;border-radius:.65rem;font-weight:700;color:var(--text)}
+.pf-scale button.on{background:#FF7B1D;border-color:#FF7B1D}
+.sh-chip,.rc-b,.rc{font-family:var(--font)}
+.hbar-v,.mcol .val,.timer,.qnav button,.opt b,.xbox,.ist-in,.ist-n,.ist-rw{font-family:var(--font)}
+.mcol.sel{background:rgba(255,123,29,.08);outline-color:#FF7B1D}
+.progress i{background:#FF7B1D}
+/* ---------- login & welcome: gradasi oranye OrangeHRM ---------- */
+.login-wrap,.welcome{background:linear-gradient(135deg,#FF920B 0%,#F35C17 100%)}
+.login-wrap .fx-orbs,.welcome .wl-orb{display:none}
+.login-side,.login-side h1,.paperless li b,.wl-word,.wl-sub b{color:#FFFFFF}
+.login-side p,.paperless li,.paperless .eyebrow,.wl-sub,.wl-org{color:rgba(255,255,255,.9)}
+.paperless .pi{color:#FFFFFF;background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.3)}
+.login-card{border:0;border-radius:1.2rem;box-shadow:0 25px 50px rgba(0,0,0,.18)}
+.wl-line i{background:#FFFFFF}
+.role-opt{border:1px solid #E8EAEF}
+.role-opt.on{border-color:#FF7B1D;background:rgba(255,123,29,.08);box-shadow:none}
+.role-opt .ri{background:rgba(255,123,29,.1);color:#FF7B1D}
+.role-opt.on .ri{background:#FF7B1D;color:#FFFFFF}
+.kpi.k-blue,.kpi.k-teal,.kpi.k-orange,.kpi.k-purple{box-shadow:none}
+.back-home{background:transparent;border-color:transparent;color:var(--text);padding-left:2px;padding-right:8px;min-height:28px}
+.back-home:hover{color:#FF7B1D;background:transparent;border-color:transparent}
+fieldset.hr-fs legend{text-transform:none;letter-spacing:0}
+.login-card .btn.primary{background:#FF7B1D;border-color:#FF7B1D}
+.login-card .btn.primary:hover{background:#FF8A37;border-color:#FF8A37}
+.login-card .btn:not(.primary){border-color:#FF7B1D;color:#FF7B1D}
+@media (max-width:640px){.card-pad{padding:16px}.card-head{padding:14px 16px}.modal-head,.modal-body,.modal-foot{padding-left:16px;padding-right:16px}.content{padding:16px 14px 40px}.card>.tbl-wrap .tbl th:first-child,.card>.tbl-wrap .tbl td:first-child{padding-left:14px}}
+@media print{body{background:#FFFFFF}.card{border:1px solid #E8EAEF}}
 </style>
 </head>
 <body>
@@ -5016,7 +5256,7 @@ async function papiEnsureSamples() {
 }
 /* =========================================================
    KEPEGAWAIAN · inti: pengaturan HR + fungsi bersama
-   Semua nilai bawaan bisa diubah di menu Pengaturan Kepegawaian.
+   Semua nilai bawaan bisa diubah di menu Aturan Absensi & Gaji.
    ========================================================= */
 const HR_STATUS = ['Tetap', 'Kontrak (PKWT)', 'Masa percobaan', 'Honorer', 'Magang', 'Mitra'];
 const HR_PTKP = ['TK/0', 'TK/1', 'TK/2', 'TK/3', 'K/0', 'K/1', 'K/2', 'K/3'];
@@ -5709,7 +5949,7 @@ Views.attendance = () => {
     <div class="card card-pad stack"><h3>Tambah scan manual</h3><p class="small muted" style="margin:0">Untuk kasus mesin rusak atau karyawan lupa scan. Untuk mengubah status satu hari, pakai tombol Koreksi di Rekap atau Harian.</p>
       <form id="aMan" class="form-grid"><label class="f">Karyawan<select class="input" name="emp" required>${empList(e => e.active !== false).map(e => `<option value="${e.id}">${esc(e.name)} · ${esc(e.unit || '')}</option>`).join('')}</select></label>
       <label class="f">Tanggal<input class="input" type="date" name="date" required value="${todayISO()}"></label><label class="f">Jam<input class="input" type="time" name="time" required></label><div class="f" style="align-self:end"><button class="btn primary">Tambah scan</button></div></form></div>`;
-  return `<div class="page-head"><div><h1>Absensi & Jadwal</h1><p>Data scan mesin sidik jari diolah otomatis menjadi kehadiran, keterlambatan, dan alpa berdasarkan jadwal shift. Aturan toleransi diatur di Pengaturan Kepegawaian.</p></div></div>
+  return `<div class="page-head"><div><h1>Absensi & Jadwal</h1><p>Data scan mesin sidik jari diolah otomatis menjadi kehadiran, keterlambatan, dan alpa berdasarkan jadwal shift. Aturan toleransi diatur di Aturan Absensi & Gaji.</p></div></div>
     <div class="tabs" role="tablist">${tabs.map(([k, l]) => `<button class="tab ${tab === k ? 'on' : ''}" role="tab" aria-selected="${tab === k}" data-atab="${k}" id="bk_at_${k}">${l}</button>`).join('')}</div>${body}`;
 };
 Views.attendanceMount = c => {
@@ -5957,7 +6197,7 @@ Views.leaves = () => {
         const cnt = t => Store.all('leaves', l => l.employeeId === e.id && l.type === t && leaveFinal(l) === 'Disetujui' && (l.start || '').startsWith(String(year))).reduce((s, l) => s + leaveDays(e, l.start, l.end), 0);
         return `<tr><td><b>${esc(e.name)}</b><div class="small muted">${esc(e.unit || '')}</div></td><td class="small">${fmtDate(e.joinDate)}${b.eligible ? '' : `<div class="pill warn">berhak mulai ${fmtDate(b.eligDate)}</div>`}</td><td class="num">${b.quota}</td><td class="num">${b.used}</td><td class="num">${b.pending}</td><td class="num"><b>${b.left}</b></td>${cfg.leaveTypes.filter(t => !t.annual).map(t => `<td class="num">${cnt(t.name)}</td>`).join('')}</tr>`; }).join('')}
     </tbody></table></div></div>`;
-  return `<div class="page-head"><div><h1>Cuti Karyawan</h1><p>Alur persetujuan: ${cfg.approvals.map(esc).join(' → ')}. Jenis cuti, kuota, dan alur diatur di Pengaturan Kepegawaian. Cuti yang disetujui otomatis tercatat di absensi.</p></div><button class="btn primary" id="addL" ${emps.length ? '' : 'disabled'}>+ Pengajuan cuti</button></div>
+  return `<div class="page-head"><div><h1>Cuti Karyawan</h1><p>Alur persetujuan: ${cfg.approvals.map(esc).join(' → ')}. Jenis cuti, kuota, dan alur diatur di Aturan Absensi & Gaji. Cuti yang disetujui otomatis tercatat di absensi.</p></div><button class="btn primary" id="addL" ${emps.length ? '' : 'disabled'}>+ Pengajuan cuti</button></div>
     <div class="grid g4"><div class="card kpi k-orange"><span class="eyebrow">Menunggu persetujuan</span><b style="font-size:24px">${waiting}</b></div><div class="card kpi k-teal"><span class="eyebrow">Sedang cuti hari ini</span><b style="font-size:24px">${onLeave.length}</b><span class="small muted">${onLeave.slice(0, 3).map(l => esc(em[l.employeeId].name)).join(', ')}</span></div></div>
     <div class="tabs" role="tablist"><button class="tab ${tab === 'req' ? 'on' : ''}" data-tab="req">Pengajuan</button><button class="tab ${tab === 'sum' ? 'on' : ''}" data-tab="sum">Saldo & rekap ${year}</button></div>${body}`;
 };
@@ -6080,7 +6320,7 @@ Views.payroll = () => {
   const rows = locked ? run.rows : empList(e => (!e.joinDate || e.joinDate <= m2) && (e.active !== false || (e.endDate || '') >= m1)).map(e => paySnap(payrollRow(e, month, st)));
   const T = k => rows.reduce((s, r) => s + (+r[k] || 0), 0), noBank = rows.filter(r => !r.bankAcc).length;
   const line = (r, re) => r.ded.filter(([k]) => re.test(k)).reduce((s, x) => s + x[1], 0);
-  return `<div class="page-head"><div><h1>Penggajian</h1><p>Gaji ${fmtMonth(month)}. Lembur, cuti tidak dibayar, dan potongan absensi diambil otomatis dari modulnya masing-masing. Komponen dan aturan potongan diatur di Pengaturan Kepegawaian.</p></div>
+  return `<div class="page-head"><div><h1>Penggajian</h1><p>Gaji ${fmtMonth(month)}. Lembur, cuti tidak dibayar, dan potongan absensi diambil otomatis dari modulnya masing-masing. Komponen dan aturan potongan diatur di Aturan Absensi & Gaji.</p></div>
     <div class="row"><input class="input" type="month" id="pm" value="${month}" style="width:auto"><button class="btn" id="pCsv" ${rows.length ? '' : 'disabled'}>Unduh rekap (CSV)</button><button class="btn" id="pBank" ${rows.length ? '' : 'disabled'}>File transfer bank</button><button class="btn" id="pPdf" ${rows.length ? '' : 'disabled'}>Slip semua (PDF)</button>
       ${locked ? '<button class="btn" id="pUnlock">Buka kunci periode</button>' : `<button class="btn primary" id="pLock" ${rows.length ? '' : 'disabled'}>Kunci periode</button>`}</div></div>
   ${locked ? `<div class="note ok"><b>Periode terkunci</b> sejak ${fmtDT(run.savedAt)} oleh ${esc(run.savedBy)}. Angka di bawah adalah arsip saat dikunci dan tidak berubah meskipun data karyawan, absensi, atau lembur diubah.</div>` : `<div class="note">Angka masih <b>sementara</b> dan ikut berubah bila data absensi, lembur, atau cuti diubah. Kunci periode setelah semua data final.</div>`}
