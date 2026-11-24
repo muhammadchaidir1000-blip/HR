@@ -822,7 +822,7 @@ tr.hr-off td{background:var(--surface-2)}
    ===================================================================== */
 :root,:root[data-theme="dark"]{
   color-scheme:light;
-  --bg:#F6F5FB; --surface:#FFFFFF; --surface-2:#F6F7F9; --line:#E8EAEF; --line-2:#E8EAEF;
+  --bg:#E7EAF0; --surface:#FFFFFF; --surface-2:#F6F7F9; --line:#E8EAEF; --line-2:#E8EAEF;
   --text:#1E2533; --muted:#424B5C; --faint:#5E6778; --strong:#0F141E;
   --brand:#FF7B1D; --brand-2:#FF6C04; --brand-soft:rgba(255,123,29,.1); --brand-text:#B9500A; --on-brand:#FFFFFF;
   --green:#4E8A14; --green-2:#5A9A16; --green-3:#42760F;
@@ -836,7 +836,7 @@ tr.hr-off td{background:var(--surface-2)}
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     color-scheme:light;
-    --bg:#F6F5FB; --surface:#FFFFFF; --surface-2:#F6F7F9; --line:#E8EAEF; --line-2:#E8EAEF;
+    --bg:#E7EAF0; --surface:#FFFFFF; --surface-2:#F6F7F9; --line:#E8EAEF; --line-2:#E8EAEF;
     --text:#1E2533; --muted:#424B5C; --faint:#5E6778; --strong:#0F141E;
     --brand:#FF7B1D; --brand-2:#FF6C04; --brand-soft:rgba(255,123,29,.1); --brand-text:#B9500A; --on-brand:#FFFFFF;
     --side-bg:#FFFFFF; --ink:#38455D; --ink-2:#E8EAEF; --ink-text:#1E2533; --ink-muted:#424B5C;
@@ -846,7 +846,7 @@ tr.hr-off td{background:var(--surface-2)}
   }
 }
 /* ---------- dasar ---------- */
-body{font-family:var(--font);font-size:14px;line-height:1.5;color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased}
+body{font-family:var(--font);font-size:14px;line-height:1.5;color:var(--text);background:#E7EAF0;-webkit-font-smoothing:antialiased}
 h1,h2,h3,h4{color:var(--text);letter-spacing:0;text-wrap:initial}
 h1{font-size:21px;font-weight:700}
 h2{font-size:16px;font-weight:700}
@@ -921,7 +921,7 @@ body.has-user::before,body.has-user::after{display:none}
   .side{border-radius:0 35px 35px 0}
 }
 /* ---------- kartu (orangehrm-paper-container / oxd-table-filter) ---------- */
-.card{background:#FFFFFF;border:0;border-radius:1.2rem;box-shadow:none}
+.card{background:#FFFFFF;border:1px solid #D5DAE3;border-radius:1.2rem;box-shadow:0 1px 3px rgba(16,24,40,.06)}
 .card-pad{padding:25px}
 .card-head{padding:18px 25px;border-bottom:1px solid #E8EAEF}
 .card-head h3,.card h3{font-size:16px;font-weight:700;color:var(--text)}
@@ -1001,7 +1001,7 @@ table.tbl{font-size:14px;color:var(--text);border-collapse:separate;border-spaci
 .tab:hover{color:#B9500A;background:rgba(255,123,29,.1)}
 .tab.on{color:#B9500A;background:rgba(255,123,29,.1);border:0}
 .tab:focus-visible{outline:2px solid rgba(255,123,29,.5)}
-.hrm-nav{border:0;border-radius:1.2rem;padding:10px}
+.hrm-nav{border:1px solid #D5DAE3;border-radius:1.2rem;padding:10px;box-shadow:0 1px 3px rgba(16,24,40,.06)}
 .hrm-nav button{font-size:14px;font-weight:400;color:var(--text);border-radius:.85rem}
 .hrm-nav button:hover{background:rgba(255,123,29,.1)}
 .hrm-nav button.on{background:rgba(255,123,29,.12);color:#B9500A;font-weight:700}
@@ -1017,12 +1017,12 @@ table.tbl{font-size:14px;color:var(--text);border-collapse:separate;border-spaci
 /* ---------- modul HRIS ---------- */
 .hr-kv{font-size:14px;border-bottom:1px solid #E8EAEF}
 .hr-kv span{color:var(--faint)} .hr-kv b{color:var(--strong);font-weight:600}
-.hr-task{border:1px solid #E8EAEF;border-radius:.85rem;font-size:14px}
+.hr-task{border:1px solid #D5DAE3;border-radius:.85rem;font-size:14px}
 .hr-task b{color:#B9500A;font-weight:700}
 .hr-task:hover{border-color:#E8EAEF;background:#F1F2F5}
 .hr-bar i{background:#FF7B1D;height:8px}
 .hr-bar b{color:var(--strong);font-weight:600}
-.org-node{border:1px solid #E8EAEF;border-radius:.85rem}
+.org-node{border:1px solid #D5DAE3;border-radius:.85rem}
 .org-node:hover{border-color:#CFD3DE;background:#F1F2F5;box-shadow:none}
 .org-node b{color:var(--strong);font-weight:600}
 .emp-av{font-weight:700}
@@ -1062,6 +1062,8 @@ body[data-role] .side{background:#FFFFFF}
 .busy-spin{width:20px;height:20px;border-radius:50%;border:3px solid #E8EAEF;border-top-color:#D35A0C;animation:busySpin .8s linear infinite;flex:none}
 @keyframes busySpin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.busy-spin{animation-duration:2s}}
+.org-units{gap:16px}
+
 @media print{body{background:#FFFFFF}.card{border:1px solid #E8EAEF}}
 </style>
 </head>
