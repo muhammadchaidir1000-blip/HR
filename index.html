@@ -1056,6 +1056,12 @@ fieldset.hr-fs legend{text-transform:none;letter-spacing:0}
 .login-wrap [style*="ink-muted"],.welcome [style*="ink-muted"]{color:#FFFFFF!important}
 body[data-role] .side{background:#FFFFFF}
 .bad-t{color:#A3060B}
+.btn[disabled]{cursor:default}
+.btn.is-busy{cursor:progress;opacity:.85}
+.busy-ind{position:fixed;right:20px;bottom:20px;z-index:9999;display:flex;align-items:center;gap:10px;padding:10px 16px 10px 12px;background:#FFFFFF;color:#1E2533;border-radius:3em;box-shadow:0 6px 24px rgba(0,0,0,.18);font-size:14px;font-weight:600}
+.busy-spin{width:20px;height:20px;border-radius:50%;border:3px solid #E8EAEF;border-top-color:#D35A0C;animation:busySpin .8s linear infinite;flex:none}
+@keyframes busySpin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.busy-spin{animation-duration:2s}}
 @media print{body{background:#FFFFFF}.card{border:1px solid #E8EAEF}}
 </style>
 </head>
@@ -2254,7 +2260,7 @@ Views.loginMount = () => {
     const t = LOCK.tries[u] || { n: 0, until: 0 };
     if (t.until > Date.now()) { err.textContent = `Terlalu banyak percobaan. Coba lagi dalam ${Math.ceil((t.until - Date.now()) / 60000)} menit.`; err.hidden = false; return; }
     if (Supa.on) {
-      const btn = $('#loginForm button[type=submit]'); if (btn) btn.disabled = true;
+      const btn = $('#loginForm button[type=submit]'), lbl = btn ? btn.textContent : ''; if (btn) { btn.disabled = true; btn.classList.add('is-busy'); btn.textContent = 'Memproses…'; } busy(true, 'Memproses login…');
       try {
         try { await Supa.login(u, p); }
         catch (er) {
@@ -2265,7 +2271,7 @@ Views.loginMount = () => {
         catch (er) { await Supa.logout(); Store.reset(); err.textContent = er.code === 'coexpired' ? er.message : (er.code === 'inactive' || er.code === 'noaccount') ? 'Akun belum aktif atau dinonaktifkan. Pendaftaran baru perlu disetujui Super Admin atau HRD.' : supaErr(er); err.hidden = false; return; }
         LOCK.tries[u] = { n: 0, until: 0 };
         audit('login'); App.render(); if (a.role !== US) showWelcome(a.name);
-      } finally { if (btn) btn.disabled = false; }
+      } finally { busy(false); if (btn && btn.isConnected) { btn.disabled = false; btn.classList.remove('is-busy'); btn.textContent = lbl; } }
       return;
     }
     const a = Store.all('accounts', x => (x.username || '').toLowerCase() === u)[0];
@@ -2278,6 +2284,13 @@ Views.loginMount = () => {
     App.setUser(a); audit('login'); App.render(); if (a.role !== US) showWelcome(a.name);
   };
 };
+/* indikator proses: pojok kanan bawah, lingkaran berputar + tulisan */
+function busy(on, text) {
+  let el = document.getElementById('busyInd');
+  if (!on) { if (el) el.remove(); return; }
+  if (!el) { el = document.createElement('div'); el.id = 'busyInd'; el.className = 'busy-ind'; el.setAttribute('role', 'status'); el.setAttribute('aria-live', 'polite'); document.body.appendChild(el); }
+  el.innerHTML = `<span class="busy-spin" aria-hidden="true"></span><span>${esc(text || 'Memproses…')}</span>`;
+}
 /* pengaturan awal Supabase: membuat Super Admin pertama + perusahaan pertama (butuh kode setup) */
 Views.setupSupa = () => {
   const co = (typeof SEED !== 'undefined' && SEED.companies && SEED.companies.c_humana) || { name: '', address: '', settings: {} };
