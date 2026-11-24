@@ -727,7 +727,7 @@ html:has(body.has-demo){scroll-padding-bottom:140px}
 .hr-kv:last-child{border-bottom:0}
 .hr-kv span{color:var(--muted)}
 .hr-kv b{text-align:right;font-weight:600;overflow-wrap:anywhere}
-.hr-kpibtn{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:4px}
+.hr-kpibtn{appearance:none;-webkit-appearance:none;font:inherit;color:inherit;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:4px;width:100%;box-sizing:border-box}
 .hr-kpibtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .hr-chips{gap:6px}
 tr.hr-off td{background:var(--surface-2)}
@@ -760,6 +760,60 @@ tr.hr-off td{background:var(--surface-2)}
 .rc.auto{opacity:.5}
 .rc.chg{box-shadow:inset 0 0 0 2px var(--accent)}
 .rc:hover{outline:2px solid var(--brand);outline-offset:-2px}
+
+/* ---------- HRIS: ruang kerja & modul tambahan ---------- */
+.ws-switch{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid var(--ink-2)}
+.ws-btn{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:1px;padding:7px 9px;border-radius:9px;color:var(--ink-muted);line-height:1.2}
+.ws-btn b{font-size:13px}.ws-btn small{font-size:10.5px;opacity:.8}
+.ws-btn:hover{background:rgba(255,255,255,.08);color:var(--ink-text)}
+.ws-btn.on{background:var(--accent);color:#fff}.ws-btn.on small{opacity:.95}
+.ws-btn:focus-visible{outline:2px solid #fff;outline-offset:1px}
+.ws-ic{display:none;font-style:normal;font-weight:800;font-size:13px;text-align:center}
+@media (min-width:901px){
+  .side:not(:hover):not(:focus-within) .ws-switch{grid-template-columns:1fr;padding:3px}
+  .side:not(:hover):not(:focus-within) .ws-btn:not(.on),.side:not(:hover):not(:focus-within) .ws-btn b,.side:not(:hover):not(:focus-within) .ws-btn small{display:none}
+  .side:not(:hover):not(:focus-within) .ws-ic{display:block}
+  .side:not(:hover):not(:focus-within) .ws-btn{padding:8px 0}
+}
+.hrm-wrap{display:grid;grid-template-columns:220px minmax(0,1fr);gap:16px;align-items:start}
+.hrm-nav{display:flex;flex-direction:column;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:6px;position:sticky;top:12px}
+.hrm-nav button{all:unset;box-sizing:border-box;cursor:pointer;display:flex;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:8px;font-weight:600;font-size:13.5px}
+.hrm-nav button span{color:var(--faint);font-size:12px}
+.hrm-nav button:hover{background:var(--surface-2)}.hrm-nav button.on{background:var(--brand);color:#fff}.hrm-nav button.on span{color:#fff}
+.hrm-nav button:focus-visible{outline:2px solid var(--accent)}
+@media (max-width:820px){.hrm-wrap{grid-template-columns:1fr}.hrm-nav{position:static;flex-direction:row;overflow-x:auto}.hrm-nav button{white-space:nowrap}}
+.emp-av{display:inline-grid;place-items:center;flex:none;width:34px;height:34px;border-radius:50%;font-weight:800;font-size:12.5px;color:#fff;background:hsl(var(--h,220) 55% 46%)}
+.emp-av.big{width:56px;height:56px;font-size:18px}
+.org-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+.org-units{display:grid;gap:14px}
+.org-unit{gap:10px}
+.org-node{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);min-width:0}
+.org-node span{display:flex;flex-direction:column;min-width:0}.org-node b{font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.org-node small{color:var(--muted);font-size:12px}
+.org-node:hover{border-color:var(--brand);box-shadow:0 2px 8px rgba(0,0,0,.06)}.org-node:focus-visible{outline:2px solid var(--accent)}
+.org-tree,.org-tree ul{list-style:none;margin:0;padding:0}
+.org-tree ul{margin-left:22px;padding-left:16px;border-left:2px solid var(--line)}
+.org-tree li{margin:8px 0;position:relative}
+.org-tree ul>li::before{content:"";position:absolute;left:-16px;top:22px;width:14px;border-top:2px solid var(--line)}
+.org-tree .org-node{max-width:340px}
+.org-count{font-size:11.5px;color:var(--faint);margin-left:8px}
+.dir-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.dir-card{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:18px 14px}
+.hr-task{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:9px 12px;border:1px solid var(--line);border-radius:10px}
+.hr-task b{font-size:18px;min-width:28px;color:var(--brand-text,var(--brand))}.hr-task:hover{border-color:var(--brand);background:var(--surface-2)}.hr-task:focus-visible{outline:2px solid var(--accent)}
+.hr-bar{display:grid;grid-template-columns:minmax(90px,38%) 1fr auto;gap:10px;align-items:center;font-size:13px}
+.hr-bar span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hr-bar i{display:block;height:10px;border-radius:6px;background:var(--brand);min-width:3px}
+.hr-bar b{font-size:13px;white-space:nowrap}
+.hr-steps{margin:0;padding-left:20px;display:grid;gap:8px}
+.news-body{white-space:pre-wrap;overflow-wrap:anywhere}
+.news-item{padding-bottom:10px;border-bottom:1px dashed var(--line-2)}.news-item:last-child{border-bottom:0;padding-bottom:0}
+.news-card.faded{opacity:.6}
+.hr-colpick{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px}
+.pf-scale{display:inline-flex;gap:4px}
+.pf-scale button{all:unset;box-sizing:border-box;cursor:pointer;width:32px;height:32px;display:grid;place-items:center;border:1.5px solid var(--line);border-radius:8px;font-weight:800}
+.pf-scale button:hover{border-color:var(--brand)}.pf-scale button.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.pf-scale button:focus-visible{outline:2px solid var(--accent)}.pf-scale button:disabled{cursor:default;opacity:.7}
+@media print{.side,.mbar,.topbar,.page-head .row,.tabs{display:none!important}.shell{display:block}}
 </style>
 </head>
 <body>
@@ -1232,7 +1286,7 @@ const IST_SAMPLE_DATA=[{"id":"ir_excel","d":{"name":"Mochammad Rizki Firmansyah"
    ========================================================= */
 const F = ['D','I','S','C'];
 const FNAME = {D:'Dominance',I:'Influence',S:'Steadiness',C:'Compliance'};
-const COLS = ['companies','accounts','disc_results','disc_sessions','ist_results','ist_sessions','papi_results','papi_sessions','skill_tests','skill_results','skill_sessions','meetings','employees','overtime','leaves','payroll_runs','hr_config','att_month','audit','initpass'];
+const COLS = ['companies','accounts','disc_results','disc_sessions','ist_results','ist_sessions','papi_results','papi_sessions','skill_tests','skill_results','skill_sessions','meetings','employees','overtime','leaves','payroll_runs','hr_config','att_month','hr_claims','hr_reviews','hr_news','audit','initpass'];
 const $ = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => [...r.querySelectorAll(s)];
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1602,6 +1656,12 @@ const S = { user: null, companyId: null, route: 'dash', params: {}, lastActive: 
 const ROLE_LABEL = { superadmin: 'Super Admin', company: 'Admin Perusahaan', user: 'Peserta' };
 const SA = 'superadmin', CO = 'company', US = 'user';
 const ICON = {
+  org: '<rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-4h12v4"/>',
+  idcard: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2.2"/><path d="M5.5 16c.6-1.6 2-2.4 3.5-2.4s2.9.8 3.5 2.4M15 10h3M15 13h3"/>',
+  receipt: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6"/>',
+  star: '<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/>',
+  mega: '<path d="M3 10v4h4l7 4V6L7 10zM17 9a4 4 0 0 1 0 6"/>',
+  list: '<path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/>',
   home: '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
   test: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/>',
   brain: '<circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/>',
@@ -1626,30 +1686,44 @@ const NAV = [
   { id: 'meetings', label: 'Wawancara Online', icon: 'video', roles: [SA, CO], group: 'Rekrutmen' },
   { id: 'cmppsy', label: 'Daftar Hasil Psikotes', icon: 'brain', roles: [SA, CO], group: 'Rekrutmen' },
   { id: 'cmpskill', label: 'Daftar Hasil Kemampuan Unit', icon: 'skill', roles: [SA, CO], group: 'Rekrutmen' },
-  { id: 'employees', label: 'Data Karyawan', icon: 'users', roles: [SA, CO], group: 'Kepegawaian' },
-  { id: 'attendance', label: 'Absensi & Jadwal', icon: 'clock', roles: [SA, CO], group: 'Kepegawaian' },
-  { id: 'leaves', label: 'Cuti', icon: 'cal', roles: [SA, CO], group: 'Kepegawaian' },
-  { id: 'overtime', label: 'Lembur', icon: 'clock', roles: [SA, CO], group: 'Kepegawaian' },
-  { id: 'payroll', label: 'Penggajian', icon: 'money', roles: [SA, CO], group: 'Kepegawaian' },
-  { id: 'hrsettings', label: 'Pengaturan Kepegawaian', icon: 'gear', roles: [SA, CO], group: 'Kepegawaian' },
   { id: 'reports', label: 'Laporan', icon: 'chart', roles: [SA, CO], group: 'Laporan' },
-  { id: 'accounts', label: 'Akun Pengguna', icon: 'key', roles: [SA, CO], group: 'Pengaturan' },
+  { id: 'hrdash', label: 'Beranda HRIS', icon: 'home', roles: [SA, CO], ws: 'hr' },
+  { id: 'employees', label: 'Data Karyawan', icon: 'users', roles: [SA, CO], group: 'Karyawan', ws: 'hr' },
+  { id: 'orgchart', label: 'Struktur Organisasi', icon: 'org', roles: [SA, CO], group: 'Karyawan', ws: 'hr' },
+  { id: 'directory', label: 'Direktori Karyawan', icon: 'idcard', roles: [SA, CO], group: 'Karyawan', ws: 'hr' },
+  { id: 'attendance', label: 'Absensi & Jadwal', icon: 'clock', roles: [SA, CO], group: 'Waktu & Kehadiran', ws: 'hr' },
+  { id: 'leaves', label: 'Cuti', icon: 'cal', roles: [SA, CO], group: 'Waktu & Kehadiran', ws: 'hr' },
+  { id: 'overtime', label: 'Lembur', icon: 'clock', roles: [SA, CO], group: 'Waktu & Kehadiran', ws: 'hr' },
+  { id: 'payroll', label: 'Penggajian', icon: 'money', roles: [SA, CO], group: 'Kompensasi', ws: 'hr' },
+  { id: 'claims', label: 'Klaim & Reimburse', icon: 'receipt', roles: [SA, CO], group: 'Kompensasi', ws: 'hr' },
+  { id: 'perf', label: 'Penilaian Kinerja', icon: 'star', roles: [SA, CO], group: 'Kinerja & Info', ws: 'hr' },
+  { id: 'news', label: 'Pengumuman', icon: 'mega', roles: [SA, CO], group: 'Kinerja & Info', ws: 'hr' },
+  { id: 'hrreports', label: 'Laporan HR', icon: 'chart', roles: [SA, CO], group: 'Kinerja & Info', ws: 'hr' },
+  { id: 'hrmaster', label: 'Master Data HR', icon: 'list', roles: [SA, CO], group: 'Pengaturan HRIS', ws: 'hr' },
+  { id: 'hrsettings', label: 'Aturan Absensi & Gaji', icon: 'gear', roles: [SA, CO], group: 'Pengaturan HRIS', ws: 'hr' },
+  { id: 'accounts', label: 'Akun Pengguna', icon: 'key', roles: [SA, CO], group: 'Pengaturan', ws: 'both' },
   { id: 'skilltests', label: 'Soal Tes Kemampuan Unit', icon: 'skill', roles: [SA, CO], group: 'Pengaturan' },
-  { id: 'settings', label: 'Pengaturan Perusahaan', icon: 'gear', roles: [SA, CO], group: 'Pengaturan' },
+  { id: 'settings', label: 'Pengaturan Perusahaan', icon: 'gear', roles: [SA, CO], group: 'Pengaturan', ws: 'both' },
   { id: 'companies', label: 'Daftar Perusahaan', icon: 'building', roles: [SA], group: 'Master' },
   { id: 'master', label: 'Master Data Psikotes', icon: 'book', roles: [SA], group: 'Master' },
   { id: 'skillmaster', label: 'Master Tes Kemampuan Unit', icon: 'skill', roles: [SA], group: 'Master' },
   { id: 'menuaccess', label: 'Akses Menu per RS', icon: 'gear', roles: [SA], group: 'Master' },
   { id: 'audit', label: 'Log Aktivitas', icon: 'log', roles: [SA], group: 'Master' }
 ];
+/* Ruang kerja: Rekrutmen & Psikotes ('rek') vs HRIS Kepegawaian ('hr') */
+const HR_ROUTES = NAV.filter(n => n.ws === 'hr').map(n => n.id).concat(['employee']);
+const wsOfRoute = r => HR_ROUTES.includes(r) ? 'hr' : (NAV.find(n => n.id === r) || {}).ws === 'both' ? null : 'rek';
+const navWs = n => n.ws === 'both' || (n.ws || 'rek') === S.ws;
+/* menu yang dulu ada di akses menu (sebelum HRIS lengkap) */
+const MENU_TOGGLE_V1 = ['exec', 'participants', 'meetings', 'cmppsy', 'cmpskill', 'reports', 'accounts', 'skilltests', 'settings'];
 /* halaman yang boleh dibuka Super Admin sebelum masuk ke perusahaan */
 const SETTINGS_IDS = ['accounts', 'skilltests', 'settings'];
 const PICK_IDS = [...SETTINGS_IDS, 'skillmaster'];
 const SA_OUTSIDE = ['companies', 'company', 'master', 'audit', 'menuaccess', 'reports', 'skillmaster', 'test-edit', 'test-results', ...SETTINGS_IDS];
 /* menu yang bisa dibuka/ditutup per perusahaan (Super Admin > Akses Menu per RS); belum diatur = semua terbuka */
-const MENU_TOGGLE = ['exec', 'participants', 'meetings', 'cmppsy', 'cmpskill', 'employees', 'attendance', 'overtime', 'leaves', 'payroll', 'hrsettings', 'reports', ...SETTINGS_IDS];
+const MENU_TOGGLE = ['exec', 'participants', 'meetings', 'cmppsy', 'cmpskill', 'reports', 'hrdash', 'employees', 'orgchart', 'directory', 'attendance', 'leaves', 'overtime', 'payroll', 'claims', 'perf', 'news', 'hrreports', 'hrmaster', 'hrsettings', ...SETTINGS_IDS];
 const ROUTE_MENU = { employee: 'employees', candidate: 'participants', candidates: 'participants', ist: 'participants', istresult: 'participants', papi: 'participants', papiresult: 'participants', kerjakan: 'participants', 'test-edit': 'skilltests', 'test-results': 'skilltests' };
-const menuOn = (id, cid) => { const co = Store.get('companies', cid || (S.user && S.user.role === SA ? S.companyId : S.user && S.user.companyId)); return !co || !Array.isArray(co.menus) || co.menus.includes(id); };
+const menuOn = (id, cid) => { const co = Store.get('companies', cid || (S.user && S.user.role === SA ? S.companyId : S.user && S.user.companyId)); if (!co || !Array.isArray(co.menus)) return true; const seen = Array.isArray(co.menusSeen) ? co.menusSeen : MENU_TOGGLE_V1; return seen.includes(id) ? co.menus.includes(id) : true; };
 const HIDDEN_ROUTES = { 'employee': [SA, CO], 'company': [SA], 'candidate': [SA, CO], 'disc-take': [US], 'skill-take': [US], 'test-edit': [SA, CO], 'test-results': [SA, CO], 'istresult': [SA, CO], 'papi': [SA, CO], 'papiresult': [SA, CO], 'myresult': [US], 'candidates': [SA, CO], 'ist': [SA, CO], 'kerjakan': [SA, CO] };
 function canRoute(r) {
   const n = NAV.find(x => x.id === r); const roles = n ? n.roles : HIDDEN_ROUTES[r]; if (!(roles && S.user && roles.includes(S.user.role))) return false;
@@ -1756,9 +1830,10 @@ const App = {
     S.user = a; S.inCompany = a.role === SA ? !!inCo : true;
     S.companyId = a.role === SA ? (cid && Store.get('companies', cid) ? cid : (Store.all('companies')[0]?.id || null)) : a.companyId;
     S.route = a.role === US ? 'mytests' : a.role === SA && !S.inCompany ? 'companies' : 'dash';
+    S.ws = 'rek'; try { if (localStorage.getItem('hrs:ws:' + a.id) === 'hr' && S.route === 'dash' && canRoute('hrdash')) { S.ws = 'hr'; S.route = 'hrdash'; } } catch (e) {}
     this.saveSession();
   },
-  saveSession() { if (!S.user) return; try { sessionStorage.setItem('hrs:session', JSON.stringify({ id: S.user.id, cid: S.companyId, ic: !!S.inCompany, t: Date.now() })); } catch (e) {} },
+  saveSession() { if (!S.user) return; try { sessionStorage.setItem('hrs:session', JSON.stringify({ id: S.user.id, cid: S.companyId, ic: !!S.inCompany, ws: S.ws, t: Date.now() })); } catch (e) {} },
   async logout(msg) {
     if (S.user && !(Supa.on && !Supa.sess)) { try { await Promise.race([audit('logout'), new Promise(r => setTimeout(r, 1500))]); } catch (e) {} }
     try { closeModal(); } catch (e) {} S.user = null; S.test = null; try { sessionStorage.removeItem('hrs:session'); } catch (e) {}
@@ -1769,6 +1844,7 @@ const App = {
     if (S.test && !route.endsWith('-take')) { toast('Selesaikan tes terlebih dahulu.'); return; }
     if (S.dirty && route !== S.route) { confirmBox('Ada perubahan yang belum disimpan. Tinggalkan halaman ini tanpa menyimpan?', 'Tinggalkan', true).then(ok => { if (ok) { S.dirty = false; S._set = null; this.go(route, params); } }); return; }
     if (S.user.role === SA && (route === 'companies' || PICK_IDS.includes(route) || route === 'menuaccess')) S.inCompany = false;
+    { const w = wsOfRoute(route); if (w && S.user && (S.user.role === CO || (S.user.role === SA && S.inCompany))) { S.ws = w; try { localStorage.setItem('hrs:ws:' + S.user.id, w); } catch (e) {} } }
     S.route = route; S.params = params; this.saveSession(); this.render(); window.scrollTo(0, 0);
   },
   onRemoteChange(col) {
@@ -1787,7 +1863,7 @@ const App = {
     document.body.classList.toggle('has-user', !!S.user); document.body.dataset.role = S.user ? S.user.role : 'guest';
     if (!S.user) { app.innerHTML = Views.login(); Views.loginMount(); return; }
     if (S.test) { this.renderTest(); return; }
-    const groups = []; NAV.filter(n => n.roles.includes(S.user.role) && (S.user.role === SA ? (S.inCompany ? !SETTINGS_IDS.includes(n.id) && n.id !== 'menuaccess' && n.id !== 'skillmaster' : SA_OUTSIDE.includes(n.id)) : true) && (!MENU_TOGGLE.includes(n.id) || S.user.role === US || (S.user.role === SA && !S.inCompany) || menuOn(n.id))).forEach(n => { const g = n.group || ''; let grp = groups.find(x => x.g === g); if (!grp) groups.push(grp = { g, items: [] }); grp.items.push(n); });
+    const groups = []; NAV.filter(n => n.roles.includes(S.user.role) && (S.user.role === CO || (S.user.role === SA && S.inCompany) ? navWs(n) : true) && (S.user.role === SA ? (S.inCompany ? !SETTINGS_IDS.includes(n.id) && n.id !== 'menuaccess' && n.id !== 'skillmaster' : SA_OUTSIDE.includes(n.id)) : true) && (!MENU_TOGGLE.includes(n.id) || S.user.role === US || (S.user.role === SA && !S.inCompany) || menuOn(n.id))).forEach(n => { const g = n.group || ''; let grp = groups.find(x => x.g === g); if (!grp) groups.push(grp = { g, items: [] }); grp.items.push(n); });
     const navHtml = groups.map(g => `<div class="nav-group">${g.g ? `<div class="eyebrow">${esc(g.g)}</div>` : ''}${g.items.map(n => `<button class="nav-item ${navOn(n) ? 'on' : ''}" data-go="${n.id}" title="${esc(n.label)}" aria-label="${esc(n.label)}">${icon(n.icon)}<span>${esc(n.label)}</span></button>`).join('')}</div>`).join('');
     const comps = Store.all('companies');
     const compSel = S.user.role === SA && !S.inCompany ? '<span class="pill info">Pilih perusahaan untuk dilihat</span>' : S.user.role === SA ? `<button class="btn sm" data-go="companies">\u2190 Daftar Perusahaan</button><label class="row small muted" style="gap:6px">Perusahaan aktif <select class="input" id="compSel" style="width:auto;padding:6px 10px">${comps.map(c => `<option value="${c.id}" ${c.id === S.companyId ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select></label>`
@@ -1795,7 +1871,7 @@ const App = {
     const cur = NAV.find(n => n.id === S.route) || { label: { employee: 'Detail Karyawan', candidate: 'Detail Hasil Psikotes', company: 'Detail Perusahaan', 'test-edit': 'Tes Kemampuan Unit', 'test-results': 'Tes Kemampuan Unit', istresult: 'Hasil Psikotes IST', papi: 'Hasil Psikotes PAPI', papiresult: 'Hasil Psikotes PAPI', myresult: 'Hasil Saya' }[S.route] || '' };
     app.innerHTML = `<div class="shell">
       <div class="side-backdrop" id="sideBg" hidden></div>
-      <aside class="side" id="side" aria-label="Menu utama"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><div class="brandmark">${brandOf().logo}<span class="brand-text">${esc(brandOf().name)}</span></div><button class="nav-close" id="sideClose" aria-label="Tutup menu">✕</button></div>${navHtml}
+      <aside class="side" id="side" aria-label="Menu utama"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><div class="brandmark">${brandOf().logo}<span class="brand-text">${esc(brandOf().name)}</span></div><button class="nav-close" id="sideClose" aria-label="Tutup menu">✕</button></div>${wsSwitchHtml()}${navHtml}
         <div class="side-foot"><div><b style="color:var(--ink-text)">${esc(S.user.name)}</b><br>${ROLE_LABEL[S.user.role]}</div>
           <div class="row"><button class="btn sm side-btn" id="btnPw">Ganti password</button><button class="btn sm side-btn" id="btnOut">Keluar</button></div></div></aside>
       <div class="main">
@@ -1841,7 +1917,7 @@ const App = {
       c.insertAdjacentHTML('afterbegin', `<div class="note info" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px"><b>Perusahaan:</b><select class="input" id="outCo" style="width:auto;min-width:220px">${cs.map(x => `<option value="${x.id}" ${x.id === S.companyId ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select><span class="small muted">Pengaturan di bawah berlaku untuk perusahaan yang dipilih.</span></div>`);
       const oc = $('#outCo', c); if (oc) oc.onchange = () => { S.companyId = oc.value; this.saveSession(); this.renderContent(); };
     }
-    if (S.route !== 'dash' && !(S.user.role === SA && !S.inCompany)) c.insertAdjacentHTML('afterbegin', '<div class="back-row"><button class="btn sm back-home" data-go="dash" aria-label="Kembali ke Beranda">\u2190 Kembali ke Beranda</button></div>');
+    { const home = S.ws === 'hr' && canRoute('hrdash') ? 'hrdash' : 'dash'; if (S.route !== home && !(S.user.role === SA && !S.inCompany)) c.insertAdjacentHTML('afterbegin', `<div class="back-row"><button class="btn sm back-home" data-go="${home}" aria-label="Kembali ke Beranda">\u2190 Kembali ke Beranda${home === 'hrdash' ? ' HRIS' : ''}</button></div>`); }
     const m = Views[S.route.replace(/-(\w)/g, (_, x) => x.toUpperCase()) + 'Mount']; m && m(c);
     $$('[data-go]', c).forEach(b => b.onclick = () => this.go(b.dataset.go, b.dataset.p ? JSON.parse(b.dataset.p) : {}));
     stackTables(c);
@@ -2619,17 +2695,16 @@ Views.dash = () => {
   const res = Store.all('disc_results', inScope); const emps = Store.all('employees', inScope);
   const pend = Store.all('leaves', x => inScope(x) && x.status === 'Menunggu');
   const upcoming = Store.all('meetings', x => inScope(x) && x.start >= todayISO()).sort((a, b) => a.start.localeCompare(b.start)).slice(0, 5);
-  const month = monthISO(); const st = settingsOf(cid);
-  const payTotal = emps.reduce((s, e) => s + payrollRow(e, month, st).net, 0);
+  const month = monthISO(); const skillN = Store.all('skill_results', inScope).length; const meetN = Store.all('meetings', x => inScope(x) && x.start >= todayISO()).length;
   const inprog = Store.all('disc_sessions', inScope).length + Store.all('skill_sessions', inScope).length;
   const recent = res.sort((a, b) => (b.finishedAt || '').localeCompare(a.finishedAt || '')).slice(0, 5);
-  return `<div class="page-head"><div><div class="eyebrow">${esc(comp?.name || 'Pilih perusahaan')}</div><h1>Beranda</h1><p>Ringkasan rekrutmen dan kepegawaian bulan ${fmtMonth(month)}.</p></div>
+  return `<div class="page-head"><div><div class="eyebrow">${esc(comp?.name || 'Pilih perusahaan')}</div><h1>Beranda</h1><p>Ringkasan rekrutmen dan psikotes. Data kepegawaian ada di ruang kerja <b>HRIS Kepegawaian</b>.</p></div>
     <div class="row"><button class="btn" data-go="meetings">Jadwalkan wawancara</button><button class="btn primary" data-go="kerjakan">Kerjakan psikotes</button></div></div>
   <div class="grid g4">
     <div class="card kpi k-blue"><span class="eyebrow">Hasil psikotes</span><b>${res.length}</b><span class="small muted">${inprog} tes sedang berlangsung</span></div>
-    <div class="card kpi k-teal"><span class="eyebrow">Karyawan aktif</span><b>${emps.length}</b><span class="small muted">terdaftar di payroll</span></div>
-    <div class="card kpi k-orange"><span class="eyebrow">Cuti menunggu</span><b>${pend.length}</b><span class="small muted">perlu persetujuan</span></div>
-    <div class="card kpi k-purple"><span class="eyebrow">Estimasi gaji bersih</span><b style="font-size:20px">${rp(payTotal)}</b><span class="small muted">${fmtMonth(month)}</span></div>
+    <div class="card kpi k-teal"><span class="eyebrow">Hasil tes kemampuan unit</span><b>${skillN}</b><span class="small muted">semua periode</span></div>
+    <div class="card kpi k-orange"><span class="eyebrow">Wawancara mendatang</span><b>${meetN}</b><span class="small muted">terjadwal</span></div>
+    <button class="card kpi k-purple hr-kpibtn" data-go="hrdash"><span class="eyebrow">HRIS Kepegawaian</span><b style="font-size:20px">${emps.filter(e => e.active !== false).length} karyawan</b><span class="small muted">Buka ruang kerja HRIS →</span></button>
   </div>
   <div class="grid g2">
     <div class="card"><div class="card-head"><h3>Psikotes terbaru</h3><button class="btn sm" data-go="candidates">Lihat semua</button></div>
@@ -3280,9 +3355,9 @@ Views.menuaccessMount = c => {
     try {
       for (const co of Store.all('companies')) {
         const on = MENU_TOGGLE.filter(id => $$('.mx', c).some(x => x.dataset.co === co.id && x.dataset.m === id && x.checked));
-        const cur = Array.isArray(co.menus) ? co.menus : MENU_TOGGLE;
+        const cur = MENU_TOGGLE.filter(id => menuOn(id, co.id));
         if (on.length === cur.length && on.every(id => cur.includes(id))) continue;
-        await Store.put('companies', co.id, { ...co, menus: on }); audit('ubah akses menu', co.name); n++;
+        await Store.put('companies', co.id, { ...co, menus: on, menusSeen: MENU_TOGGLE }); audit('ubah akses menu', co.name); n++;
       }
       S.dirty = false; toast(n ? 'Akses menu disimpan untuk ' + n + ' RS' : 'Tidak ada perubahan untuk disimpan'); App.renderContent();
     } catch (er) { toast('Gagal menyimpan: ' + (er && er.message || er)); btn.disabled = false; }
@@ -4967,7 +5042,8 @@ function hrDefault(cid) {
     approvals: ['Atasan langsung', 'HRD'],
     deductAbsent: true, lateRule: 'none', latePerMinute: 0, latePerTimes: 0, lateFree: 0,
     components: [],
-    device: { method: 'import', note: '' }
+    device: { method: 'import', note: '' },
+    master: hrMasterDefault()
   };
 }
 function hrCfg(cid) {
@@ -4975,6 +5051,7 @@ function hrCfg(cid) {
   const d = hrDefault(cid), c = Store.get('hr_config', cid) || {};
   const o = { ...d, ...c }; ['shifts', 'leaveTypes', 'approvals', 'holidays', 'components'].forEach(k => { if (!Array.isArray(o[k])) o[k] = d[k]; });
   o.device = { ...d.device, ...(c.device || {}) };
+  o.master = { ...d.master }; Object.keys(c.master || {}).forEach(k => { if (Array.isArray(c.master[k])) o.master[k] = c.master[k]; });
   return o;
 }
 async function hrSaveCfg(cid, patch) {
@@ -5004,8 +5081,9 @@ const hrDaysUntil = iso => iso ? Math.round((new Date(iso + 'T00:00:00') - new D
 function hrAlerts(e) {
   const out = [], chk = (iso, label, warnDays) => { const n = hrDaysUntil(iso); if (n == null) return; if (n < 0) out.push({ lvl: 'bad', t: `${label} lewat ${-n} hari` }); else if (n <= warnDays) out.push({ lvl: 'warn', t: `${label} ${n === 0 ? 'hari ini' : n + ' hari lagi'}` }); };
   if (e.active === false) return out;
-  if (/Kontrak|percobaan|Magang/i.test(e.status || '')) chk(e.contractEnd, 'Kontrak berakhir', 30);
+  if (hrIsContract(e.status, e.companyId)) chk(e.contractEnd, 'Kontrak berakhir', 30);
   chk(e.strUntil, 'STR berakhir', 90); chk(e.sipUntil, 'SIP berakhir', 90);
+  (e.licenses || []).forEach(l => l.until && chk(l.until, (l.name || 'Sertifikat') + ' berakhir', 60));
   return out;
 }
 /* editor tabel sederhana: baris input yang bisa ditambah/dihapus */
@@ -5017,7 +5095,8 @@ function hrRowsTable(id, cols, rows) {
     <button type="button" class="btn sm" data-addrow="${id}">+ Tambah baris</button><template id="${id}_tpl">${row({})}</template>`;
 }
 function hrRowsWire(c) {
-  c.addEventListener('click', e => {
+  if (c._hrRows) c.removeEventListener('click', c._hrRows);
+  c.addEventListener('click', c._hrRows = e => {
     const a = e.target.closest('[data-addrow]'); if (a) { const id = a.dataset.addrow; $(`#${id} tbody`, c).insertAdjacentHTML('beforeend', $(`#${id}_tpl`, c).innerHTML); return; }
     const r = e.target.closest('[data-rmrow]'); if (r) r.closest('tr').remove();
   });
@@ -5061,7 +5140,7 @@ Views.hrsettings = () => {
         <option value="agent" ${cfg.device.method === 'agent' ? 'selected' : ''}>Program penarik data di komputer RS — tahap berikutnya</option></select></label>
       <label class="f">Catatan (merek, tipe, lokasi mesin)<textarea class="input" id="hDevN" placeholder="Contoh: ZKTeco K40 di pintu IGD, Solution X100-C di gedung administrasi">${esc(cfg.device.note || '')}</textarea></label>
       <ul class="ist-notes"><li>Setiap karyawan harus punya <b>PIN / ID mesin</b> di Data Karyawan, sama dengan nomor yang terdaftar di mesin.</li><li>Impor file bisa dilakukan kapan saja di menu Absensi → Impor data mesin. Data yang sama tidak tercatat dua kali.</li><li>Untuk pengiriman otomatis, siapkan merek dan tipe mesin, lalu cek apakah ada menu <i>Cloud Server Setting</i> atau <i>ADMS</i> di mesin.</li></ul></div>`;
-  return `<div class="page-head"><div><h1>Pengaturan Kepegawaian</h1><p>Aturan yang dipakai Absensi, Cuti, dan Penggajian. Nilai bawaan bisa diubah kapan saja.</p></div><button class="btn primary" id="hSave">Simpan pengaturan</button></div>
+  return `<div class="page-head"><div><h1>Aturan Absensi & Gaji</h1><p>Aturan yang dipakai Absensi, Cuti, dan Penggajian. Nilai bawaan bisa diubah kapan saja.</p></div><button class="btn primary" id="hSave">Simpan pengaturan</button></div>
     <div class="tabs" role="tablist">${tabs.map(([k, l]) => `<button class="tab ${tab === k ? 'on' : ''}" role="tab" aria-selected="${tab === k}" data-htab="${k}" id="bk_ht_${k}">${l}</button>`).join('')}</div>${body}`;
 };
 Views.hrsettingsMount = c => {
@@ -5098,11 +5177,91 @@ Views.hrsettingsMount = c => {
 };
 
 /* =========================================================
+   HRIS · Master Data HR
+   Daftar pilihan yang dipakai di seluruh modul HRIS (jabatan, golongan,
+   status, lokasi, kualifikasi, alasan keluar, jenis klaim, KPI).
+   Disimpan di hr_config/<companyId>.master — tidak perlu tabel baru.
+   ========================================================= */
+function hrMasterDefault() {
+  const L = a => a.map(name => ({ name }));
+  return {
+    jobs: [
+      { name: 'Direktur', cat: 'Manajerial', grade: 'IV' }, { name: 'Manajer', cat: 'Manajerial', grade: 'IV' }, { name: 'Kepala Instalasi', cat: 'Manajerial', grade: 'III' },
+      { name: 'Kepala Ruangan', cat: 'Keperawatan', grade: 'III' }, { name: 'Dokter Spesialis', cat: 'Medis', grade: 'IV' }, { name: 'Dokter Umum', cat: 'Medis', grade: 'III' },
+      { name: 'Perawat Pelaksana', cat: 'Keperawatan', grade: 'II' }, { name: 'Bidan Pelaksana', cat: 'Keperawatan', grade: 'II' }, { name: 'Apoteker', cat: 'Penunjang Medis', grade: 'III' },
+      { name: 'Tenaga Teknis Kefarmasian', cat: 'Penunjang Medis', grade: 'II' }, { name: 'Analis Laboratorium', cat: 'Penunjang Medis', grade: 'II' }, { name: 'Radiografer', cat: 'Penunjang Medis', grade: 'II' },
+      { name: 'Staf Administrasi', cat: 'Non-medis', grade: 'I' }, { name: 'Staf Keuangan', cat: 'Non-medis', grade: 'II' }, { name: 'Petugas Keamanan', cat: 'Non-medis', grade: 'I' }, { name: 'Pramu Kebersihan', cat: 'Non-medis', grade: 'I' }
+    ],
+    cats: L(['Manajerial', 'Medis', 'Keperawatan', 'Penunjang Medis', 'Non-medis']),
+    grades: [{ name: 'I', min: 0, max: 0 }, { name: 'II', min: 0, max: 0 }, { name: 'III', min: 0, max: 0 }, { name: 'IV', min: 0, max: 0 }],
+    statuses: HR_STATUS.map(name => ({ name, contract: /Kontrak|percobaan|Magang/i.test(name) })),
+    locs: [],
+    edus: L(['SD', 'SMP', 'SMA/SMK', 'D3', 'D4', 'S1', 'Profesi (Ners/Dokter/Apoteker)', 'S2', 'Spesialis', 'S3']),
+    skills: L(['Komputer / Office', 'Pelayanan pelanggan', 'Pemasangan infus', 'Perawatan luka', 'Kegawatdaruratan']),
+    licenses: L(['STR', 'SIP', 'BTCLS', 'ACLS', 'PPGD', 'Sertifikat K3', 'Sertifikat PPI']),
+    langs: L(['Indonesia', 'Inggris', 'Arab', 'Mandarin']),
+    endReasons: L(['Mengundurkan diri', 'Kontrak selesai', 'Pensiun', 'PHK', 'Meninggal dunia', 'Lainnya']),
+    claimTypes: [{ name: 'Rawat jalan', limit: 0 }, { name: 'Kacamata', limit: 0 }, { name: 'Transport dinas', limit: 0 }, { name: 'Uang makan dinas', limit: 0 }, { name: 'Pelatihan / seminar', limit: 0 }],
+    kpis: [
+      { job: '', name: 'Kedisiplinan & kehadiran', weight: 20, target: 'Hadir & tepat waktu ≥ 95%' },
+      { job: '', name: 'Kualitas pekerjaan', weight: 30, target: 'Sesuai SOP, tanpa komplain' },
+      { job: '', name: 'Kerja sama tim', weight: 20, target: 'Aktif membantu rekan' },
+      { job: '', name: 'Pelayanan pasien / pelanggan', weight: 30, target: 'Kepuasan ≥ 85%' }
+    ]
+  };
+}
+const hrMaster = (k, cid) => hrCfg(cid).master[k] || [];
+const hrStatusList = cid => { const l = hrMaster('statuses', cid).map(x => x.name).filter(Boolean); return l.length ? l : HR_STATUS; };
+const hrIsContract = (status, cid) => { const m = hrMaster('statuses', cid).find(x => x.name === status); return m ? !!m.contract : /Kontrak|percobaan|Magang/i.test(status || ''); };
+
+const HRM_TABS = [
+  { k: 'jobs', label: 'Jabatan', help: 'Daftar jabatan. Kategori dan golongan dipakai untuk laporan dan kisaran gaji.', cols: () => [{ k: 'name', label: 'Nama jabatan' }, { k: 'cat', label: 'Kategori', type: 'select', opts: [['', '–'], ...hrMaster('cats').map(c => [c.name, c.name])] }, { k: 'grade', label: 'Golongan', type: 'select', opts: [['', '–'], ...hrMaster('grades').map(c => [c.name, c.name])] }, { k: 'desc', label: 'Uraian tugas singkat' }] },
+  { k: 'cats', label: 'Kategori jabatan', help: 'Pengelompokan jabatan (misalnya Medis, Keperawatan, Non-medis).', cols: () => [{ k: 'name', label: 'Nama kategori' }] },
+  { k: 'grades', label: 'Golongan gaji', help: 'Kisaran gaji pokok per golongan. Data Karyawan akan memberi tanda bila gaji pokok di luar kisaran. Isi 0 bila tidak dibatasi.', cols: () => [{ k: 'name', label: 'Golongan', w: '90px' }, { k: 'min', label: 'Gaji pokok minimal (Rp)', type: 'number', attrs: 'min="0" step="1000"' }, { k: 'max', label: 'Gaji pokok maksimal (Rp)', type: 'number', attrs: 'min="0" step="1000"' }] },
+  { k: 'statuses', label: 'Status kepegawaian', help: 'Tandai status yang punya tanggal akhir (kontrak, percobaan, magang) agar sistem mengingatkan 30 hari sebelum berakhir.', cols: () => [{ k: 'name', label: 'Status' }, { k: 'contract', label: 'Punya tanggal akhir', type: 'check' }] },
+  { k: 'locs', label: 'Lokasi kerja', help: 'Gedung, cabang, atau klinik tempat karyawan bekerja.', cols: () => [{ k: 'name', label: 'Nama lokasi' }, { k: 'address', label: 'Alamat' }, { k: 'phone', label: 'Telepon' }] },
+  { k: 'edus', label: 'Jenjang pendidikan', help: 'Pilihan jenjang pada riwayat pendidikan karyawan.', cols: () => [{ k: 'name', label: 'Jenjang' }] },
+  { k: 'licenses', label: 'Lisensi & sertifikat', help: 'Jenis lisensi/sertifikat. Sistem mengingatkan 60 hari sebelum masa berlakunya habis.', cols: () => [{ k: 'name', label: 'Nama lisensi / sertifikat' }] },
+  { k: 'skills', label: 'Keahlian', help: 'Daftar keahlian yang bisa dicatat per karyawan.', cols: () => [{ k: 'name', label: 'Keahlian' }] },
+  { k: 'langs', label: 'Bahasa', help: '', cols: () => [{ k: 'name', label: 'Bahasa' }] },
+  { k: 'endReasons', label: 'Alasan berhenti', help: 'Pilihan alasan saat karyawan dinonaktifkan. Dipakai di laporan turnover.', cols: () => [{ k: 'name', label: 'Alasan' }] },
+  { k: 'claimTypes', label: 'Jenis klaim', help: 'Jenis klaim/reimburse. Batas per tahun 0 berarti tidak dibatasi.', cols: () => [{ k: 'name', label: 'Jenis klaim' }, { k: 'limit', label: 'Batas per karyawan per tahun (Rp)', type: 'number', attrs: 'min="0" step="1000"' }] },
+  { k: 'kpis', label: 'KPI penilaian', help: 'Indikator penilaian kinerja. Kosongkan kolom jabatan agar berlaku untuk semua jabatan. Bobot dalam persen; total per jabatan sebaiknya 100.', cols: () => [{ k: 'job', label: 'Jabatan', type: 'select', opts: [['', 'Semua jabatan'], ...hrMaster('jobs').map(c => [c.name, c.name])] }, { k: 'name', label: 'Indikator' }, { k: 'weight', label: 'Bobot (%)', type: 'number', w: '80px', attrs: 'min="0" max="100"' }, { k: 'target', label: 'Target / ukuran' }] }
+];
+
+Views.hrmaster = () => {
+  const tab = (S.params || {}).tab || 'jobs', T = HRM_TABS.find(t => t.k === tab) || HRM_TABS[0], rows = hrMaster(T.k);
+  const used = name => { const E = empList(); return T.k === 'jobs' ? E.filter(e => e.position === name).length : T.k === 'statuses' ? E.filter(e => e.status === name).length : T.k === 'locs' ? E.filter(e => e.location === name).length : null; };
+  const usage = ['jobs', 'statuses', 'locs'].includes(T.k) && rows.length ? `<div class="row small muted">${rows.filter(r => r.name).map(r => `<span class="pill">${esc(r.name)} · ${used(r.name)}</span>`).join('')}</div>` : '';
+  let extra = '';
+  if (T.k === 'kpis') { const by = {}; rows.forEach(r => { by[r.job || 'Semua jabatan'] = (by[r.job || 'Semua jabatan'] || 0) + (+r.weight || 0); });
+    extra = `<div class="row">${Object.entries(by).map(([j, w]) => `<span class="pill ${w === 100 ? 'ok' : 'warn'}">${esc(j)}: ${w}%</span>`).join('')}</div>`; }
+  return `<div class="page-head"><div><h1>Master Data HR</h1><p>Daftar pilihan yang dipakai di Data Karyawan, Cuti, Klaim, dan Penilaian Kinerja.</p></div><button class="btn primary" id="hmSave">Simpan</button></div>
+  <div class="hrm-wrap"><nav class="hrm-nav" aria-label="Jenis master data">${HRM_TABS.map(t => `<button class="${t.k === T.k ? 'on' : ''}" data-hmt="${t.k}" id="bk_hm_${t.k}">${esc(t.label)}<span>${hrMaster(t.k).length}</span></button>`).join('')}</nav>
+  <div class="card card-pad stack" style="min-width:0"><h3 style="margin:0">${esc(T.label)}</h3>${T.help ? `<p class="small muted" style="margin:0">${esc(T.help)}</p>` : ''}${extra}
+    ${hrRowsTable('tHm', T.cols(), rows)}${usage ? `<div class="eyebrow">Dipakai oleh karyawan aktif</div>${usage}` : ''}</div></div>`;
+};
+Views.hrmasterMount = c => {
+  const tab = (S.params || {}).tab || 'jobs';
+  $$('[data-hmt]', c).forEach(b => b.onclick = async () => { if (S.dirty && !(await confirmBox('Perubahan belum disimpan dan akan hilang. Lanjut pindah?', 'Pindah'))) return; S.dirty = false; S.params = { tab: b.dataset.hmt }; App.renderContent(); });
+  hrRowsWire(c);
+  const save = async () => {
+    const rows = hrRowsRead(c, 'tHm').filter(r => String(r.name || '').trim());
+    const names = rows.map(r => (r.job ? r.job + '|' : '') + r.name.toLowerCase());
+    if (new Set(names).size !== names.length) { toast('Ada nama yang sama dua kali'); return; }
+    if (tab === 'grades' && rows.some(r => r.max && r.min > r.max)) { toast('Gaji minimal lebih besar dari maksimal'); return; }
+    const cur = (Store.get('hr_config', S.companyId) || {}).master || {};
+    await hrSaveCfg(S.companyId, { master: { ...cur, [tab]: rows } }); S.dirty = false; audit('ubah master data HR', tab); toast('Master data disimpan'); App.renderContent();
+  };
+  $('#hmSave', c).onclick = save; trackDirty(c, save);
+};
+
+/* =========================================================
    KEPEGAWAIAN · Data Karyawan
    ========================================================= */
 /* kolom impor/ekspor: [kunci, judul kolom] */
 const EMP_COLS = [
-  ['nik', 'NIK Karyawan'], ['name', 'Nama Lengkap'], ['pin', 'PIN Mesin Absensi'], ['unit', 'Unit'], ['position', 'Jabatan'], ['level', 'Level'],
+  ['nik', 'NIK Karyawan'], ['name', 'Nama Lengkap'], ['pin', 'PIN Mesin Absensi'], ['unit', 'Unit'], ['position', 'Jabatan'], ['level', 'Level'], ['grade', 'Golongan'], ['location', 'Lokasi Kerja'],
   ['status', 'Status Kepegawaian'], ['joinDate', 'Tanggal Masuk'], ['contractEnd', 'Kontrak Berakhir'], ['workType', 'Jenis Kerja (shift/nonshift)'],
   ['profession', 'Profesi'], ['gender', 'Jenis Kelamin (L/P)'], ['birthPlace', 'Tempat Lahir'], ['birthDate', 'Tanggal Lahir'], ['nikKtp', 'NIK KTP'],
   ['phone', 'No HP'], ['email', 'Email'], ['address', 'Alamat'], ['ptkp', 'Status PTKP'], ['npwp', 'NPWP'], ['bpjsKesNo', 'No BPJS Kesehatan'], ['bpjsTkNo', 'No BPJS Ketenagakerjaan'],
@@ -5123,7 +5282,7 @@ Views.employees = () => {
   if (f.status) rows = rows.filter(e => (e.status || '') === f.status);
   if (f.alert) rows = rows.filter(e => hrAlerts(e).length);
   const act = all.filter(e => e.active !== false), alertN = act.filter(e => hrAlerts(e).length).length, noPin = act.filter(e => !e.pin).length;
-  const contract = act.filter(e => /Kontrak|percobaan/i.test(e.status || '')).length;
+  const contract = act.filter(e => hrIsContract(e.status)).length;
   return `<div class="page-head"><div><h1>Data Karyawan</h1><p>Data induk karyawan untuk absensi, cuti, dan penggajian.</p></div>
     <div class="row"><button class="btn" id="eExp">Unduh Excel (CSV)</button><button class="btn" id="eImp">Impor dari Excel</button><button class="btn primary" id="addE">+ Karyawan</button></div></div>
   <div class="grid g4">
@@ -5135,7 +5294,7 @@ Views.employees = () => {
   <div class="card"><div class="card-head"><div class="row">
     <input class="input" id="eq" placeholder="Cari nama, NIK, PIN…" value="${esc(f.q || '')}" style="width:220px">
     <select class="input" id="eu" style="width:auto"><option value="">Semua unit</option>${units.map(u => `<option ${u === f.unit ? 'selected' : ''}>${esc(u)}</option>`).join('')}</select>
-    <select class="input" id="es" style="width:auto"><option value="">Semua status</option>${HR_STATUS.map(u => `<option ${u === f.status ? 'selected' : ''}>${esc(u)}</option>`).join('')}</select>
+    <select class="input" id="es" style="width:auto"><option value="">Semua status</option>${hrStatusList().map(u => `<option ${u === f.status ? 'selected' : ''}>${esc(u)}</option>`).join('')}</select>
     <select class="input" id="eshow" style="width:auto"><option value="">Aktif</option><option value="off" ${f.show === 'off' ? 'selected' : ''}>Nonaktif</option><option value="all" ${f.show === 'all' ? 'selected' : ''}>Semua</option></select>
     ${f.alert ? '<button class="btn sm" id="eAlertOff">Hapus filter perhatian ✕</button>' : ''}</div><span class="small muted">${rows.length} karyawan</span></div>
   ${rows.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>NIK</th><th>Nama</th><th>Unit / jabatan</th><th>Status</th><th>Masa kerja</th><th>PIN mesin</th><th>Jenis kerja</th><th>Perhatian</th></tr></thead><tbody>
@@ -5166,8 +5325,10 @@ function employeeForm(e = {}) {
   openModal({ title: e.id ? 'Ubah data karyawan' : 'Tambah karyawan', wide: true, body: `<form id="eF" class="stack" style="gap:14px">
     <fieldset class="hr-fs"><legend>Kepegawaian</legend><div class="form-grid">
       ${F('nik', 'NIK karyawan *', 'required')}${F('name', 'Nama lengkap *', 'required')}
-      <label class="f">Unit *<select class="input" name="unit" required>${unitOptions(S.companyId, e.unit)}</select></label>${F('position', 'Jabatan')}
-      ${Sel('level', 'Level', ['', ...POSISI], e.level)}${Sel('status', 'Status kepegawaian', HR_STATUS, e.status || 'Tetap')}
+      <label class="f">Unit *<select class="input" name="unit" required>${unitOptions(S.companyId, e.unit)}</select></label>
+      <label class="f">Jabatan<input class="input" name="position" list="dlJob" value="${esc(e.position || '')}" placeholder="pilih atau ketik"><datalist id="dlJob">${cfg.master.jobs.map(j => `<option value="${esc(j.name)}">${esc(j.cat || '')}</option>`).join('')}</datalist></label>
+      ${Sel('level', 'Level', ['', ...POSISI], e.level)}${Sel('status', 'Status kepegawaian', [...new Set([...hrStatusList(), ...(e.status ? [e.status] : [])])], e.status || hrStatusList()[0])}
+      ${Sel('grade', 'Golongan (kosong = ikut jabatan)', ['', ...cfg.master.grades.map(g => g.name)], e.grade)}${Sel('location', 'Lokasi kerja', ['', ...cfg.master.locs.map(l => l.name)], e.location)}
       ${F('joinDate', 'Tanggal masuk *', 'required', 'date')}${F('contractEnd', 'Kontrak / percobaan berakhir', '', 'date')}
       <label class="f">Profesi<input class="input" name="profession" list="dlProf" value="${esc(e.profession || '')}"><datalist id="dlProf">${HR_PROF.map(p => `<option>${esc(p)}</option>`).join('')}</datalist></label>
       ${Sel('supervisorId', 'Atasan langsung', [['', '– tidak ada –'], ...others.map(o => [o.id, `${o.name} · ${o.position || o.unit || ''}`])], e.supervisorId)}
@@ -5203,7 +5364,7 @@ function employeeForm(e = {}) {
       if (d.contractEnd && d.contractEnd < d.joinDate) { toast('Tanggal kontrak berakhir sebelum tanggal masuk'); return; }
       const compsV = {}; comps.forEach(k => { const v = d['comp_' + k.code]; if (v !== '' && v != null) compsV[k.code] = +v; delete d['comp_' + k.code]; });
       const id = e.id || uid('e'), prev = e.id ? Store.get('employees', e.id) : {};
-      const body = { ...prev, ...d, companyId: S.companyId, basic: +d.basic || 0, fixedAllow: +d.fixedAllow || 0, varAllow: +d.varAllow || 0, pph: +d.pph || 0, bpjs: d.bpjs !== '0', comps: { ...(prev.comps || {}), ...compsV }, active: prev.active !== false, updatedAt: nowISO() };
+      const body = { ...prev, ...d, history: empHistoryDiff(prev, { ...d, basic: +d.basic || 0 }), companyId: S.companyId, basic: +d.basic || 0, fixedAllow: +d.fixedAllow || 0, varAllow: +d.varAllow || 0, pph: +d.pph || 0, bpjs: d.bpjs !== '0', comps: { ...(prev.comps || {}), ...compsV }, active: prev.active !== false, updatedAt: nowISO() };
       delete body.id; await Store.put('employees', id, body);
       audit(e.id ? 'ubah karyawan' : 'tambah karyawan', d.name); closeModal(); toast('Data karyawan disimpan');
       if (!e.id) App.go('employee', { id }); else App.renderContent();
@@ -5214,12 +5375,12 @@ function employeeForm(e = {}) {
 /* ---------- detail ---------- */
 Views.employee = () => {
   const e = Store.get('employees', (S.params || {}).id); if (!e || !inScope(e)) return '<div class="card card-pad">Karyawan tidak ditemukan. <button class="btn sm" data-go="employees">Kembali</button></div>';
-  const tab = S.params.tab || 'profil', cfg = hrCfg(), sup = e.supervisorId ? Store.get('employees', e.supervisorId) : null;
+  const tab = S.params.tab || 'profil', cfg = hrCfg(), sup = e.supervisorId ? Store.get('employees', e.supervisorId) : null, subs = empSubs(e), job = cfg.master.jobs.find(j => j.name === e.position), gw = empGradeCheck(e);
   const row = (k, v) => `<div class="hr-kv"><span>${k}</span><b>${v || '<span class="faint">–</span>'}</b></div>`;
   let body = '';
   if (tab === 'profil') body = `<div class="grid g2" style="align-items:start">
     <div class="card card-pad stack"><div class="eyebrow">Kepegawaian</div>${row('NIK karyawan', esc(e.nik))}${row('Unit', esc(e.unit))}${row('Jabatan', esc(e.position))}${row('Level', esc(e.level))}${row('Status', esc(e.status))}
-      ${row('Tanggal masuk', e.joinDate ? fmtDate(e.joinDate) + ' · ' + hrServiceText(e.joinDate) : '')}${row('Kontrak berakhir', e.contractEnd ? fmtDate(e.contractEnd) : '')}${row('Profesi', esc(e.profession))}${row('Atasan langsung', sup ? esc(sup.name) : '')}
+      ${row('Tanggal masuk', e.joinDate ? fmtDate(e.joinDate) + ' · ' + hrServiceText(e.joinDate) : '')}${row('Kontrak berakhir', e.contractEnd ? fmtDate(e.contractEnd) : '')}${row('Kategori / golongan', [esc(job?.cat || ''), esc(e.grade || job?.grade || '')].filter(Boolean).join(' · '))}${row('Lokasi kerja', esc(e.location))}${row('Profesi', esc(e.profession))}${row('Atasan langsung', sup ? `<a href="#" data-emp="${sup.id}">${esc(sup.name)}</a>` : '')}${row('Bawahan langsung', subs.map(x => `<a href="#" data-emp="${x.id}">${esc(x.name)}</a>`).join(', '))}
       ${e.active === false ? row('Nonaktif sejak', fmtDate(e.endDate) + (e.endReason ? ' · ' + esc(e.endReason) : '')) : ''}</div>
     <div class="stack"><div class="card card-pad stack"><div class="eyebrow">Absensi</div>${row('PIN mesin absensi', e.pin ? `<span class="mono">${esc(e.pin)}</span>` : '<span class="pill warn">belum diisi</span>')}${row('Jenis kerja', e.workType === 'shift' ? 'Shift (ikut jadwal bulanan)' : `Non-shift (shift ${esc(cfg.defaultShift)} pada hari kerja)`)}</div>
       <div class="card card-pad stack"><div class="eyebrow">Legalitas tenaga kesehatan</div>${row('STR', e.strNo ? esc(e.strNo) + (e.strUntil ? ' · s.d. ' + fmtDate(e.strUntil) : ' · seumur hidup') : '')}${row('SIP', e.sipNo ? esc(e.sipNo) + (e.sipUntil ? ' · s.d. ' + fmtDate(e.sipUntil) : '') : '')}</div></div>
@@ -5231,9 +5392,11 @@ Views.employee = () => {
     body = `<div class="card card-pad stack"><div class="row" style="justify-content:space-between"><div class="eyebrow">Absensi ${fmtMonth(month)}</div><div class="row"><input class="input" type="month" id="eam" value="${month}" style="width:auto"><button class="btn sm" data-go="attendance" data-p='${JSON.stringify({ tab: 'rekap', month })}'>Buka menu Absensi</button></div></div>
       ${attRecapChips(R)}${attDaysTable(e, A)}</div>`; }
   if (tab === 'cuti') { const year = new Date().getFullYear(), b = leaveBalance(e, year), L = Store.all('leaves', l => l.employeeId === e.id).sort((a, c) => (c.start || '').localeCompare(a.start || ''));
-    body = `<div class="card card-pad stack"><div class="eyebrow">Saldo cuti tahunan ${year}</div><div class="row">${b.type ? `<span class="pill info">Hak ${b.quota} hari</span><span class="pill">Terpakai ${b.used}</span><span class="pill warn">Menunggu ${b.pending}</span><span class="pill ok">Sisa ${b.left}</span>${b.eligible ? '' : `<span class="pill warn">berhak mulai ${fmtDate(b.eligDate)}</span>`}` : '<span class="small muted">Belum ada jenis cuti yang ditandai sebagai cuti tahunan.</span>'}</div></div>
+    body = `<div class="card card-pad stack"><div class="row" style="justify-content:space-between"><div class="eyebrow">Saldo cuti tahunan ${year}</div><button class="btn sm" id="eLadj">Sesuaikan saldo</button></div><div class="row">${b.type ? `<span class="pill info">Hak ${b.quota} hari${b.adj ? ` (termasuk penyesuaian ${b.adj > 0 ? '+' : ''}${b.adj})` : ''}</span><span class="pill">Terpakai ${b.used}</span><span class="pill warn">Menunggu ${b.pending}</span><span class="pill ok">Sisa ${b.left}</span>${b.eligible ? '' : `<span class="pill warn">berhak mulai ${fmtDate(b.eligDate)}</span>`}` : '<span class="small muted">Belum ada jenis cuti yang ditandai sebagai cuti tahunan.</span>'}</div></div>
       <div class="card">${L.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Jenis</th><th>Tanggal</th><th class="num">Hari</th><th>Alasan</th><th>Status</th></tr></thead><tbody>${L.map(l => `<tr><td>${esc(l.type)}</td><td class="small">${fmtDate(l.start)} – ${fmtDate(l.end)}</td><td class="num">${leaveDays(e, l.start, l.end)}</td><td class="small">${esc(l.reason || '')}</td><td>${leaveStatusPill(l)}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">Belum ada riwayat cuti.</div>'}</div>`; }
-  const tabs = [['profil', 'Profil'], ['absen', 'Absensi'], ['cuti', 'Cuti'], ['gaji', 'Gaji']];
+  if (['keluarga', 'kualifikasi', 'riwayat', 'dokumen'].includes(tab)) body = empTabBody(e, tab);
+  if (tab === 'gaji' && gw) body = `<div class="card card-pad" style="border-color:var(--warn,#E0730B)"><b>Perhatian:</b> ${esc(gw)}</div>` + body;
+  const tabs = [['profil', 'Profil'], ['keluarga', 'Keluarga & darurat'], ['kualifikasi', 'Kualifikasi'], ['riwayat', 'Riwayat'], ['dokumen', 'Dokumen'], ['absen', 'Absensi'], ['cuti', 'Cuti'], ['gaji', 'Gaji']];
   return `<div class="page-head"><div><button class="btn ghost sm" data-go="employees">← Data Karyawan</button><h1 style="margin-top:6px">${esc(e.name)}${sampleTag(e)}</h1>
       <p>${esc(e.position || '')}${e.unit ? ' · ' + esc(e.unit) : ''} · ${esc(e.status || '')}${e.active === false ? ' · <b>Nonaktif</b>' : ''}</p>
       <div class="row">${hrAlerts(e).map(a => `<span class="pill ${a.lvl}">${esc(a.t)}</span>`).join('')}</div></div>
@@ -5246,9 +5409,16 @@ Views.employeeMount = c => {
   const m1 = $('#egm', c); if (m1) m1.onchange = () => { S.params = { ...S.params, month: m1.value }; App.renderContent(); };
   const m2 = $('#eam', c); if (m2) m2.onchange = () => { S.params = { ...S.params, month: m2.value }; App.renderContent(); };
   attDaysWire(c, e);
+  const la = $('#eLadj', c); if (la) la.onclick = () => { const y = new Date().getFullYear(), cur = +((e.leaveAdj || {})[y] || 0);
+    openModal({ title: 'Penyesuaian saldo cuti ' + y, body: `<form id="laF" class="stack"><label class="f">Tambah / kurangi hari (mis. 3 untuk sisa cuti tahun lalu, -2 untuk potongan)<input class="input" type="number" name="v" step="1" min="-60" max="60" value="${cur}"></label><label class="f">Alasan<input class="input" name="note" value="${esc((e.leaveAdjNote || {})[y] || '')}" placeholder="mis. carry over 2025"></label></form>`,
+      foot: '<button class="btn" data-close>Batal</button><button class="btn primary" form="laF">Simpan</button>',
+      onMount: r => $('#laF', r).onsubmit = async ev => { ev.preventDefault(); const d = formData(ev.target), x = Store.get('employees', e.id);
+        await Store.put('employees', e.id, { ...x, leaveAdj: { ...(x.leaveAdj || {}), [y]: +d.v || 0 }, leaveAdjNote: { ...(x.leaveAdjNote || {}), [y]: d.note } }); audit('sesuaikan saldo cuti', e.name); closeModal(); App.renderContent(); } }); };
+  $$('[data-elist]', c).forEach(b => b.onclick = () => empListEdit(Store.get('employees', e.id), b.dataset.elist));
+  $$('[data-emp]', c).forEach(a => a.onclick = ev => { ev.preventDefault(); App.go('employee', { id: a.dataset.emp }); });
   $('#eEdit', c).onclick = () => employeeForm(e);
   const off = $('#eOff', c); if (off) off.onclick = () => openModal({ title: 'Nonaktifkan karyawan', body: `<form id="offF" class="form-grid"><label class="f">Tanggal keluar<input class="input" type="date" name="endDate" required value="${todayISO()}"></label>
-      <label class="f">Alasan<select class="input" name="endReason"><option>Mengundurkan diri</option><option>Kontrak selesai</option><option>Pensiun</option><option>PHK</option><option>Meninggal dunia</option><option>Lainnya</option></select></label></form>
+      <label class="f">Alasan<select class="input" name="endReason">${hrMaster('endReasons').map(x => `<option>${esc(x.name)}</option>`).join('')}</select></label></form>
       <p class="small muted" style="margin:0">Data karyawan, absensi, dan riwayat gaji tetap tersimpan.</p>`, foot: '<button class="btn" data-close>Batal</button><button class="btn primary" form="offF">Nonaktifkan</button>',
     onMount: r => $('#offF', r).onsubmit = async ev => { ev.preventDefault(); const d = formData(ev.target); await Store.put('employees', e.id, { ...Store.get('employees', e.id), active: false, endDate: d.endDate, endReason: d.endReason }); audit('nonaktifkan karyawan', e.name); closeModal(); App.renderContent(); } });
   const on = $('#eOn', c); if (on) on.onclick = async () => { await Store.put('employees', e.id, { ...Store.get('employees', e.id), active: true, endDate: '', endReason: '' }); audit('aktifkan karyawan', e.name); App.renderContent(); };
@@ -5299,7 +5469,7 @@ function empImportDialog() {
       $('#iGo', r).onclick = async () => {
         const b = $('#iGo', r); b.disabled = true; b.textContent = 'Mengimpor…';
         for (const x of plan.add) { const id = uid('e'); const o = { ...x }; delete o.id; await Store.put('employees', id, { ...o, companyId: S.companyId, active: true, createdAt: nowISO() }); }
-        for (const x of plan.upd) { const cur = Store.get('employees', x.id); const o = { ...cur, ...x, comps: { ...(cur.comps || {}), ...(x.comps || {}) } }; delete o.id; await Store.put('employees', x.id, o); }
+        for (const x of plan.upd) { const cur = Store.get('employees', x.id); const o = { ...cur, ...x, comps: { ...(cur.comps || {}), ...(x.comps || {}) } }; o.history = empHistoryDiff(cur, o); delete o.id; await Store.put('employees', x.id, o); }
         audit('impor data karyawan', `${plan.add.length} baru, ${plan.upd.length} diperbarui`); closeModal(); toast('Impor selesai'); App.renderContent();
       };
     }
@@ -5327,6 +5497,65 @@ function empImportPlan(rows) {
     else { if (!o.name || !o.joinDate) { bad.push(`Baris ${line}: karyawan baru wajib punya nama dan tanggal masuk`); return; } add.push({ status: 'Tetap', workType: 'nonshift', bpjs: true, basic: 0, fixedAllow: 0, varAllow: 0, pph: 0, ...o }); }
   });
   return { add, upd, bad };
+}
+
+/* =========================================================
+   HRIS · Detail karyawan lanjutan
+   Kontak darurat, tanggungan, pendidikan, pengalaman, keahlian,
+   lisensi, bahasa, riwayat jabatan & gaji, dokumen.
+   Semua disimpan sebagai daftar di dokumen employees/<id>.
+   ========================================================= */
+const EMP_REL = ['Suami/Istri', 'Anak', 'Ayah', 'Ibu', 'Saudara', 'Lainnya'];
+const EMP_LISTS = {
+  emergency: { title: 'Kontak darurat', cols: () => [{ k: 'name', label: 'Nama' }, { k: 'rel', label: 'Hubungan', type: 'select', opts: EMP_REL.map(x => [x, x]) }, { k: 'phone', label: 'No HP', type: 'tel' }, { k: 'phone2', label: 'Telepon lain', type: 'tel' }] },
+  dependents: { title: 'Keluarga & tanggungan', cols: () => [{ k: 'name', label: 'Nama' }, { k: 'rel', label: 'Hubungan', type: 'select', opts: EMP_REL.map(x => [x, x]) }, { k: 'birth', label: 'Tanggal lahir', type: 'date' }, { k: 'nik', label: 'NIK' }, { k: 'bpjs', label: 'Ditanggung BPJS', type: 'check' }] },
+  edu: { title: 'Riwayat pendidikan', cols: () => [{ k: 'level', label: 'Jenjang', type: 'select', opts: [['', '–'], ...hrMaster('edus').map(x => [x.name, x.name])] }, { k: 'school', label: 'Institusi' }, { k: 'major', label: 'Jurusan' }, { k: 'year', label: 'Lulus', type: 'number', w: '80px', attrs: 'min="1950" max="2100"' }, { k: 'gpa', label: 'IPK/Nilai', w: '70px' }] },
+  work: { title: 'Pengalaman kerja sebelumnya', cols: () => [{ k: 'company', label: 'Instansi' }, { k: 'title', label: 'Jabatan' }, { k: 'from', label: 'Dari', type: 'month' }, { k: 'to', label: 'Sampai', type: 'month' }, { k: 'note', label: 'Keterangan' }] },
+  skills: { title: 'Keahlian', cols: () => [{ k: 'name', label: 'Keahlian', type: 'select', opts: [['', '–'], ...hrMaster('skills').map(x => [x.name, x.name])] }, { k: 'years', label: 'Pengalaman (th)', type: 'number', w: '90px', attrs: 'min="0" max="60"' }, { k: 'note', label: 'Keterangan' }] },
+  licenses: { title: 'Lisensi & sertifikat', cols: () => [{ k: 'name', label: 'Jenis', type: 'select', opts: [['', '–'], ...hrMaster('licenses').map(x => [x.name, x.name])] }, { k: 'no', label: 'Nomor' }, { k: 'issued', label: 'Terbit', type: 'date' }, { k: 'until', label: 'Berlaku s.d.', type: 'date' }] },
+  langs: { title: 'Bahasa', cols: () => [{ k: 'name', label: 'Bahasa', type: 'select', opts: [['', '–'], ...hrMaster('langs').map(x => [x.name, x.name])] }, { k: 'skill', label: 'Kemampuan', type: 'select', opts: [['Membaca', 'Membaca'], ['Menulis', 'Menulis'], ['Berbicara', 'Berbicara'], ['Semua', 'Semua']] }, { k: 'level', label: 'Tingkat', type: 'select', opts: [['Dasar', 'Dasar'], ['Menengah', 'Menengah'], ['Mahir', 'Mahir'], ['Penutur asli', 'Penutur asli']] }] },
+  history: { title: 'Riwayat jabatan & gaji', cols: () => [{ k: 'date', label: 'Berlaku', type: 'date' }, { k: 'what', label: 'Perubahan', type: 'select', opts: [['Jabatan', 'Jabatan'], ['Unit', 'Unit'], ['Status', 'Status'], ['Gaji pokok', 'Gaji pokok'], ['Level', 'Level'], ['Lainnya', 'Lainnya']] }, { k: 'from', label: 'Dari' }, { k: 'to', label: 'Menjadi' }, { k: 'note', label: 'No SK / keterangan' }] },
+  docs: { title: 'Dokumen', cols: () => [{ k: 'name', label: 'Nama dokumen' }, { k: 'kind', label: 'Jenis', type: 'select', opts: ['KTP', 'Kartu Keluarga', 'Ijazah', 'Transkrip', 'STR', 'SIP', 'Kontrak kerja', 'SK', 'Sertifikat', 'Lainnya'].map(x => [x, x]) }, { k: 'url', label: 'Tautan file (Google Drive, dll.)', type: 'url' }, { k: 'until', label: 'Berlaku s.d.', type: 'date' }] }
+};
+function empListTable(e, key, fmt) {
+  const L = EMP_LISTS[key], rows = e[key] || [], cols = L.cols();
+  const cell = (c, r) => { const v = r[c.k]; if (c.type === 'check') return v ? 'Ya' : 'Tidak'; if (c.type === 'date') return v ? fmtDate(v) : ''; if (c.type === 'month') return v ? fmtMonth(v) : ''; if (c.type === 'url') return v ? `<a href="${esc(/^https?:\/\//.test(v) ? v : 'https://' + v)}" target="_blank" rel="noopener noreferrer">Buka</a>` : ''; if (c.k === 'phone' && v) return `<a href="tel:${esc(v)}">${esc(v)}</a>`; return esc(v ?? ''); };
+  return `<div class="card"><div class="card-head"><h3 style="margin:0">${esc(L.title)}</h3><button class="btn sm" data-elist="${key}">Ubah</button></div>
+    ${rows.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr>${cols.map(c => `<th>${esc(c.label)}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${cols.map(c => `<td class="small">${fmt ? fmt(c, r, cell(c, r)) : cell(c, r)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : '<div class="empty small">Belum ada data.</div>'}</div>`;
+}
+function empListEdit(e, key) {
+  const L = EMP_LISTS[key];
+  openModal({ title: L.title + ' · ' + e.name, wide: true, body: `<div id="elW">${hrRowsTable('tEl', L.cols(), e[key] || [])}</div>`,
+    foot: '<button class="btn" data-close>Batal</button><button class="btn primary" id="elSave">Simpan</button>',
+    onMount: r => { hrRowsWire($('.modal', r)); $('#elSave', r).onclick = async () => {
+      const rows = hrRowsRead(r, 'tEl').filter(x => Object.entries(x).some(([k, v]) => k !== 'bpjs' && v && v !== 0));
+      const cur = Store.get('employees', e.id); await Store.put('employees', e.id, { ...cur, [key]: rows, updatedAt: nowISO() });
+      audit('ubah ' + L.title.toLowerCase(), e.name); closeModal(); toast('Tersimpan'); App.renderContent(); }; } });
+}
+/* catat otomatis perubahan jabatan/unit/status/gaji */
+function empHistoryDiff(prev, next) {
+  if (!prev || !prev.id) return prev && prev.history || [];
+  const H = [...(prev.history || [])], d = todayISO(), by = S.user?.name || '';
+  [['position', 'Jabatan'], ['unit', 'Unit'], ['status', 'Status'], ['level', 'Level'], ['basic', 'Gaji pokok']].forEach(([k, w]) => {
+    const a = prev[k] ?? '', b = next[k] ?? ''; if (String(a) === String(b) || (a === '' && b === 0) || (a === 0 && b === '')) return;
+    H.push({ date: d, what: w, from: k === 'basic' ? rp(+a || 0) : String(a), to: k === 'basic' ? rp(+b || 0) : String(b), note: 'dicatat otomatis · ' + by });
+  });
+  return H;
+}
+function empGradeCheck(e) {
+  const job = hrMaster('jobs', e.companyId).find(j => j.name === e.position), g = hrMaster('grades', e.companyId).find(x => x.name === (e.grade || job?.grade));
+  if (!g || !(+e.basic)) return null;
+  if (+g.min && +e.basic < +g.min) return `Gaji pokok di bawah kisaran golongan ${g.name} (${rp(+g.min)} – ${rp(+g.max || 0)})`;
+  if (+g.max && +e.basic > +g.max) return `Gaji pokok di atas kisaran golongan ${g.name} (${rp(+g.min || 0)} – ${rp(+g.max)})`;
+  return null;
+}
+const empSubs = e => empList(x => x.supervisorId === e.id && x.active !== false);
+function empTabBody(e, tab) {
+  if (tab === 'keluarga') return `<div class="stack">${empListTable(e, 'emergency')}${empListTable(e, 'dependents')}</div>`;
+  if (tab === 'kualifikasi') return `<div class="stack">${empListTable(e, 'edu')}${empListTable(e, 'work')}${empListTable(e, 'licenses', (c, r, v) => c.k === 'until' && r.until ? (hrDaysUntil(r.until) < 0 ? `<span class="pill bad">${v}</span>` : hrDaysUntil(r.until) <= 60 ? `<span class="pill warn">${v}</span>` : v) : v)}<div class="grid g2" style="align-items:start">${empListTable(e, 'skills')}${empListTable(e, 'langs')}</div></div>`;
+  if (tab === 'riwayat') return `<div class="stack"><p class="small muted" style="margin:0">Perubahan jabatan, unit, status, level, dan gaji pokok lewat tombol <b>Ubah data</b> tercatat otomatis. Anda juga bisa menambah riwayat lama secara manual.</p>${empListTable(e, 'history')}</div>`;
+  if (tab === 'dokumen') return `<div class="stack"><p class="small muted" style="margin:0">Simpan berkas di Google Drive/OneDrive RS, lalu tempel tautannya di sini agar mudah dicari. Atur berbagi tautan hanya untuk tim HRD.</p>${empListTable(e, 'docs')}</div>`;
+  return '';
 }
 
 /* =========================================================
@@ -5697,8 +5926,8 @@ function leaveBalance(e, year) {
   if (!T) return { type: null, used: 0, pending: 0, quota: 0, left: 0, eligible: true, eligDate };
   const mine = Store.all('leaves', l => l.employeeId === e.id && l.type === T.name && (l.start || '').startsWith(String(year)));
   const sum = f => mine.filter(l => leaveFinal(l) === f).reduce((s, l) => s + leaveDays(e, l.start, l.end), 0);
-  const eligible = eligDate <= `${year}-12-31`, quota = eligible ? (+T.quota || 0) : 0, used = sum('Disetujui');
-  return { type: T.name, used, pending: sum('Menunggu'), quota, left: quota - used, eligible, eligDate };
+  const adj = +((e.leaveAdj || {})[year] || 0), eligible = eligDate <= `${year}-12-31`, quota = (eligible ? (+T.quota || 0) : 0) + adj, used = sum('Disetujui');
+  return { type: T.name, used, pending: sum('Menunggu'), quota, adj, left: quota - used, eligible, eligDate };
 }
 
 Views.leaves = () => {
@@ -5822,10 +6051,12 @@ function payrollRow(e, month, st) {
   const unpaid = unpaidDays * perDay;
   const earn = [['Gaji pokok', (+e.basic || 0) * factor], ['Tunjangan tetap', (+e.fixedAllow || 0) * factor], ...fixedComps.map(k => [k.name, amt(k) * factor]), ['Tunjangan tidak tetap', +e.varAllow || 0], ...varComps.map(k => [k.name, amt(k)])].filter(([, v], i) => v || i < 2);
   if (otPay) earn.push([`Lembur (${nf(otHours, 1)} jam)`, otPay]);
-  const gross = earn.reduce((s, x) => s + x[1], 0);
+  const clm = typeof claimPayFor === 'function' ? claimPayFor(e, month) : 0;
+  const gross = earn.reduce((s, x) => s + x[1], 0) + clm;
+  if (clm) earn.push(['Reimbursement klaim (bebas pajak)', clm]);
   const b = st.bpjs || {}, on = e.bpjs !== false;
   const kes = on ? Math.min(wage, b.kesCap || 12000000) * (b.kesEmp ?? 1) / 100 : 0, jht = on ? wage * (b.jhtEmp ?? 2) / 100 : 0, jp = on ? Math.min(wage, b.jpCap || 10547400) * (b.jpEmp ?? 1) / 100 : 0;
-  const pph = Math.max(0, gross - unpaid - absentDed - lateDed) * (+e.pph || 0) / 100;
+  const pph = Math.max(0, gross - clm - unpaid - absentDed - lateDed) * (+e.pph || 0) / 100;
   const ded = [[`Cuti tidak dibayar (${unpaidDays} hari)`, unpaid], [`Alpa (${absentDays} hari)`, absentDed], [`Keterlambatan (${lateCnt}×, ${lateMin} mnt)`, lateDed], ...dedComps.map(k => [k.name, amt(k)]), ['BPJS Kesehatan', kes], ['BPJS JHT', jht], ['BPJS JP', jp], [`PPh 21 (${e.pph || 0}%)`, pph]].filter(([, v]) => v);
   const dedT = ded.reduce((s, x) => s + x[1], 0);
   const co = on ? Math.min(wage, b.kesCap || 12000000) * (b.kesCo ?? 4) / 100 + wage * (b.jhtCo ?? 3.7) / 100 + Math.min(wage, b.jpCap || 10547400) * (b.jpCo ?? 2) / 100 + wage * ((b.jkk ?? 0.24) + (b.jkm ?? 0.3)) / 100 : 0;
@@ -5885,7 +6116,9 @@ Views.payrollMount = c => {
     audit('unduh file transfer gaji', month); if (miss.length) toast(`${miss.length} karyawan tanpa rekening tidak dimasukkan`); };
   $('#pPdf', c).onclick = () => paySlipPdf(rows(), month);
   const lk = $('#pLock', c); if (lk) lk.onclick = async () => { const rs = rows(); if (!(await confirmBox(`Kunci penggajian ${fmtMonth(month)} untuk ${rs.length} karyawan? Angka akan diarsipkan dan tidak berubah lagi.`, 'Kunci periode'))) return;
-    await Store.put('payroll_runs', runId, { companyId: S.companyId, month, locked: true, savedAt: nowISO(), savedBy: S.user.username, totalNet: rs.reduce((s, r) => s + r.net, 0), rows: rs }); audit('kunci penggajian', month); toast('Periode dikunci'); App.renderContent(); };
+    await Store.put('payroll_runs', runId, { companyId: S.companyId, month, locked: true, savedAt: nowISO(), savedBy: S.user.username, totalNet: rs.reduce((s, r) => s + r.net, 0), rows: rs }); audit('kunci penggajian', month);
+    for (const x of Store.all('hr_claims', x => x.companyId === S.companyId && x.status === 'approved' && x.payVia === 'payroll' && x.payMonth === month)) await claimLog(x, { status: 'paid', paidAt: todayISO() }, 'dibayar lewat gaji ' + month);
+    toast('Periode dikunci'); App.renderContent(); };
   const ul = $('#pUnlock', c); if (ul) ul.onclick = async () => { if (!(await confirmBox(`Buka kunci ${fmtMonth(month)}? Angka akan dihitung ulang dari data terbaru.`, 'Buka kunci', true))) return; await Store.put('payroll_runs', runId, { ...run, locked: false, unlockedAt: nowISO(), unlockedBy: S.user.username }); audit('buka kunci penggajian', month); App.renderContent(); };
 };
 async function paySlipPdf(rs, month) {
@@ -5914,6 +6147,422 @@ async function paySlipPdf(rs, month) {
   const name = rs.length === 1 ? `slip-gaji-${String(rs[0].name).toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${month}.pdf` : `slip-gaji-${month}.pdf`;
   await download(name, doc.output('blob')); audit('unduh slip gaji', `${month} · ${rs.length} karyawan`);
 }
+
+/* =========================================================
+   HRIS · Klaim & Reimburse
+   Alur: Diajukan → Disetujui → Dibayar (lewat gaji bulan tertentu atau transfer) / Ditolak
+   Koleksi: hr_claims
+   ========================================================= */
+const CLM_ST = { submitted: ['Menunggu', 'warn'], approved: ['Disetujui', 'info'], paid: ['Dibayar', 'ok'], rejected: ['Ditolak', 'bad'] };
+const clmPill = c => { const [l, k] = CLM_ST[c.status] || ['?', '']; return `<span class="pill ${k}">${l}</span>`; };
+const clmAll = f => Store.all('hr_claims', x => inScope(x) && (!f || f(x)));
+/* dipakai Penggajian: total klaim yang dibayar lewat gaji bulan ini */
+function claimPayFor(e, month) { return Store.all('hr_claims', x => x.employeeId === e.id && x.payVia === 'payroll' && x.payMonth === month && (x.status === 'approved' || x.status === 'paid')).reduce((s, x) => s + (+x.approvedTotal || +x.total || 0), 0); }
+function clmUsedYear(empId, type, year, exceptId) { return Store.all('hr_claims', x => x.employeeId === empId && x.type === type && x.id !== exceptId && (x.date || '').startsWith(String(year)) && x.status !== 'rejected').reduce((s, x) => s + (+x.approvedTotal || +x.total || 0), 0); }
+
+Views.claims = () => {
+  const p = S.params || {}, st = p.st || 'submitted', year = p.year || String(new Date().getFullYear());
+  const all = clmAll(x => (x.date || '').startsWith(year)), list = all.filter(x => st === 'all' || x.status === st).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const sum = s => all.filter(x => x.status === s).reduce((t, x) => t + (+x.approvedTotal || +x.total || 0), 0), cnt = s => all.filter(x => x.status === s).length;
+  const years = [...new Set([String(new Date().getFullYear()), ...clmAll().map(x => (x.date || '').slice(0, 4)).filter(Boolean)])].sort().reverse();
+  return `<div class="page-head"><div><h1>Klaim & Reimburse</h1><p>Penggantian biaya karyawan: rawat jalan, transport dinas, pelatihan, dan lainnya. Klaim yang dibayar lewat gaji otomatis masuk slip.</p></div>
+    <div class="row"><select class="input" id="cy" style="width:auto">${years.map(y => `<option ${y === year ? 'selected' : ''}>${y}</option>`).join('')}</select><button class="btn" id="cCsv">Unduh CSV</button><button class="btn primary" id="cAdd">+ Ajukan klaim</button></div></div>
+  <div class="grid g4">${[['submitted', 'k-orange'], ['approved', 'k-blue'], ['paid', 'k-teal'], ['rejected', 'k-purple']].map(([s, k]) => `<button class="card kpi ${k} hr-kpibtn" data-cst="${s}"><span class="eyebrow">${CLM_ST[s][0]}</span><b style="font-size:22px">${rp(sum(s))}</b><span class="small muted">${cnt(s)} klaim</span></button>`).join('')}</div>
+  <div class="tabs" role="tablist">${[['submitted', 'Menunggu'], ['approved', 'Disetujui'], ['paid', 'Dibayar'], ['rejected', 'Ditolak'], ['all', 'Semua']].map(([k, l]) => `<button class="tab ${st === k ? 'on' : ''}" data-cst="${k}">${l}</button>`).join('')}</div>
+  <div class="card">${list.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Tanggal</th><th>Karyawan</th><th>Jenis</th><th>Keterangan</th><th class="num">Diajukan</th><th class="num">Disetujui</th><th>Pembayaran</th><th>Status</th><th></th></tr></thead><tbody>
+    ${list.map(x => `<tr><td class="small">${fmtDate(x.date)}</td><td><b>${esc(empName(x.employeeId))}</b></td><td class="small">${esc(x.type)}</td><td class="small">${esc(x.note || '')}${(x.items || []).length > 1 ? `<div class="faint">${x.items.length} rincian</div>` : ''}</td>
+      <td class="num">${rp(x.total)}</td><td class="num">${x.approvedTotal != null && x.status !== 'submitted' ? rp(x.approvedTotal) : '–'}</td>
+      <td class="small">${x.status === 'rejected' ? '' : x.payVia === 'payroll' ? 'Gaji ' + (x.payMonth ? fmtMonth(x.payMonth) : '') : 'Transfer'}</td><td>${clmPill(x)}</td>
+      <td><div class="row" style="flex-wrap:nowrap">${x.status === 'submitted' ? `<button class="btn sm primary" data-cap="${x.id}">Proses</button>` : ''}${x.status === 'approved' && x.payVia !== 'payroll' ? `<button class="btn sm" data-cpaid="${x.id}">Tandai dibayar</button>` : ''}<button class="btn sm" data-cview="${x.id}">Detail</button></div></td></tr>`).join('')}
+  </tbody></table></div>` : '<div class="empty">Tidak ada klaim pada daftar ini.</div>'}</div>`;
+};
+Views.claimsMount = c => {
+  const setP = x => { S.params = { ...S.params, ...x }; App.renderContent(); };
+  $$('[data-cst]', c).forEach(b => b.onclick = () => setP({ st: b.dataset.cst }));
+  $('#cy', c).onchange = e => setP({ year: e.target.value });
+  $('#cAdd', c).onclick = () => claimForm();
+  $$('[data-cap]', c).forEach(b => b.onclick = () => claimProcess(Store.get('hr_claims', b.dataset.cap)));
+  $$('[data-cview]', c).forEach(b => b.onclick = () => claimView(Store.get('hr_claims', b.dataset.cview)));
+  $$('[data-cpaid]', c).forEach(b => b.onclick = async () => { const x = Store.get('hr_claims', b.dataset.cpaid); await claimLog(x, { status: 'paid', paidAt: todayISO() }, 'dibayar'); toast('Ditandai sudah dibayar'); App.renderContent(); });
+  $('#cCsv', c).onclick = () => { const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`, y = (S.params || {}).year || String(new Date().getFullYear());
+    const L = [['Tanggal', 'NIK', 'Nama', 'Unit', 'Jenis', 'Keterangan', 'Diajukan', 'Disetujui', 'Pembayaran', 'Status'].map(q).join(';'), ...clmAll(x => (x.date || '').startsWith(y)).map(x => { const e = Store.get('employees', x.employeeId) || {}; return [x.date, e.nik, e.name, e.unit, x.type, x.note, x.total, x.approvedTotal ?? '', x.payVia === 'payroll' ? 'Gaji ' + (x.payMonth || '') : 'Transfer', CLM_ST[x.status][0]].map(q).join(';'); })];
+    download(`klaim-${y}.csv`, '﻿' + L.join('\n')); };
+};
+async function claimLog(x, patch, action, note) {
+  const cur = Store.get('hr_claims', x.id), log = [...(cur.log || []), { at: nowISO(), by: S.user.name, action, note: note || '' }];
+  const o = { ...cur, ...patch, log }; delete o.id; await Store.put('hr_claims', x.id, o); audit('klaim ' + action, empName(x.employeeId));
+}
+function claimForm() {
+  const types = hrMaster('claimTypes'), E = empList(e => e.active !== false);
+  if (!E.length) { toast('Belum ada karyawan aktif'); return; }
+  const itemRow = () => `<tr><td><input class="input" type="date" data-k="date" value="${todayISO()}" aria-label="Tanggal"></td><td><input class="input" data-k="desc" placeholder="mis. Kuitansi apotek" aria-label="Uraian"></td><td><input class="input" type="number" min="0" step="500" data-k="amount" aria-label="Nominal"></td><td><button type="button" class="btn sm danger" data-rmrow aria-label="Hapus">✕</button></td></tr>`;
+  openModal({ title: 'Ajukan klaim', wide: true, body: `<form id="cF" class="stack"><div class="form-grid">
+      <label class="f">Karyawan *<select class="input" name="employeeId" required><option value="">– pilih –</option>${E.map(e => `<option value="${e.id}">${esc(e.name)} · ${esc(e.unit || '')}</option>`).join('')}</select></label>
+      <label class="f">Jenis klaim *<select class="input" name="type" required>${types.map(t => `<option>${esc(t.name)}</option>`).join('')}</select></label>
+      <label class="f">Tanggal pengajuan<input class="input" type="date" name="date" value="${todayISO()}" required></label>
+      <label class="f">Keterangan<input class="input" name="note" placeholder="mis. kontrol gigi, seminar PPI"></label></div>
+    <div class="eyebrow">Rincian biaya</div><div class="tbl-wrap"><table class="tbl no-stack hr-edit" id="cItems"><thead><tr><th>Tanggal</th><th>Uraian</th><th>Nominal (Rp)</th><th></th></tr></thead><tbody>${itemRow()}</tbody></table></div>
+    <button type="button" class="btn sm" id="cAddRow">+ Tambah rincian</button><div id="cInfo" class="small"></div>
+    <label class="f">Tautan bukti / kuitansi (opsional)<input class="input" type="url" name="proof" placeholder="https://drive.google.com/…"></label></form>`,
+    foot: '<button class="btn" data-close>Batal</button><button class="btn primary" form="cF">Ajukan</button>',
+    onMount: r => {
+      $('#cAddRow', r).onclick = () => $('#cItems tbody', r).insertAdjacentHTML('beforeend', itemRow());
+      const M = $('.modal', r);
+      M.addEventListener('click', e => { const b = e.target.closest('[data-rmrow]'); if (b && $$('#cItems tbody tr', r).length > 1) { b.closest('tr').remove(); info(); } });
+      const info = () => { const f = formData($('#cF', r)), tot = hrRowsRead(r, 'cItems').reduce((s, i) => s + (+i.amount || 0), 0), T = types.find(t => t.name === f.type);
+        let t = `Total: <b>${rp(tot)}</b>`; if (T && +T.limit && f.employeeId) { const used = clmUsedYear(f.employeeId, T.name, (f.date || todayISO()).slice(0, 4)), left = +T.limit - used; t += ` · Batas ${esc(T.name)} per tahun ${rp(+T.limit)}, sisa <b>${rp(left)}</b>${tot > left ? ' <span class="pill warn">melebihi batas</span>' : ''}`; }
+        $('#cInfo', r).innerHTML = t; };
+      M.addEventListener('input', info); M.addEventListener('change', info); info();
+      $('#cF', r).onsubmit = async ev => { ev.preventDefault(); const d = formData(ev.target), items = hrRowsRead(r, 'cItems').filter(i => +i.amount > 0);
+        if (!items.length) { toast('Isi minimal satu rincian biaya'); return; }
+        const id = uid('cl'); await Store.put('hr_claims', id, { ...d, companyId: S.companyId, items, total: items.reduce((s, i) => s + i.amount, 0), status: 'submitted', createdAt: nowISO(), log: [{ at: nowISO(), by: S.user.name, action: 'diajukan', note: '' }] });
+        audit('ajukan klaim', empName(d.employeeId)); closeModal(); toast('Klaim diajukan'); App.go('claims', { st: 'submitted' }); };
+    } });
+}
+function claimProcess(x) {
+  const T = hrMaster('claimTypes').find(t => t.name === x.type), used = clmUsedYear(x.employeeId, x.type, (x.date || '').slice(0, 4), x.id), left = T && +T.limit ? +T.limit - used : null;
+  const sug = left == null ? x.total : Math.max(0, Math.min(x.total, left));
+  openModal({ title: 'Proses klaim · ' + empName(x.employeeId), body: `<div class="stack">${claimDetailHtml(x)}
+    ${left != null ? `<div class="small">Batas ${esc(x.type)} per tahun ${rp(+T.limit)} · sudah terpakai ${rp(used)} · sisa ${rp(left)}</div>` : ''}
+    <form id="cpF" class="form-grid"><label class="f">Nominal disetujui (Rp)<input class="input" type="number" min="0" name="amt" value="${sug}" required></label>
+      <label class="f">Dibayar lewat<select class="input" name="via"><option value="payroll">Gaji bulan…</option><option value="transfer">Transfer terpisah</option></select></label>
+      <label class="f">Bulan gaji<input class="input" type="month" name="month" value="${monthISO()}"></label>
+      <label class="f" style="grid-column:1/-1">Catatan<input class="input" name="note" placeholder="opsional, wajib bila ditolak"></label></form></div>`,
+    foot: '<button class="btn danger" id="cpRej">Tolak</button><button class="btn" data-close>Batal</button><button class="btn primary" id="cpOk">Setujui</button>',
+    onMount: r => {
+      $('#cpOk', r).onclick = async () => { const d = formData($('#cpF', r)); if (!(+d.amt >= 0)) return;
+        const run = d.via === 'payroll' && Store.get('payroll_runs', S.companyId + '__' + d.month); if (run && run.locked) { toast('Gaji ' + fmtMonth(d.month) + ' sudah dikunci. Pilih bulan lain.'); return; }
+        await claimLog(x, { status: 'approved', approvedTotal: +d.amt, payVia: d.via, payMonth: d.via === 'payroll' ? d.month : '' }, 'disetujui', d.note); closeModal(); toast('Klaim disetujui'); App.renderContent(); };
+      $('#cpRej', r).onclick = async () => { const d = formData($('#cpF', r)); if (!d.note) { toast('Isi catatan alasan penolakan'); return; }
+        await claimLog(x, { status: 'rejected' }, 'ditolak', d.note); closeModal(); toast('Klaim ditolak'); App.renderContent(); };
+    } });
+}
+function claimDetailHtml(x) {
+  return `<div class="row">${clmPill(x)}<span class="small">${esc(x.type)} · ${fmtDate(x.date)}</span>${x.proof ? `<a class="small" href="${esc(x.proof)}" target="_blank" rel="noopener noreferrer">Lihat bukti</a>` : ''}</div>
+    ${x.note ? `<div class="small">${esc(x.note)}</div>` : ''}
+    <table class="tbl no-stack"><tbody>${(x.items || []).map(i => `<tr><td class="small">${fmtDate(i.date)}</td><td class="small">${esc(i.desc || '')}</td><td class="num">${rp(i.amount)}</td></tr>`).join('')}<tr><td colspan="2"><b>Total diajukan</b></td><td class="num"><b>${rp(x.total)}</b></td></tr></tbody></table>`;
+}
+function claimView(x) {
+  openModal({ title: 'Klaim · ' + empName(x.employeeId), body: `<div class="stack">${claimDetailHtml(x)}
+    ${x.approvedTotal != null && x.status !== 'submitted' ? `<div>Disetujui: <b>${rp(x.approvedTotal)}</b> · ${x.payVia === 'payroll' ? 'dibayar lewat gaji ' + fmtMonth(x.payMonth) : 'transfer terpisah'}</div>` : ''}
+    <div class="eyebrow">Riwayat</div><ul class="ist-notes">${(x.log || []).map(l => `<li>${fmtDate(l.at.slice(0, 10))} · ${esc(l.action)} oleh ${esc(l.by)}${l.note ? ' — ' + esc(l.note) : ''}</li>`).join('')}</ul></div>`,
+    foot: `${x.status !== 'paid' ? '<button class="btn danger" id="cvDel">Hapus</button>' : ''}<button class="btn" data-close>Tutup</button>`,
+    onMount: r => { const d = $('#cvDel', r); if (d) d.onclick = async () => { if (!(await confirmBox('Hapus klaim ini?', 'Hapus', true))) return; await Store.remove('hr_claims', x.id); audit('hapus klaim', empName(x.employeeId)); closeModal(); App.renderContent(); }; } });
+}
+
+/* =========================================================
+   HRIS · Penilaian Kinerja
+   KPI diambil dari Master Data HR (per jabatan atau umum), skor 1–5,
+   nilai akhir = rata-rata tertimbang. Koleksi: hr_reviews
+   ========================================================= */
+const PRF_SCALE = [[1, 'Sangat kurang'], [2, 'Kurang'], [3, 'Cukup'], [4, 'Baik'], [5, 'Sangat baik']];
+const prfGrade = v => v == null ? null : v >= 4.5 ? ['A', 'Istimewa', 'ok'] : v >= 3.5 ? ['B', 'Baik', 'ok'] : v >= 2.5 ? ['C', 'Cukup', 'info'] : v >= 1.5 ? ['D', 'Kurang', 'warn'] : ['E', 'Sangat kurang', 'bad'];
+const prfScore = items => { const it = (items || []).filter(i => i.score); const w = it.reduce((s, i) => s + (+i.weight || 0), 0); if (!it.length) return null; return w ? it.reduce((s, i) => s + i.score * (+i.weight || 0), 0) / w : it.reduce((s, i) => s + i.score, 0) / it.length; };
+const prfKpisFor = e => { const K = hrMaster('kpis'), own = K.filter(k => k.job && k.job === e.position); return (own.length ? own : K.filter(k => !k.job)).map(k => ({ name: k.name, weight: +k.weight || 0, target: k.target || '', score: 0, note: '' })); };
+const prfPeriods = () => { const y = new Date().getFullYear(); return [`${y} Semester 1`, `${y} Semester 2`, `Tahunan ${y}`, `${y - 1} Semester 2`, `Tahunan ${y - 1}`]; };
+
+Views.perf = () => {
+  const p = S.params || {}, R = Store.all('hr_reviews', x => inScope(x)), periods = [...new Set([...prfPeriods(), ...R.map(r => r.period)])];
+  const period = p.period || (R.length ? [...R].sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))[0].period : prfPeriods()[0]);
+  let list = R.filter(r => r.period === period); if (p.unit) list = list.filter(r => (Store.get('employees', r.employeeId) || {}).unit === p.unit);
+  if (p.st) list = list.filter(r => r.status === p.st);
+  list.sort((a, b) => empName(a.employeeId).localeCompare(empName(b.employeeId)));
+  const done = list.filter(r => r.status === 'done'), avg = done.length ? done.reduce((s, r) => s + (r.final || 0), 0) / done.length : null;
+  const dist = ['A', 'B', 'C', 'D', 'E'].map(g => [g, done.filter(r => prfGrade(r.final)[0] === g).length]);
+  const units = [...new Set(empList().map(e => e.unit).filter(Boolean))].sort();
+  return `<div class="page-head"><div><h1>Penilaian Kinerja</h1><p>Nilai karyawan per periode berdasarkan KPI jabatan. Atur indikator dan bobotnya di Master Data HR → KPI penilaian.</p></div>
+    <div class="row"><button class="btn" id="pfCsv">Unduh CSV</button><button class="btn primary" id="pfNew">+ Buat penilaian</button></div></div>
+  <div class="card card-pad"><div class="row"><label class="row small" style="gap:6px">Periode<select class="input" id="pfPer" style="width:auto">${periods.map(x => `<option ${x === period ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></label>
+    <select class="input" id="pfU" style="width:auto"><option value="">Semua unit</option>${units.map(u => `<option ${u === p.unit ? 'selected' : ''}>${esc(u)}</option>`).join('')}</select>
+    <select class="input" id="pfS" style="width:auto"><option value="">Semua status</option><option value="draft" ${p.st === 'draft' ? 'selected' : ''}>Belum selesai</option><option value="done" ${p.st === 'done' ? 'selected' : ''}>Selesai</option></select></div></div>
+  <div class="grid g4"><div class="card kpi k-blue"><span class="eyebrow">Dinilai</span><b style="font-size:24px">${list.length}</b></div>
+    <div class="card kpi k-teal"><span class="eyebrow">Selesai</span><b style="font-size:24px">${done.length}</b><span class="small muted">${list.length ? Math.round(done.length / list.length * 100) : 0}%</span></div>
+    <div class="card kpi k-purple"><span class="eyebrow">Rata-rata nilai</span><b style="font-size:24px">${avg == null ? '–' : nf(avg, 2)}</b><span class="small muted">${avg == null ? '' : prfGrade(avg)[1]}</span></div>
+    <div class="card kpi k-orange"><span class="eyebrow">Sebaran predikat</span><div class="row" style="gap:4px;margin-top:4px">${dist.map(([g, n]) => `<span class="pill">${g}: ${n}</span>`).join('')}</div></div></div>
+  <div class="card">${list.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Karyawan</th><th>Unit / jabatan</th><th>Penilai</th><th>Batas</th><th class="num">Nilai</th><th>Predikat</th><th>Status</th><th></th></tr></thead><tbody>
+    ${list.map(r => { const e = Store.get('employees', r.employeeId) || {}, g = prfGrade(r.status === 'done' ? r.final : prfScore(r.items)), late = r.status !== 'done' && r.due && r.due < todayISO();
+      return `<tr class="click" data-pf="${r.id}" tabindex="0"><td><b>${esc(e.name || '–')}</b></td><td class="small">${esc(e.unit || '')}<div class="muted">${esc(e.position || '')}</div></td><td class="small">${esc(r.reviewer || '–')}</td>
+      <td class="small">${r.due ? fmtDate(r.due) : '–'}${late ? ' <span class="pill bad">lewat</span>' : ''}</td><td class="num">${r.status === 'done' ? nf(r.final, 2) : (prfScore(r.items) != null ? '<span class="faint">' + nf(prfScore(r.items), 2) + '</span>' : '–')}</td>
+      <td>${g ? `<span class="pill ${g[2]}">${g[0]} · ${g[1]}</span>` : '–'}</td><td>${r.status === 'done' ? '<span class="pill ok">Selesai</span>' : '<span class="pill warn">Belum selesai</span>'}</td><td><button class="btn sm">${r.status === 'done' ? 'Lihat' : 'Nilai'}</button></td></tr>`; }).join('')}
+  </tbody></table></div>` : `<div class="empty">Belum ada penilaian untuk periode ini. Tekan <b>+ Buat penilaian</b> untuk membuat lembar penilaian sekaligus untuk satu unit atau semua karyawan.</div>`}</div>`;
+};
+Views.perfMount = c => {
+  const setP = x => { S.params = { ...S.params, ...x }; App.renderContent(); };
+  $('#pfPer', c).onchange = e => setP({ period: e.target.value }); $('#pfU', c).onchange = e => setP({ unit: e.target.value }); $('#pfS', c).onchange = e => setP({ st: e.target.value });
+  $('#pfNew', c).onclick = () => perfCreate($('#pfPer', c).value);
+  $$('[data-pf]', c).forEach(tr => { tr.onclick = () => perfForm(Store.get('hr_reviews', tr.dataset.pf)); tr.onkeydown = e => { if (e.key === 'Enter') tr.click(); }; });
+  $('#pfCsv', c).onclick = () => { const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`, per = $('#pfPer', c).value;
+    const L = [['Periode', 'NIK', 'Nama', 'Unit', 'Jabatan', 'Penilai', 'Nilai', 'Predikat', 'Status', 'Catatan'].map(q).join(';'), ...Store.all('hr_reviews', x => inScope(x) && x.period === per).map(r => { const e = Store.get('employees', r.employeeId) || {}, g = prfGrade(r.final); return [r.period, e.nik, e.name, e.unit, e.position, r.reviewer, r.final != null ? nf(r.final, 2) : '', g ? g[0] + ' ' + g[1] : '', r.status === 'done' ? 'Selesai' : 'Belum', r.summary].map(q).join(';'); })];
+    download(`penilaian-kinerja-${per.replace(/\s+/g, '-')}.csv`, '﻿' + L.join('\n')); };
+};
+function perfCreate(period) {
+  const units = [...new Set(empList().map(e => e.unit).filter(Boolean))].sort();
+  openModal({ title: 'Buat penilaian kinerja', body: `<form id="pcF" class="form-grid">
+      <label class="f">Periode *<input class="input" name="period" list="dlPer" value="${esc(period)}" required><datalist id="dlPer">${prfPeriods().map(x => `<option>${esc(x)}</option>`).join('')}</datalist></label>
+      <label class="f">Batas waktu penilaian<input class="input" type="date" name="due"></label>
+      <label class="f">Untuk<select class="input" name="unit"><option value="">Semua karyawan aktif</option>${units.map(u => `<option>${esc(u)}</option>`).join('')}</select></label>
+      <label class="f">Atau satu karyawan<select class="input" name="emp"><option value="">–</option>${empList(e => e.active !== false).map(e => `<option value="${e.id}">${esc(e.name)}</option>`).join('')}</select></label></form>
+    <p class="small muted">Penilai otomatis = atasan langsung karyawan (bisa diubah per lembar). Karyawan yang sudah punya penilaian di periode ini dilewati.</p>`,
+    foot: '<button class="btn" data-close>Batal</button><button class="btn primary" form="pcF">Buat</button>',
+    onMount: r => $('#pcF', r).onsubmit = async ev => { ev.preventDefault(); const d = formData(ev.target);
+      const have = new Set(Store.all('hr_reviews', x => inScope(x) && x.period === d.period).map(x => x.employeeId));
+      const E = empList(e => e.active !== false && (d.emp ? e.id === d.emp : !d.unit || e.unit === d.unit) && !have.has(e.id));
+      if (!E.length) { toast('Tidak ada karyawan baru untuk dinilai di periode ini'); return; }
+      for (const e of E) { const sup = e.supervisorId && Store.get('employees', e.supervisorId);
+        await Store.put('hr_reviews', uid('rv'), { companyId: S.companyId, employeeId: e.id, period: d.period, due: d.due, reviewer: sup ? sup.name : '', items: prfKpisFor(e), status: 'draft', createdAt: nowISO() }); }
+      audit('buat penilaian kinerja', `${d.period} · ${E.length} karyawan`); closeModal(); toast(E.length + ' lembar penilaian dibuat'); App.go('perf', { period: d.period }); } });
+}
+function perfForm(r) {
+  const e = Store.get('employees', r.employeeId) || {}, ro = r.status === 'done';
+  const items = (r.items || []).map(i => ({ ...i }));
+  const att = (() => { try { const y = new Date().getFullYear(); return leaveBalance(e, y); } catch (x) { return null; } })();
+  const body = () => `<div class="stack"><div class="row small muted">${esc(e.position || '')} · ${esc(e.unit || '')} · ${esc(r.period)}${att && att.type ? ` · cuti tahunan terpakai ${att.used} hari` : ''}</div>
+    <label class="f" style="max-width:320px">Penilai<input class="input" id="pfRev" value="${esc(r.reviewer || '')}" ${ro ? 'disabled' : ''}></label>
+    <div class="tbl-wrap"><table class="tbl no-stack"><thead><tr><th>Indikator</th><th class="num">Bobot</th><th>Skor</th><th>Catatan</th></tr></thead><tbody>
+    ${items.map((i, n) => `<tr><td><b>${esc(i.name)}</b><div class="small muted">${esc(i.target || '')}</div></td><td class="num">${i.weight}%</td>
+      <td><div class="pf-scale" role="radiogroup" aria-label="Skor ${esc(i.name)}">${PRF_SCALE.map(([v, l]) => `<button type="button" class="${i.score === v ? 'on' : ''}" data-sc="${n}:${v}" title="${l}" ${ro ? 'disabled' : ''} id="bk_sc_${n}_${v}">${v}</button>`).join('')}</div></td>
+      <td><input class="input" data-nt="${n}" value="${esc(i.note || '')}" ${ro ? 'disabled' : ''} aria-label="Catatan"></td></tr>`).join('')}</tbody></table></div>
+    <div id="pfTot"></div>
+    <label class="f">Ringkasan & rencana pengembangan<textarea class="input" id="pfSum" rows="3" ${ro ? 'disabled' : ''} placeholder="Kekuatan, area perbaikan, pelatihan yang disarankan">${esc(r.summary || '')}</textarea></label>
+    <label class="f" style="max-width:360px">Rekomendasi<select class="input" id="pfRec" ${ro ? 'disabled' : ''}>${['', 'Dipertahankan', 'Perpanjang kontrak', 'Angkat karyawan tetap', 'Kenaikan gaji berkala', 'Promosi', 'Pembinaan / SP', 'Tidak diperpanjang'].map(x => `<option ${x === (r.rec || '') ? 'selected' : ''}>${x}</option>`).join('')}</select></label></div>`;
+  openModal({ title: 'Penilaian · ' + (e.name || ''), wide: true, body: body(),
+    foot: ro ? '<button class="btn danger" id="pfDel">Hapus</button><button class="btn" id="pfReopen">Buka kembali</button><button class="btn" data-close>Tutup</button>'
+      : '<button class="btn danger" id="pfDel">Hapus</button><button class="btn" id="pfDraft">Simpan draf</button><button class="btn primary" id="pfDone">Selesai & kunci</button>',
+    onMount: m => {
+      const tot = () => { const v = prfScore(items), g = prfGrade(v), miss = items.filter(i => !i.score).length; $('#pfTot', m).innerHTML = `<div class="row"><b>Nilai akhir: ${v == null ? '–' : nf(v, 2)}</b>${g ? `<span class="pill ${g[2]}">${g[0]} · ${g[1]}</span>` : ''}${miss ? `<span class="small muted">${miss} indikator belum dinilai</span>` : ''}</div>`; };
+      $('.modal', m).addEventListener('click', ev => { const b = ev.target.closest('[data-sc]'); if (!b || ro) return; const [n, v] = b.dataset.sc.split(':').map(Number); items[n].score = v; $$(`[data-sc^="${n}:"]`, m).forEach(x => x.classList.toggle('on', x === b)); tot(); });
+      tot();
+      const collect = () => { $$('[data-nt]', m).forEach(i => items[+i.dataset.nt].note = i.value.trim()); return { reviewer: $('#pfRev', m).value.trim(), summary: $('#pfSum', m).value.trim(), rec: $('#pfRec', m).value, items }; };
+      const put = async patch => { const cur = Store.get('hr_reviews', r.id), o = { ...cur, ...patch, updatedAt: nowISO() }; delete o.id; await Store.put('hr_reviews', r.id, o); };
+      const dr = $('#pfDraft', m); if (dr) dr.onclick = async () => { await put(collect()); closeModal(); toast('Draf disimpan'); App.renderContent(); };
+      const dn = $('#pfDone', m); if (dn) dn.onclick = async () => { const d = collect(); if (d.items.some(i => !i.score)) { toast('Semua indikator harus diberi skor'); return; }
+        await put({ ...d, status: 'done', final: prfScore(d.items), doneAt: nowISO(), doneBy: S.user.name }); audit('selesaikan penilaian kinerja', e.name); closeModal(); toast('Penilaian selesai'); App.renderContent(); };
+      const ro2 = $('#pfReopen', m); if (ro2) ro2.onclick = async () => { await put({ status: 'draft' }); closeModal(); App.renderContent(); };
+      $('#pfDel', m).onclick = async () => { if (!(await confirmBox('Hapus lembar penilaian ini?', 'Hapus', true))) return; await Store.remove('hr_reviews', r.id); audit('hapus penilaian kinerja', e.name); closeModal(); App.renderContent(); };
+    } });
+}
+
+/* =========================================================
+   HRIS · Struktur Organisasi & Direktori Karyawan
+   ========================================================= */
+const empInitials = n => String(n || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+const empAvatar = (e, big) => `<span class="emp-av${big ? ' big' : ''}" style="--h:${[...String(e.name || '')].reduce((s, ch) => s + ch.charCodeAt(0), 0) % 360}" aria-hidden="true">${esc(empInitials(e.name))}</span>`;
+
+Views.orgchart = () => {
+  const p = S.params || {}, mode = p.mode || 'unit', E = empList(e => e.active !== false), ids = new Set(E.map(e => e.id));
+  const units = [...new Set([...(settingsOf(S.companyId).units || []).map(u => u.name), ...E.map(e => e.unit).filter(Boolean)])];
+  const node = e => `<button class="org-node" data-emp="${e.id}">${empAvatar(e)}<span><b>${esc(e.name)}</b><small>${esc(e.position || '–')}${mode === 'tree' && e.unit ? ' · ' + esc(e.unit) : ''}</small></span></button>`;
+  let body = '';
+  if (mode === 'tree') {
+    const kids = id => E.filter(e => e.supervisorId === id);
+    const tree = (e, depth, seen) => { if (seen.has(e.id) || depth > 12) return ''; seen.add(e.id); const k = kids(e.id); return `<li>${node(e)}${k.length ? `<span class="org-count">${k.length} bawahan</span><ul>${k.map(x => tree(x, depth + 1, seen)).join('')}</ul>` : ''}</li>`; };
+    const roots = E.filter(e => !e.supervisorId || !ids.has(e.supervisorId)), seen = new Set();
+    const tops = roots.filter(r => kids(r.id).length), lone = roots.filter(r => !kids(r.id).length);
+    body = `<div class="card card-pad"><ul class="org-tree">${tops.map(r => tree(r, 0, seen)).join('')}</ul>
+      ${lone.length ? `<details style="margin-top:12px"><summary class="small"><b>${lone.length} karyawan belum punya atasan langsung</b> — isi kolom "Atasan langsung" di Data Karyawan agar masuk bagan</summary><div class="org-grid" style="margin-top:10px">${lone.map(node).join('')}</div></details>` : ''}
+      ${!tops.length && !lone.length ? '<div class="empty">Belum ada karyawan aktif.</div>' : ''}</div>`;
+  } else {
+    body = `<div class="org-units">${units.map(u => { const M = E.filter(e => e.unit === u), heads = M.filter(e => !M.some(x => x.id === e.supervisorId) && M.some(x => x.supervisorId === e.id));
+      const rest = M.filter(e => !heads.includes(e));
+      return `<div class="card card-pad org-unit"><div class="row" style="justify-content:space-between"><h3 style="margin:0">${esc(u)}</h3><span class="pill">${M.length} orang</span></div>
+        ${heads.length ? `<div class="eyebrow">Pimpinan</div><div class="org-grid">${heads.map(node).join('')}</div>` : ''}
+        ${rest.length ? `<div class="eyebrow">Anggota</div><div class="org-grid">${rest.map(node).join('')}</div>` : M.length ? '' : '<div class="small faint">Belum ada karyawan.</div>'}</div>`; }).join('')}
+      ${E.some(e => !e.unit) ? `<div class="card card-pad org-unit"><h3 style="margin:0">Tanpa unit</h3><div class="org-grid">${E.filter(e => !e.unit).map(node).join('')}</div></div>` : ''}</div>`;
+  }
+  return `<div class="page-head"><div><h1>Struktur Organisasi</h1><p>Dibentuk otomatis dari kolom Unit dan Atasan langsung di Data Karyawan. Klik nama untuk membuka profil.</p></div>
+    <div class="row"><button class="btn" id="orgPrint">Cetak</button></div></div>
+  <div class="tabs" role="tablist"><button class="tab ${mode === 'unit' ? 'on' : ''}" data-om="unit">Per unit</button><button class="tab ${mode === 'tree' ? 'on' : ''}" data-om="tree">Bagan atasan–bawahan</button></div>${body}`;
+};
+Views.orgchartMount = c => {
+  $$('[data-om]', c).forEach(b => b.onclick = () => { S.params = { mode: b.dataset.om }; App.renderContent(); });
+  $$('[data-emp]', c).forEach(b => b.onclick = () => App.go('employee', { id: b.dataset.emp }));
+  $('#orgPrint', c).onclick = () => window.print();
+};
+
+Views.directory = () => {
+  const p = S.params || {}, all = empList(e => e.active !== false), units = [...new Set(all.map(e => e.unit).filter(Boolean))].sort();
+  let rows = all; if (p.unit) rows = rows.filter(e => e.unit === p.unit); if (p.loc) rows = rows.filter(e => e.location === p.loc);
+  if (p.q) { const q = p.q.toLowerCase(); rows = rows.filter(e => [e.name, e.position, e.unit, e.profession, e.phone, e.email].some(v => String(v || '').toLowerCase().includes(q))); }
+  const locs = hrMaster('locs').map(l => l.name);
+  const wa = ph => { const d = String(ph || '').replace(/\D/g, '').replace(/^0/, '62'); return d.length > 8 ? `https://wa.me/${d}` : ''; };
+  return `<div class="page-head"><div><h1>Direktori Karyawan</h1><p>Cari rekan kerja dan hubungi lewat telepon, WhatsApp, atau email.</p></div></div>
+  <div class="card card-pad"><div class="row"><input class="input" id="dq" placeholder="Cari nama, jabatan, unit…" value="${esc(p.q || '')}" style="width:240px">
+    <select class="input" id="du" style="width:auto"><option value="">Semua unit</option>${units.map(u => `<option ${u === p.unit ? 'selected' : ''}>${esc(u)}</option>`).join('')}</select>
+    ${locs.length ? `<select class="input" id="dl" style="width:auto"><option value="">Semua lokasi</option>${locs.map(u => `<option ${u === p.loc ? 'selected' : ''}>${esc(u)}</option>`).join('')}</select>` : ''}
+    <span class="small muted">${rows.length} orang</span></div></div>
+  ${rows.length ? `<div class="dir-grid">${rows.map(e => `<div class="card dir-card">${empAvatar(e, 1)}<b>${esc(e.name)}</b><span class="small muted">${esc(e.position || '–')}</span><span class="small">${esc(e.unit || '')}${e.location ? ' · ' + esc(e.location) : ''}</span>
+    <div class="row" style="justify-content:center;gap:6px">${e.phone ? `<a class="btn sm" href="tel:${esc(e.phone)}">Telepon</a>` : ''}${wa(e.phone) ? `<a class="btn sm" href="${wa(e.phone)}" target="_blank" rel="noopener">WhatsApp</a>` : ''}${e.email ? `<a class="btn sm" href="mailto:${esc(e.email)}">Email</a>` : ''}</div>
+    <button class="btn ghost sm" data-emp="${e.id}">Lihat profil</button></div>`).join('')}</div>` : '<div class="card"><div class="empty">Tidak ada karyawan yang cocok.</div></div>'}`;
+};
+Views.directoryMount = c => {
+  const setP = x => { S.params = { ...S.params, ...x }; App.renderContent(); };
+  let t; $('#dq', c).oninput = e => { clearTimeout(t); t = setTimeout(() => { setP({ q: e.target.value }); const i = $('#dq'); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }, 300); };
+  $('#du', c).onchange = e => setP({ unit: e.target.value }); const dl = $('#dl', c); if (dl) dl.onchange = e => setP({ loc: e.target.value });
+  $$('[data-emp]', c).forEach(b => b.onclick = () => App.go('employee', { id: b.dataset.emp }));
+};
+
+/* =========================================================
+   HRIS · Beranda HRIS, Pengumuman, Laporan HR
+   ========================================================= */
+const wsSwitchHtml = () => {
+  if (!S.user || !(S.user.role === CO || (S.user.role === SA && S.inCompany))) return '';
+  const first = ws => NAV.find(n => n.ws === ws && n.roles.includes(S.user.role) && (!MENU_TOGGLE.includes(n.id) || menuOn(n.id)));
+  const rek = NAV.find(n => !n.ws && n.roles.includes(S.user.role) && n.id !== 'mytests' && (!MENU_TOGGLE.includes(n.id) || menuOn(n.id))), hr = first('hr');
+  if (!rek || !hr) return '';
+  const b = (ws, tgt, label, sub, ic) => `<button class="ws-btn ${S.ws === ws ? 'on' : ''}" data-go="${tgt.id}" aria-pressed="${S.ws === ws}" title="${label} · ${sub}"><i class="ws-ic" aria-hidden="true">${ic}</i><b>${label}</b><small>${sub}</small></button>`;
+  return `<div class="ws-switch" role="group" aria-label="Ruang kerja">${b('rek', rek, 'Rekrutmen', 'Psikotes & seleksi', 'RK')}${b('hr', hr, 'HRIS', 'Kepegawaian', 'HR')}</div>`;
+};
+const hrToday = () => todayISO();
+function hrPresentToday() {
+  const t = hrToday(), m = t.slice(0, 7), dd = t.slice(8, 10);
+  return empList(e => e.active !== false).filter(e => { const d = attDoc(e.id, m); return d && ((d.scans || {})[dd] || []).length; }).length;
+}
+const hrOnLeaveToday = () => { const t = hrToday(); return Store.all('leaves', l => inScope(l) && l.start <= t && l.end >= t && leaveFinal(l) === 'Disetujui'); };
+const newsAll = () => Store.all('hr_news', inScope).filter(n => !n.until || n.until >= todayISO()).sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || (b.at || '').localeCompare(a.at || ''));
+
+Views.hrdash = () => {
+  const comp = Store.get('companies', S.companyId), E = empList(e => e.active !== false), t = hrToday(), mm = t.slice(5, 7);
+  const present = hrPresentToday(), onLeave = hrOnLeaveToday(), alerts = E.filter(e => hrAlerts(e).length);
+  const lvPend = Store.all('leaves', l => inScope(l) && leaveFinal(l) === 'Menunggu'), clPend = Store.all('hr_claims', x => inScope(x) && x.status === 'submitted'), rvPend = Store.all('hr_reviews', x => inScope(x) && x.status !== 'done' && x.due && x.due <= addDays(t, 7));
+  const bday = E.filter(e => (e.birthDate || '').slice(5, 7) === mm).sort((a, b) => a.birthDate.slice(8).localeCompare(b.birthDate.slice(8)));
+  const anniv = E.filter(e => e.joinDate && e.joinDate.slice(5, 7) === mm && e.joinDate.slice(0, 4) < t.slice(0, 4));
+  const fresh = E.filter(e => e.joinDate && e.joinDate >= addDays(t, -30) && e.joinDate <= t);
+  const units = Object.entries(E.reduce((o, e) => { const u = e.unit || 'Tanpa unit'; o[u] = (o[u] || 0) + 1; return o; }, {})).sort((a, b) => b[1] - a[1]), maxU = Math.max(1, ...units.map(u => u[1]));
+  const N = newsAll().slice(0, 3), noData = !E.length;
+  const task = (n, label, go, p) => n ? `<button class="hr-task" data-go="${go}" ${p ? `data-p='${JSON.stringify(p)}'` : ''}><b>${n}</b><span>${label}</span><span aria-hidden="true">›</span></button>` : '';
+  const tasks = task(lvPend.length, 'pengajuan cuti menunggu persetujuan', 'leaves') + task(clPend.length, 'klaim menunggu diproses', 'claims', { st: 'submitted' }) + task(rvPend.length, 'penilaian kinerja mendekati / lewat batas', 'perf') + task(alerts.length, 'karyawan perlu perhatian (kontrak, STR, SIP, sertifikat)', 'employees', { alert: 1 }) + task(E.filter(e => !e.pin).length, 'karyawan belum punya PIN mesin absensi', 'employees');
+  return `<div class="page-head"><div><div class="eyebrow">${esc(comp?.name || '')} · HRIS Kepegawaian</div><h1>Beranda HRIS</h1><p>${fmtDate(t)} · ringkasan karyawan, kehadiran, dan hal yang perlu ditindaklanjuti.</p></div>
+    <div class="row"><button class="btn" data-go="attendance" data-p='{"tab":"impor"}'>Impor absensi</button><button class="btn primary" id="hdAdd">+ Karyawan</button></div></div>
+  ${noData ? `<div class="card card-pad stack"><h3 style="margin:0">Mulai pakai HRIS dalam 4 langkah</h3><ol class="hr-steps">
+      <li><b>Isi Master Data HR</b> — jabatan, golongan, status, lokasi. <button class="btn sm" data-go="hrmaster">Buka</button></li>
+      <li><b>Atur shift, hari libur, jenis cuti, komponen gaji.</b> <button class="btn sm" data-go="hrsettings">Buka</button></li>
+      <li><b>Masukkan karyawan</b> satu per satu atau impor dari Excel. <button class="btn sm" data-go="employees">Buka</button></li>
+      <li><b>Impor data mesin absensi</b> setiap bulan, lalu proses gaji. <button class="btn sm" data-go="attendance" data-p='{"tab":"impor"}'>Buka</button></li></ol></div>` : ''}
+  <div class="grid g4">
+    <button class="card kpi k-blue hr-kpibtn" data-go="employees"><span class="eyebrow">Karyawan aktif</span><b style="font-size:24px">${E.length}</b><span class="small muted">${fresh.length} masuk 30 hari terakhir</span></button>
+    <button class="card kpi k-teal hr-kpibtn" data-go="attendance" data-p='{"tab":"harian"}'><span class="eyebrow">Sudah scan hari ini</span><b style="font-size:24px">${present}</b><span class="small muted">dari data mesin yang sudah diimpor</span></button>
+    <button class="card kpi k-purple hr-kpibtn" data-go="leaves"><span class="eyebrow">Cuti hari ini</span><b style="font-size:24px">${onLeave.length}</b><span class="small muted">${onLeave.slice(0, 2).map(l => esc(empName(l.employeeId).split(' ')[0])).join(', ')}${onLeave.length > 2 ? '…' : ''}</span></button>
+    <button class="card kpi k-orange hr-kpibtn" data-go="employees" data-p='{"alert":1}'><span class="eyebrow">Perlu perhatian</span><b style="font-size:24px">${alerts.length}</b><span class="small muted">kontrak & legalitas</span></button>
+  </div>
+  <div class="grid g2" style="align-items:start">
+    <div class="stack">
+      <div class="card"><div class="card-head"><h3 style="margin:0">Perlu tindakan</h3></div><div class="card-pad stack" style="gap:6px">${tasks || '<div class="small muted">Tidak ada yang menunggu. 👍</div>'}</div></div>
+      <div class="card"><div class="card-head"><h3 style="margin:0">Pengumuman</h3><button class="btn sm" data-go="news">Kelola</button></div><div class="card-pad stack">
+        ${N.length ? N.map(n => `<div class="news-item">${n.pinned ? '<span class="pill info">Disematkan</span> ' : ''}<b>${esc(n.title)}</b><div class="small muted">${fmtDate((n.at || '').slice(0, 10))}${n.unit ? ' · untuk ' + esc(n.unit) : ''}</div><div class="small news-body">${esc(n.body || '').slice(0, 220)}${(n.body || '').length > 220 ? '…' : ''}</div></div>`).join('') : '<div class="small muted">Belum ada pengumuman.</div>'}</div></div>
+    </div>
+    <div class="stack">
+      <div class="card"><div class="card-head"><h3 style="margin:0">Komposisi per unit</h3><button class="btn sm" data-go="orgchart">Struktur</button></div><div class="card-pad stack" style="gap:6px">
+        ${units.length ? units.map(([u, n]) => `<div class="hr-bar"><span>${esc(u)}</span><i style="width:${n / maxU * 100}%"></i><b>${n}</b></div>`).join('') : '<div class="small muted">Belum ada data.</div>'}</div></div>
+      <div class="card"><div class="card-head"><h3 style="margin:0">Bulan ini</h3></div><div class="card-pad stack" style="gap:8px">
+        <div><div class="eyebrow">Ulang tahun</div>${bday.length ? bday.map(e => `<span class="pill">${esc(e.name)} · ${+e.birthDate.slice(8)} ${fmtMonth(t.slice(0, 7)).split(' ')[0]}</span>`).join(' ') : '<span class="small muted">–</span>'}</div>
+        <div><div class="eyebrow">Ulang tahun kerja</div>${anniv.length ? anniv.map(e => `<span class="pill">${esc(e.name)} · ${+t.slice(0, 4) - +e.joinDate.slice(0, 4)} th</span>`).join(' ') : '<span class="small muted">–</span>'}</div>
+        <div><div class="eyebrow">Karyawan baru (30 hari)</div>${fresh.length ? fresh.map(e => `<span class="pill ok">${esc(e.name)}</span>`).join(' ') : '<span class="small muted">–</span>'}</div></div></div>
+    </div></div>`;
+};
+Views.hrdashMount = c => { const a = $('#hdAdd', c); if (a) a.onclick = () => employeeForm(); };
+
+/* ---------------- Pengumuman ---------------- */
+Views.news = () => {
+  const all = Store.all('hr_news', inScope).sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || (b.at || '').localeCompare(a.at || ''));
+  return `<div class="page-head"><div><h1>Pengumuman</h1><p>Informasi internal untuk karyawan: kebijakan baru, jadwal, ucapan, dan pengingat. Tampil di Beranda HRIS.</p></div><button class="btn primary" id="nAdd">+ Pengumuman</button></div>
+  ${all.length ? `<div class="stack">${all.map(n => { const exp = n.until && n.until < todayISO(); return `<div class="card card-pad stack news-card${exp ? ' faded' : ''}"><div class="row" style="justify-content:space-between"><div><b style="font-size:16px">${esc(n.title)}</b><div class="small muted">${fmtDate((n.at || '').slice(0, 10))} · ${esc(n.by || '')}${n.unit ? ' · untuk ' + esc(n.unit) : ' · semua karyawan'}${n.until ? ' · tampil s.d. ' + fmtDate(n.until) : ''}</div></div>
+    <div class="row">${n.pinned ? '<span class="pill info">Disematkan</span>' : ''}${exp ? '<span class="pill">Kedaluwarsa</span>' : ''}<button class="btn sm" data-ned="${n.id}">Ubah</button><button class="btn sm danger" data-ndel="${n.id}">Hapus</button></div></div>
+    <div class="news-body">${esc(n.body || '')}</div></div>`; }).join('')}</div>` : '<div class="card"><div class="empty">Belum ada pengumuman.</div></div>'}`;
+};
+Views.newsMount = c => {
+  $('#nAdd', c).onclick = () => newsForm();
+  $$('[data-ned]', c).forEach(b => b.onclick = () => newsForm(Store.get('hr_news', b.dataset.ned)));
+  $$('[data-ndel]', c).forEach(b => b.onclick = async () => { if (!(await confirmBox('Hapus pengumuman ini?', 'Hapus', true))) return; await Store.remove('hr_news', b.dataset.ndel); audit('hapus pengumuman'); App.renderContent(); });
+};
+function newsForm(n = {}) {
+  openModal({ title: n.id ? 'Ubah pengumuman' : 'Pengumuman baru', body: `<form id="nF" class="stack"><label class="f">Judul *<input class="input" name="title" required maxlength="120" value="${esc(n.title || '')}"></label>
+    <label class="f">Isi *<textarea class="input" name="body" rows="6" required>${esc(n.body || '')}</textarea></label>
+    <div class="form-grid"><label class="f">Untuk<select class="input" name="unit">${unitOptions(S.companyId, n.unit).replace('– pilih unit –', 'Semua karyawan')}</select></label>
+    <label class="f">Tampil sampai (opsional)<input class="input" type="date" name="until" value="${esc(n.until || '')}"></label>
+    <label class="row small" style="gap:8px"><input type="checkbox" name="pinned" ${n.pinned ? 'checked' : ''}> Sematkan di atas</label></div></form>`,
+    foot: '<button class="btn" data-close>Batal</button><button class="btn primary" form="nF">Simpan</button>',
+    onMount: r => $('#nF', r).onsubmit = async ev => { ev.preventDefault(); const d = formData(ev.target);
+      const id = n.id || uid('nw'); await Store.put('hr_news', id, { companyId: S.companyId, title: d.title, body: d.body, unit: d.unit, until: d.until, pinned: !!d.pinned, at: n.at || nowISO(), by: n.by || S.user.name, editedAt: n.id ? nowISO() : '' });
+      audit(n.id ? 'ubah pengumuman' : 'buat pengumuman', d.title); closeModal(); toast('Pengumuman disimpan'); App.renderContent(); } });
+}
+
+/* ---------------- Laporan HR ---------------- */
+const HRR_TABS = [['ringkas', 'Ringkasan karyawan'], ['turnover', 'Masuk & keluar'], ['legal', 'Kontrak & legalitas'], ['builder', 'Buat laporan sendiri']];
+function hrrCount(list, fn) { const o = {}; list.forEach(e => { const k = fn(e) || 'Belum diisi'; o[k] = (o[k] || 0) + 1; }); return Object.entries(o).sort((a, b) => b[1] - a[1]); }
+function hrrBox(title, rows, total) { const mx = Math.max(1, ...rows.map(r => r[1])); return `<div class="card"><div class="card-head"><h3 style="margin:0">${esc(title)}</h3></div><div class="card-pad stack" style="gap:6px">${rows.map(([k, n]) => `<div class="hr-bar"><span>${esc(k)}</span><i style="width:${n / mx * 100}%"></i><b>${n}<small class="faint"> · ${total ? Math.round(n / total * 100) : 0}%</small></b></div>`).join('') || '<span class="small muted">–</span>'}</div></div>`; }
+const hrAge = (b, ref) => { if (!b) return null; const d = new Date(b + 'T00:00:00'), r = new Date((ref || todayISO()) + 'T00:00:00'); let a = r.getFullYear() - d.getFullYear(); if (r < new Date(r.getFullYear(), d.getMonth(), d.getDate())) a--; return a; };
+const hrYears = j => j ? (new Date() - new Date(j + 'T00:00:00')) / 31557600000 : null;
+const lastEdu = e => { const ord = hrMaster('edus').map(x => x.name); return (e.edu || []).map(x => x.level).filter(Boolean).sort((a, b) => ord.indexOf(b) - ord.indexOf(a))[0]; };
+
+Views.hrreports = () => {
+  const p = S.params || {}, tab = p.tab || 'ringkas', E = empList(e => e.active !== false), n = E.length;
+  let body = '';
+  if (tab === 'ringkas') {
+    const ageB = e => { const a = hrAge(e.birthDate); return a == null ? null : a < 25 ? '< 25 th' : a < 35 ? '25–34 th' : a < 45 ? '35–44 th' : a < 55 ? '45–54 th' : '≥ 55 th'; };
+    const svcB = e => { const y = hrYears(e.joinDate); return y == null ? null : y < 1 ? '< 1 th' : y < 3 ? '1–2 th' : y < 5 ? '3–4 th' : y < 10 ? '5–9 th' : '≥ 10 th'; };
+    body = `<div class="grid g4"><div class="card kpi k-blue"><span class="eyebrow">Karyawan aktif</span><b style="font-size:24px">${n}</b></div>
+      <div class="card kpi k-teal"><span class="eyebrow">Rata-rata usia</span><b style="font-size:24px">${(() => { const a = E.map(e => hrAge(e.birthDate)).filter(x => x != null); return a.length ? nf(a.reduce((s, x) => s + x, 0) / a.length, 1) + ' th' : '–'; })()}</b></div>
+      <div class="card kpi k-purple"><span class="eyebrow">Rata-rata masa kerja</span><b style="font-size:24px">${(() => { const a = E.map(e => hrYears(e.joinDate)).filter(x => x != null); return a.length ? nf(a.reduce((s, x) => s + x, 0) / a.length, 1) + ' th' : '–'; })()}</b></div>
+      <div class="card kpi k-orange"><span class="eyebrow">Perempuan / laki-laki</span><b style="font-size:24px">${E.filter(e => e.gender === 'P').length} / ${E.filter(e => e.gender === 'L').length}</b></div></div>
+    <div class="grid g2" style="align-items:start">${hrrBox('Per unit', hrrCount(E, e => e.unit), n)}${hrrBox('Per status kepegawaian', hrrCount(E, e => e.status), n)}${hrrBox('Per profesi', hrrCount(E, e => e.profession), n)}${hrrBox('Per kategori jabatan', hrrCount(E, e => (hrMaster('jobs').find(j => j.name === e.position) || {}).cat), n)}
+      ${hrrBox('Per kelompok usia', hrrCount(E, ageB), n)}${hrrBox('Per masa kerja', hrrCount(E, svcB), n)}${hrrBox('Pendidikan terakhir', hrrCount(E, lastEdu), n)}${hrrBox('Per lokasi kerja', hrrCount(E, e => e.location), n)}</div>`;
+  }
+  if (tab === 'turnover') {
+    const y = +(p.year || new Date().getFullYear()), A = empList(), rows = [];
+    for (let m = 1; m <= 12; m++) { const mm = `${y}-${pad(m)}`, end = `${mm}-${pad(daysIn(mm))}`, start = `${mm}-01`;
+      const inN = A.filter(e => (e.joinDate || '').startsWith(mm)).length, out = A.filter(e => e.active === false && (e.endDate || '').startsWith(mm)).length;
+      const hc = A.filter(e => e.joinDate && e.joinDate <= end && (!e.endDate || e.endDate >= start) && !(e.active === false && !e.endDate)).length; rows.push({ mm, inN, out, hc }); }
+    const tin = rows.reduce((s, r) => s + r.inN, 0), tout = rows.reduce((s, r) => s + r.out, 0), avgHc = rows.reduce((s, r) => s + r.hc, 0) / 12;
+    const reasons = hrrCount(A.filter(e => e.active === false && (e.endDate || '').startsWith(String(y))), e => e.endReason);
+    body = `<div class="card card-pad row"><label class="row small" style="gap:6px">Tahun<input class="input" type="number" id="trY" value="${y}" min="2000" max="2100" style="width:100px"></label>
+      <span class="pill ok">Masuk ${tin}</span><span class="pill bad">Keluar ${tout}</span><span class="pill info">Turnover ${avgHc ? nf(tout / avgHc * 100, 1) : 0}%</span><span class="small muted">turnover = keluar ÷ rata-rata jumlah karyawan</span></div>
+    <div class="grid g2" style="align-items:start"><div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Bulan</th><th class="num">Jumlah karyawan</th><th class="num">Masuk</th><th class="num">Keluar</th></tr></thead><tbody>${rows.map(r => `<tr><td>${fmtMonth(r.mm)}</td><td class="num">${r.hc}</td><td class="num">${r.inN || ''}</td><td class="num">${r.out || ''}</td></tr>`).join('')}</tbody></table></div></div>
+      ${hrrBox('Alasan keluar ' + y, reasons, tout)}</div>`;
+  }
+  if (tab === 'legal') {
+    const days = +(p.days || 90), items = [];
+    E.forEach(e => { const add = (what, d) => { const k = hrDaysUntil(d); if (k != null && k <= days) items.push({ e, what, d, k }); };
+      if (hrIsContract(e.status)) add('Kontrak / ' + e.status, e.contractEnd); add('STR', e.strUntil); add('SIP', e.sipUntil); (e.licenses || []).forEach(l => add(l.name || 'Sertifikat', l.until)); (e.docs || []).forEach(l => add('Dokumen ' + (l.name || l.kind), l.until)); });
+    items.sort((a, b) => a.k - b.k);
+    body = `<div class="card card-pad row"><label class="row small" style="gap:6px">Tampilkan yang berakhir dalam<select class="input" id="lgD" style="width:auto">${[30, 60, 90, 180, 365].map(d => `<option value="${d}" ${d === days ? 'selected' : ''}>${d} hari</option>`).join('')}</select></label><span class="small muted">termasuk yang sudah lewat</span></div>
+    <div class="card">${items.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Karyawan</th><th>Unit</th><th>Dokumen</th><th>Berakhir</th><th>Sisa</th></tr></thead><tbody>${items.map(x => `<tr class="click" data-emp="${x.e.id}"><td><b>${esc(x.e.name)}</b></td><td class="small">${esc(x.e.unit || '')}</td><td class="small">${esc(x.what)}</td><td class="small">${fmtDate(x.d)}</td><td><span class="pill ${x.k < 0 ? 'bad' : x.k <= 30 ? 'warn' : 'info'}">${x.k < 0 ? 'lewat ' + -x.k + ' hari' : x.k + ' hari'}</span></td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">Tidak ada yang berakhir dalam rentang ini.</div>'}</div>`;
+  }
+  if (tab === 'builder') {
+    const sel = p.cols || ['nik', 'name', 'unit', 'position', 'status', 'joinDate'];
+    const extra = [['location', 'Lokasi kerja'], ['grade', 'Golongan'], ['_service', 'Masa kerja'], ['_age', 'Usia'], ['_edu', 'Pendidikan terakhir'], ['_sup', 'Atasan langsung'], ['_emg', 'Kontak darurat']];
+    const COLS = [...EMP_COLS.filter(c => !['grade', 'location'].includes(c[0])), ...extra];
+    const units = [...new Set(empList().map(e => e.unit).filter(Boolean))].sort();
+    body = `<div class="card card-pad stack"><p class="small muted" style="margin:0">Pilih kolom dan filter, lihat pratinjau, lalu unduh sebagai CSV (bisa dibuka di Excel).</p>
+      <div class="form-grid"><label class="f">Unit<select class="input" id="bU"><option value="">Semua</option>${units.map(u => `<option ${u === p.unit ? 'selected' : ''}>${esc(u)}</option>`).join('')}</select></label>
+      <label class="f">Status<select class="input" id="bS"><option value="">Semua</option>${hrStatusList().map(u => `<option ${u === p.status ? 'selected' : ''}>${esc(u)}</option>`).join('')}</select></label>
+      <label class="f">Karyawan<select class="input" id="bA"><option value="">Aktif saja</option><option value="all" ${p.all === 'all' ? 'selected' : ''}>Termasuk nonaktif</option></select></label></div>
+      <div class="eyebrow">Kolom</div><div class="hr-colpick">${COLS.map(([k, l]) => `<label class="row small" style="gap:6px"><input type="checkbox" data-bc="${k}" ${sel.includes(k) ? 'checked' : ''}> ${esc(l)}</label>`).join('')}</div>
+      <div class="row"><button class="btn" id="bPrev">Terapkan</button><button class="btn primary" id="bCsv">Unduh CSV</button></div></div>
+      <div class="card" id="bOut">${hrrBuild(p, COLS).html}</div>`;
+  }
+  return `<div class="page-head"><div><h1>Laporan HR</h1><p>Laporan kepegawaian siap pakai dan pembuat laporan sendiri. Laporan absensi, cuti, dan gaji ada di menu masing-masing.</p></div><button class="btn" id="hrPrint">Cetak</button></div>
+    <div class="tabs" role="tablist">${HRR_TABS.map(([k, l]) => `<button class="tab ${tab === k ? 'on' : ''}" data-rt="${k}">${l}</button>`).join('')}</div>${body}`;
+};
+function hrrBuild(p, COLS) {
+  const sel = (p.cols || ['nik', 'name', 'unit', 'position', 'status', 'joinDate']).filter(k => COLS.some(c => c[0] === k));
+  let E = empList(e => p.all === 'all' || e.active !== false); if (p.unit) E = E.filter(e => e.unit === p.unit); if (p.status) E = E.filter(e => e.status === p.status);
+  const val = (e, k) => k === '_service' ? hrServiceText(e.joinDate) : k === '_age' ? (hrAge(e.birthDate) ?? '') : k === '_edu' ? (lastEdu(e) || '') : k === '_sup' ? (e.supervisorId ? empName(e.supervisorId) : '') : k === '_emg' ? (e.emergency || []).map(x => `${x.name} (${x.rel}) ${x.phone}`).join('; ') : k === 'workType' ? (e.workType || 'nonshift') : (e[k] ?? '');
+  const head = sel.map(k => COLS.find(c => c[0] === k)[1]), rows = E.map(e => sel.map(k => val(e, k)));
+  const html = `<div class="card-head"><span class="small muted">${E.length} baris</span></div>${E.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr>${head.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.slice(0, 200).map(r => `<tr>${r.map(v => `<td class="small">${esc(String(v))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>${E.length > 200 ? '<div class="small muted card-pad">Pratinjau 200 baris pertama. CSV berisi semua baris.</div>' : ''}` : '<div class="empty">Tidak ada data.</div>'}`;
+  return { html, head, rows };
+}
+Views.hrreportsMount = c => {
+  const setP = x => { S.params = { ...S.params, ...x }; App.renderContent(); };
+  $$('[data-rt]', c).forEach(b => b.onclick = () => { S.params = { tab: b.dataset.rt }; App.renderContent(); });
+  $('#hrPrint', c).onclick = () => window.print();
+  $$('[data-emp]', c).forEach(b => b.onclick = () => App.go('employee', { id: b.dataset.emp }));
+  const ty = $('#trY', c); if (ty) ty.onchange = () => setP({ year: ty.value });
+  const lg = $('#lgD', c); if (lg) lg.onchange = () => setP({ days: lg.value });
+  const read = () => ({ unit: $('#bU', c).value, status: $('#bS', c).value, all: $('#bA', c).value, cols: $$('[data-bc]', c).filter(i => i.checked).map(i => i.dataset.bc) });
+  const bp = $('#bPrev', c); if (bp) bp.onclick = () => setP(read());
+  const bc = $('#bCsv', c); if (bc) bc.onclick = () => { S.params = { ...S.params, ...read() }; const COLS = [...EMP_COLS.filter(x => !['grade', 'location'].includes(x[0])), ['location', 'Lokasi kerja'], ['grade', 'Golongan'], ['_service', 'Masa kerja'], ['_age', 'Usia'], ['_edu', 'Pendidikan terakhir'], ['_sup', 'Atasan langsung'], ['_emg', 'Kontak darurat']];
+    const r = hrrBuild(S.params, COLS), q = v => `"${String(v ?? '').replace(/"/g, '""')}"`; download(`laporan-karyawan-${todayISO()}.csv`, '﻿' + [r.head.map(q).join(';'), ...r.rows.map(x => x.map(q).join(';'))].join('\n')); audit('unduh laporan HR'); };
+};
 
 /* ---------------- boot ---------------- */
 App.start().catch(e => { console.error(e); $('#app').innerHTML = `<div id="boot">Gagal memuat aplikasi: ${esc(e.message || e)}</div>`; });
