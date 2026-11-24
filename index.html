@@ -1067,6 +1067,49 @@ body[data-role] .side{background:#FFFFFF}
 .st-day{display:grid;grid-template-columns:70px auto 1fr;gap:10px;align-items:center;padding:8px 10px;border:1px solid #E8EAEF;border-radius:.65rem}
 .st-day.today{border-color:#D35A0C;background:rgba(255,123,29,.06)}
 .st-dd{font-size:13px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+/* ---------- halaman login (hijau mint) ---------- */
+.lg-wrap{min-height:100vh;min-height:100dvh;display:grid;place-items:center;padding:24px;background:#5FBF98}
+.lg-card{width:100%;max-width:1120px;min-height:560px;display:grid;grid-template-columns:1.05fr 1fr;background:#FFFFFF;border-radius:28px;overflow:hidden;box-shadow:0 30px 60px rgba(16,60,44,.22)}
+.lg-art{position:relative;background:#FFFFFF;min-height:560px}
+.lg-svg{position:absolute;inset:0;width:100%;height:100%}
+.lg-cap{position:absolute;left:28px;bottom:22px;max-width:300px;margin:0;font-size:14px;font-weight:700;color:#14563E;line-height:1.4}
+.lg-main{display:flex;align-items:center;justify-content:center;padding:40px 48px}
+.lg-form{width:100%;max-width:420px;display:flex;flex-direction:column;gap:14px}
+.lg-brand{display:flex;align-items:center;gap:12px;justify-content:center;margin-bottom:12px}
+.lg-brand img{width:44px;height:auto}
+.lg-brand b{display:block;font-size:24px;font-weight:800;color:#1E2533;letter-spacing:-.01em;line-height:1.1}
+.lg-brand b span{color:#23805C}
+.lg-brand small{display:block;font-size:12.5px;color:#424B5C;font-weight:600}
+.lg-form label.f,.lg-form .f>label{font-size:13px;font-weight:700;color:#1E2533}
+.lg-form .input{min-height:44px;border:1px solid #C9D2DC;border-radius:10px;font-size:15px;color:#1E2533}
+.lg-form .input:focus{border-color:#23805C;box-shadow:0 0 0 3px rgba(35,128,92,.18)}
+.lg-form .pw-wrap{position:relative;display:block}
+.lg-form .pw-wrap .input{padding-right:46px;width:100%}
+.lg-eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:36px;height:36px;display:grid;place-items:center;border:0;background:transparent;color:#5E6778;border-radius:8px;cursor:pointer;padding:0}
+.lg-eye:hover,.lg-eye.on{color:#23805C;background:rgba(35,128,92,.08)}
+.lg-eye:focus-visible{outline:2px solid #23805C}
+.lg-row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.lg-row .link-btn{color:#1E2533;font-weight:700;font-size:13px}
+.lg-row .link-btn:hover{color:#23805C}
+.lg-submit{width:100%;min-height:46px;border-radius:10px!important;font-size:15px!important;background:#23805C!important;border-color:#23805C!important;color:#FFFFFF!important}
+.lg-submit:hover{background:#1B6A4C!important;border-color:#1B6A4C!important}
+.lg-form .or-line{color:#5E6778;font-size:12.5px;font-weight:700}
+.lg-alt{all:unset;box-sizing:border-box;cursor:pointer;text-align:center;padding:8px;border-radius:10px;color:#23805C;font-weight:700;font-size:14px}
+.lg-alt.small{font-size:13px;color:#424B5C;font-weight:600}
+.lg-alt:hover{background:rgba(35,128,92,.08)}
+.lg-alt:focus-visible{outline:2px solid #23805C}
+.lg-foot{margin:6px 0 0;text-align:center;font-size:12px;color:#5E6778}
+.lg-foot a{color:#23805C}
+@media (max-width:860px){
+  .lg-wrap{padding:0;place-items:stretch;background:#FFFFFF}
+  .lg-card{grid-template-columns:1fr;border-radius:0;box-shadow:none;min-height:100dvh}
+  .lg-art{min-height:0;height:230px;overflow:hidden;background:#FFFFFF}
+  .lg-svg{inset:0;width:100%;height:100%}
+  .lg-row .small{display:none}.lg-row{justify-content:flex-end}
+  .lg-cap{display:none}
+  .lg-main{padding:24px 20px 32px;align-items:flex-start}
+}
 @media print{body{background:#FFFFFF}.card{border:1px solid #E8EAEF}}
 </style>
 </head>
@@ -2236,30 +2279,27 @@ const PAPERLESS = [
   [ICO('<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>'), 'Lebih cepat dan akurat.', 'Skor DISC dihitung otomatis, hasil langsung siap dibaca tanpa input ulang.'],
   [ICO('<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/>'), 'Data rapi dan aman.', 'Arsip terpusat, mudah dicari, dan hanya dibuka oleh pihak yang berwenang.']
 ];
-Views.login = () => { const k0 = (() => { try { const q = new URLSearchParams(location.search).get('role'); return LOGIN_ROLES[q] ? q : 'admin'; } catch (e) { return 'admin'; } })(); return `<div class="login-wrap" data-lrole="all">
-  <canvas class="fx-canvas" id="fxCanvas" aria-hidden="true"></canvas>
-  <div class="fx-orbs" aria-hidden="true"><i></i><i></i><i></i></div>
-  <section class="login-side">
-    <div class="stack rise" style="gap:6px;--d:.05s"><a class="lx-pill" href="https://lyrionx.com" target="_blank" rel="noopener" aria-label="LyrionX.Co - lyrionx.com"><img src="${LOGO_LX_MARK}" alt=""><span><b>LyrionX.Co</b><small>lyrionx.com</small></span></a><div class="small" style="color:var(--ink-muted);padding-left:6px;font-weight:700;letter-spacing:.04em">HR Suite</div></div>
-    <div class="stack" style="gap:16px"><h1 class="rise" id="sideH" style="--d:.15s">Rekrutmen, psikotes, dan payroll dalam satu tempat.</h1></div>
-    <div class="paperless rise" style="--d:.4s"><div class="eyebrow">Manfaat rekrutmen digital tanpa kertas</div>
-      <ul>${PAPERLESS.map(([i, t, d]) => `<li><span class="pi">${i}</span><span><b>${t}</b> ${d}</span></li>`).join('')}</ul></div>
-  </section>
-  <section class="login-main"><div class="login-stack"><form class="login-card rise" style="--d:.2s" id="loginForm" autocomplete="on">
-    <div><h1 style="font-size:24px" id="loginTitle">Masuk</h1><p class="muted" style="margin:4px 0 0">Pilih jenis akun, lalu masukkan data login dari HRD.</p></div>
-    <label class="f">Username<input class="input" id="lu" name="u" autocomplete="username" required></label>
-    <div class="f"><label for="lp" style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">Password<button type="button" class="link-btn" id="forgotBtn">Lupa password?</button></label><span class="pw-wrap"><input class="input" id="lp" name="p" type="password" autocomplete="current-password" required><button type="button" class="pw-eye" id="pwEye" aria-label="Tampilkan password">Lihat</button></span></div>
-    <div id="loginErr" class="note bad" hidden></div>
-    <button class="btn primary" type="submit" style="padding:11px">Masuk</button>
-    <div class="or-line"><span>Belum punya akun?</span></div>
-    <button class="btn" type="button" id="regBtn" style="padding:11px">Daftar akun</button>
-    ${Supa.on ? '<button class="link-btn" type="button" id="setupBtn" style="align-self:center" hidden>Pengaturan awal (pertama kali)</button>' : '<button class="link-btn" type="button" id="demoBtn" style="align-self:center">Coba simulasi peserta (isi otomatis)</button>'}
-    <p class="small faint" style="margin:0">Akun dikunci sementara 5 menit setelah 5 kali salah password. Sesi berakhir otomatis setelah 30 menit tanpa aktivitas.</p>
-  </form></div></section></div>`; };
+Views.login = () => `<div class="lg-wrap">
+  <div class="lg-card">
+    <section class="lg-art" aria-hidden="true">${LOGIN_ART}<p class="lg-cap">Rekrutmen, psikotes, dan kepegawaian dalam satu tempat.</p></section>
+    <section class="lg-main"><form class="lg-form" id="loginForm" autocomplete="on">
+      <div class="lg-brand"><img src="${LOGO_LX_MARK}" alt="" width="44" height="33"><div><b>LyrionX <span>HR Suite</span></b><small>Kelola orang, bukan kertas.</small></div></div>
+      <h1 class="sr-only" id="loginTitle">Masuk</h1>
+      <label class="f">Nama Pengguna<input class="input" id="lu" name="u" autocomplete="username" required placeholder="username dari HRD"></label>
+      <div class="f"><label for="lp">Kata Sandi</label><span class="pw-wrap"><input class="input" id="lp" name="p" type="password" autocomplete="current-password" required placeholder="kata sandi"><button type="button" class="pw-eye lg-eye" id="pwEye" aria-label="Tampilkan kata sandi" aria-pressed="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></span></div>
+      <div class="lg-row"><span class="small muted">Sesi berakhir setelah 30 menit tidak aktif</span><button type="button" class="link-btn" id="forgotBtn">Lupa kata sandi?</button></div>
+      <div id="loginErr" class="note bad" hidden></div>
+      <button class="btn primary lg-submit" type="submit">Masuk</button>
+      <div class="or-line"><span>atau</span></div>
+      <button class="lg-alt" type="button" id="regBtn">Daftar akun baru</button>
+      ${Supa.on ? '<button class="lg-alt small" type="button" id="setupBtn" hidden>Pengaturan awal (pertama kali)</button>' : '<button class="lg-alt small" type="button" id="demoBtn">Coba simulasi peserta (isi otomatis)</button>'}
+      <p class="lg-foot">Akun dikunci 5 menit setelah 5 kali salah kata sandi. <a href="https://lyrionx.com" target="_blank" rel="noopener">lyrionx.com</a></p>
+    </form></section>
+  </div></div>`;
 Views.loginMount = () => {
   const pick = 'peserta';
   $('#roleHint') && 0;
-  $('#pwEye').onclick = () => { const i = $('#lp'), show = i.type === 'password'; i.type = show ? 'text' : 'password'; $('#pwEye').textContent = show ? 'Sembunyi' : 'Lihat'; };
+  $('#pwEye').onclick = () => { const i = $('#lp'), show = i.type === 'password'; i.type = show ? 'text' : 'password'; $('#pwEye').setAttribute('aria-pressed', show); $('#pwEye').setAttribute('aria-label', show ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'); $('#pwEye').classList.toggle('on', show); };
   $('#forgotBtn').onclick = () => Views.forgotPassword($('#lu').value.trim());
   $('#regBtn').onclick = () => Views.registerAccount('peserta');
   if ($('#demoBtn')) $('#demoBtn').onclick = () => Demo.start();
@@ -7158,6 +7198,56 @@ async function linkAccountEmployee(accountId, empId) {
   for (const x of Store.all('employees', x => x.accountId === accountId && x.id !== empId)) { const o = { ...x, accountId: '' }; delete o.id; await Store.put('employees', x.id, o); }
   if (empId) { const x = Store.get('employees', empId); if (x && x.accountId !== accountId) { const o = { ...x, accountId }; delete o.id; await Store.put('employees', empId, o); } }
 }
+
+/* Ilustrasi halaman login (orisinal): karyawan bekerja di meja, lampu meja, tanaman */
+const LOGIN_ART = `<svg class="lg-svg" viewBox="0 0 520 560" xmlns="http://www.w3.org/2000/svg" role="img" focusable="false">
+  <defs>
+    <linearGradient id="lgBlob" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#E9F7F0"/><stop offset=".55" stop-color="#BFE8D4"/><stop offset="1" stop-color="#7FD0AC"/></linearGradient>
+    <linearGradient id="lgScreen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F7FBF9"/><stop offset="1" stop-color="#E3F1EA"/></linearGradient>
+  </defs>
+  <path d="M-10 70 C70 10 190 0 280 40 C360 76 360 150 420 200 C480 250 530 300 500 380 C470 460 420 520 330 560 L-10 560 Z" fill="url(#lgBlob)"/>
+  <path d="M410 70 C440 140 470 210 455 300" fill="none" stroke="#FFFFFF" stroke-width="14" stroke-linecap="round" opacity=".55"/>
+  <!-- jam dinding -->
+  <circle cx="70" cy="120" r="34" fill="#FFFFFF" stroke="#2E9E73" stroke-width="7"/>
+  <path d="M70 120 V98 M70 120 L84 128" stroke="#1E2533" stroke-width="4" stroke-linecap="round"/>
+  <!-- titik dekorasi -->
+  <circle cx="330" cy="110" r="6" fill="#2E9E73" opacity=".5"/><circle cx="360" cy="140" r="4" fill="#F2B233"/><circle cx="150" cy="60" r="5" fill="#F2B233" opacity=".8"/>
+  <!-- lampu meja -->
+  <path d="M318 330 L338 250 L300 205" fill="none" stroke="#1E2533" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <ellipse cx="330" cy="333" rx="30" ry="7" fill="#E9822F"/>
+  <path d="M276 186 C290 168 322 172 330 192 L306 214 Z" fill="#F2B233"/>
+  <circle cx="300" cy="212" r="6" fill="#FFF3C4"/>
+  <path d="M296 220 L240 300 L330 300 Z" fill="#FFF3C4" opacity=".35"/>
+  <!-- meja -->
+  <rect x="150" y="336" width="250" height="14" rx="5" fill="#1F6B4E"/>
+  <rect x="170" y="350" width="10" height="150" rx="4" fill="#1F6B4E"/><rect x="370" y="350" width="10" height="150" rx="4" fill="#1F6B4E"/>
+  <!-- laptop -->
+  <path d="M196 336 L212 268 L300 268 L284 336 Z" fill="#2B3445"/>
+  <path d="M203 330 L216 274 L294 274 L280 330 Z" fill="url(#lgScreen)"/>
+  <rect x="226" y="286" width="34" height="5" rx="2" fill="#2E9E73"/><rect x="224" y="298" width="48" height="4" rx="2" fill="#B8C6D4"/><rect x="221" y="309" width="40" height="4" rx="2" fill="#B8C6D4"/>
+  <rect x="180" y="333" width="122" height="5" rx="2" fill="#3A4558"/>
+  <!-- kursi -->
+  <path d="M60 300 C55 250 70 230 100 232 L118 236 L128 360 L72 360 C64 340 62 320 60 300 Z" fill="#2E9E73"/>
+  <rect x="62" y="352" width="104" height="18" rx="9" fill="#23805C"/>
+  <path d="M80 370 L72 470 M150 370 L158 470" stroke="#1E2533" stroke-width="7" stroke-linecap="round"/>
+  <!-- orang -->
+  <path d="M110 352 L190 352 C206 352 214 364 212 380 L206 470" fill="none" stroke="#2B3445" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M198 476 L232 476" stroke="#1E2533" stroke-width="14" stroke-linecap="round"/>
+  <path d="M96 352 C88 300 98 262 128 252 C152 244 170 258 172 284 L176 352 Z" fill="#F2B233"/>
+  <path d="M150 276 C170 300 190 316 222 322" fill="none" stroke="#F2B233" stroke-width="18" stroke-linecap="round"/>
+  <circle cx="226" cy="322" r="8" fill="#E8B48F"/>
+  <rect x="128" y="226" width="16" height="22" rx="6" fill="#E8B48F"/>
+  <circle cx="138" cy="206" r="28" fill="#E8B48F"/>
+  <path d="M110 206 C106 176 128 164 148 168 C166 172 172 188 166 200 C156 192 140 190 128 196 C124 214 118 228 108 236 C104 226 108 214 110 206 Z" fill="#2B2724"/>
+  <circle cx="150" cy="208" r="2.6" fill="#1E2533"/><path d="M152 222 C156 224 160 222 162 218" stroke="#B5634B" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+  <!-- tanaman -->
+  <path d="M430 470 L476 470 L468 530 L438 530 Z" fill="#E9822F"/>
+  <path d="M452 470 C440 430 410 420 398 380 C430 392 448 420 454 460" fill="#2E9E73"/>
+  <path d="M454 470 C460 420 488 400 500 360 C504 410 480 440 458 468" fill="#23805C"/>
+  <path d="M452 468 C452 430 446 400 452 360 C466 400 464 440 456 470" fill="#3FB585"/>
+  <!-- lantai -->
+  <path d="M20 500 H420" stroke="#23805C" stroke-width="3" stroke-linecap="round" opacity=".35"/>
+</svg>`;
 
 /* ---------------- boot ---------------- */
 App.start().catch(e => { console.error(e); $('#app').innerHTML = `<div id="boot">Gagal memuat aplikasi: ${esc(e.message || e)}</div>`; });
