@@ -6073,12 +6073,23 @@ function empImportDialog() {
         try { rows = await skReadFile(f); } catch (e) { $('#iPrev', r).innerHTML = `<div class="note warn">File tidak dapat dibaca: ${esc(e.message || e)}</div>`; return; }
         plan = empImportPlan(rows);
         $('#iPrev', r).innerHTML = plan.err ? `<div class="note warn">${esc(plan.err)}</div>` : `<div class="note">${plan.add.length} karyawan baru, ${plan.upd.length} diperbarui${plan.bad.length ? `, <b>${plan.bad.length} baris dilewati</b>` : ''}.</div>
+          ${plan.newUnits.length ? `<div class="note warn"><b>${plan.newUnits.length} unit belum terdaftar</b> di Pengaturan Perusahaan: ${plan.newUnits.map(esc).join(', ')}.
+            <label class="row" style="gap:6px;margin-top:6px"><input type="checkbox" id="iNewU" checked> Tambahkan unit tersebut ke Pengaturan Perusahaan saat impor</label></div>` : ''}
           ${plan.bad.length ? `<ul class="small">${plan.bad.slice(0, 15).map(b => `<li>${esc(b)}</li>`).join('')}${plan.bad.length > 15 ? `<li>dan ${plan.bad.length - 15} lainnya</li>` : ''}</ul>` : ''}
           <div class="tbl-wrap" style="max-height:260px"><table class="tbl no-stack"><thead><tr><th>NIK</th><th>Nama</th><th>Unit</th><th>PIN</th><th></th></tr></thead><tbody>${[...plan.add.map(x => [x, 'baru']), ...plan.upd.map(x => [x, 'diperbarui'])].slice(0, 100).map(([x, t]) => `<tr><td class="mono">${esc(x.nik)}</td><td>${esc(x.name || Store.get('employees', x.id)?.name || '')}</td><td>${esc(x.unit || '')}</td><td>${esc(x.pin || '')}</td><td><span class="pill ${t === 'baru' ? 'ok' : 'info'}">${t}</span></td></tr>`).join('')}</tbody></table></div>`;
         $('#iGo', r).disabled = !!plan.err || !(plan.add.length + plan.upd.length);
       };
       $('#iGo', r).onclick = async () => {
-        const b = $('#iGo', r); b.disabled = true; b.textContent = 'Mengimpor…';
+        const b = $('#iGo', r);
+        if (plan.newUnits.length) {
+          const nu = $('#iNewU', r);
+          if (nu && nu.checked) { const comp = Store.get('companies', S.companyId), st = JSON.parse(JSON.stringify(comp.settings || settingsOf(S.companyId)));
+            st.units = [...(st.units || []), ...plan.newUnits.filter(u => !(st.units || []).some(x => x.name === u)).map(name => ({ name, ideal: { D: 'bebas', I: 'bebas', S: 'bebas', C: 'bebas' } }))];
+            await Store.put('companies', comp.id, { ...comp, settings: st }); audit('tambah unit dari impor karyawan', plan.newUnits.join(', ')); }
+          else { const keep = new Set((settingsOf(S.companyId).units || []).map(u => u.name)), skip = x => x.unit && !keep.has(x.unit);
+            const n = plan.add.filter(skip).length + plan.upd.filter(skip).length; plan.add = plan.add.filter(x => !skip(x)); plan.upd = plan.upd.filter(x => !skip(x)); if (n) toast(`${n} baris dengan unit baru dilewati`); }
+        }
+        b.disabled = true; b.textContent = 'Mengimpor…';
         for (const x of plan.add) { const id = uid('e'); const o = { ...x }; delete o.id; delete o.supNik; await Store.put('employees', id, { ...o, companyId: S.companyId, active: true, createdAt: nowISO() }); }
         for (const x of plan.upd) { const cur = Store.get('employees', x.id); const o = { ...cur, ...x, comps: { ...(cur.comps || {}), ...(x.comps || {}) } }; delete o.supNik; o.history = empHistoryDiff(cur, o); delete o.id; await Store.put('employees', x.id, o); }
         { const byN = Object.fromEntries(empList().filter(e => e.nik).map(e => [e.nik, e]));
@@ -6097,14 +6108,14 @@ function empImportPlan(rows) {
   EMP_COLS.forEach(([k, l]) => { const i = H.indexOf(norm(l)); if (i >= 0) map[k] = i; });
   const compIdx = cfg.components.map(k => [k.code, H.indexOf(norm(k.name))]).filter(x => x[1] >= 0);
   const units = (settingsOf(S.companyId).units || []).map(u => u.name), byNik = Object.fromEntries(empList().filter(e => e.nik).map(e => [e.nik, e]));
-  const add = [], upd = [], bad = [], seen = new Set(), pins = new Map(empList(e => e.active !== false && e.pin).map(e => [String(e.pin), e.nik]));
+  const newUnits = new Set(), add = [], upd = [], bad = [], seen = new Set(), pins = new Map(empList(e => e.active !== false && e.pin).map(e => [String(e.pin), e.nik]));
   rows.slice(hi + 1).forEach((r, n) => {
     const line = hi + n + 2, o = {};
     Object.entries(map).forEach(([k, i]) => { let v = String(r[i] ?? '').trim(); if (v === '') return; if (EMP_NUM.includes(k)) v = +v.replace(/[^\d,.-]/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.') || 0; else if (EMP_DATE.includes(k)) { const d = hrParseDate(v); if (!d) { bad.push(`Baris ${line}: tanggal "${v}" tidak dikenali`); return; } v = d; } else if (k === 'workType') v = /^shift/i.test(v) ? 'shift' : 'nonshift'; else if (k === 'gender') v = /^p/i.test(v) ? 'P' : /^l/i.test(v) ? 'L' : ''; o[k] = v; });
     const comps = {}; compIdx.forEach(([code, i]) => { const v = String(r[i] ?? '').trim(); if (v !== '') comps[code] = +v.replace(/[^\d]/g, '') || 0; }); if (Object.keys(comps).length) o.comps = comps;
     if (!o.nik) { if (Object.keys(o).length) bad.push(`Baris ${line}: NIK kosong`); return; }
     if (seen.has(o.nik)) { bad.push(`Baris ${line}: NIK ${o.nik} ganda di file`); return; } seen.add(o.nik);
-    if (o.unit && units.length && !units.includes(o.unit)) { bad.push(`Baris ${line}: unit "${o.unit}" belum terdaftar di Pengaturan Perusahaan`); return; }
+    if (o.unit && units.length && !units.includes(o.unit)) newUnits.add(o.unit);
     if (o.pin) { const p = pins.get(String(o.pin)); if (p && p !== o.nik) { bad.push(`Baris ${line}: PIN ${o.pin} sudah dipakai NIK ${p}`); return; } pins.set(String(o.pin), o.nik); }
     if (o.supNik === o.nik) { bad.push(`Baris ${line}: NIK Atasan tidak boleh sama dengan NIK sendiri`); return; }
     const cur = byNik[o.nik];
@@ -6113,7 +6124,7 @@ function empImportPlan(rows) {
   });
   const known = new Set([...Object.keys(byNik), ...add.map(x => x.nik), ...upd.map(x => x.nik)]);
   [...add, ...upd].forEach(x => { if (x.supNik && !known.has(x.supNik)) { bad.push(`NIK ${x.nik}: NIK Atasan ${x.supNik} tidak ditemukan, atasan dikosongkan`); delete x.supNik; } });
-  return { add, upd, bad };
+  return { add, upd, bad, newUnits: [...newUnits] };
 }
 
 /* =========================================================
