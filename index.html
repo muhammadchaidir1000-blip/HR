@@ -1180,6 +1180,7 @@ body[data-role] .side{background:#FFFFFF}
 .tbl tr.sel td{background:#EEF7F2}
 .bulk-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 16px;background:#E8F4EE;border-top:1px solid #CFE5D9;border-bottom:1px solid #CFE5D9;position:sticky;top:0;z-index:3}
 /* pemilih tanggal cuti */
+.ldp-row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:4px}.ldp-row .input{width:auto}.ldp-full{gap:6px;align-self:center;padding-top:18px}
 .ldp-meter{margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .ldp-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 /* lonceng notifikasi */
@@ -6073,7 +6074,7 @@ Views.employee = () => {
       ${attRecapChips(R)}${attDaysTable(e, A)}</div>`; }
   if (tab === 'cuti') { const year = new Date().getFullYear(), b = leaveBalance(e, year), L = Store.all('leaves', l => l.employeeId === e.id).sort((a, c) => (c.start || '').localeCompare(a.start || ''));
     body = `<div class="card card-pad stack"><div class="row" style="justify-content:space-between"><div class="eyebrow">Saldo cuti tahunan ${year}</div><button class="btn sm" id="eLadj">Sesuaikan saldo</button></div><div class="row">${b.type ? `<span class="pill info">Hak ${b.quota} hari${b.adj ? ` (termasuk penyesuaian ${b.adj > 0 ? '+' : ''}${b.adj})` : ''}</span><span class="pill">Terpakai ${b.used}</span><span class="pill warn">Menunggu ${b.pending}</span><span class="pill ok">Sisa ${b.left}</span>${b.eligible ? '' : `<span class="pill warn">berhak mulai ${fmtDate(b.eligDate)}</span>`}` : '<span class="small muted">Belum ada jenis cuti yang ditandai sebagai cuti tahunan.</span>'}</div></div>
-      <div class="card">${L.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Jenis</th><th>Tanggal</th><th class="num">Hari</th><th>Alasan</th><th>Status</th></tr></thead><tbody>${L.map(l => `<tr><td>${esc(l.type)}</td><td class="small">${leaveWhen(l)}</td><td class="num">${leaveDaysOf(e, l)}</td><td class="small">${esc(l.reason || '')}</td><td>${leaveStatusPill(l)}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">Belum ada riwayat cuti.</div>'}</div>`; }
+      <div class="card">${L.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Jenis</th><th>Tanggal</th><th class="num">Hari</th><th>Alasan</th><th>Status</th></tr></thead><tbody>${L.map(l => `<tr><td>${esc(l.type)}</td><td class="small">${leaveWhen(l)}</td><td class="num">${fmtDays(leaveDaysOf(e, l))}</td><td class="small">${esc(l.reason || '')}</td><td>${leaveStatusPill(l)}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">Belum ada riwayat cuti.</div>'}</div>`; }
   if (['keluarga', 'kualifikasi', 'riwayat', 'dokumen'].includes(tab)) body = empTabBody(e, tab);
   if (tab === 'gaji' && gw) body = `<div class="card card-pad" style="border-color:var(--warn,#E0730B)"><b>Perhatian:</b> ${esc(gw)}</div>` + body;
   const tabs = [['profil', 'Profil'], ['keluarga', 'Keluarga & darurat'], ['kualifikasi', 'Kualifikasi'], ['riwayat', 'Riwayat'], ['dokumen', 'Dokumen'], ['absen', 'Absensi'], ['cuti', 'Cuti'], ['gaji', 'Gaji']];
@@ -6755,7 +6756,7 @@ function lanDownloadZip() {
 }
 
 /* tanggal & jam cuti: "21 Des 2026 08:00 – 22 Des 2026 16:00" */
-const leaveWhen = l => Array.isArray(l.dates) && l.dates.length > 1 && leaveRanges(l.dates).length > 1 ? `${leaveRanges(l.dates).map(leaveRangeTxt).join(', ')}${l.t1 && l.t2 ? `, ${l.t1}–${l.t2}` : ''}` : l.start === l.end && l.t1 && l.t2 ? `${fmtDate(l.start)}, ${l.t1}–${l.t2}${l.t2 < l.t1 ? ' (esok hari)' : ''}` : `${fmtDate(l.start)}${l.t1 ? ' ' + l.t1 : ''} – ${fmtDate(l.end)}${l.t2 ? ' ' + l.t2 : ''}`;
+const leaveWhen = l => { const sl = leaveSlotsOf(l); if (sl) return leaveGroups(sl).map(leaveGroupTxt).join('; '); return l.start === l.end && l.t1 && l.t2 ? `${fmtDate(l.start)}, ${l.t1}–${l.t2}${l.t2 < l.t1 ? ' (esok hari)' : ''}` : `${fmtDate(l.start)}${l.t1 ? ' ' + l.t1 : ''} – ${fmtDate(l.end)}${l.t2 ? ' ' + l.t2 : ''}`; };
 const leaveTimeOpts = v => HALF_HOURS.map(h => `<option ${h === v ? 'selected' : ''}>${h}</option>`).join('');
 /* isi jam otomatis dari jadwal shift karyawan (selama jam belum diubah manual) */
 function leaveTimeWire(f, empOf) {
@@ -6820,7 +6821,7 @@ function leaveBalance(e, year) {
 const leaveQuotaTxt = T => { const q = +T.quota || 0; if (!q) return ''; if (T.cal && q >= 30) { const b = q / 30; return `${String(b).replace('.', ',')} bulan (${q} hari kalender)`; } return `${q} hari`; };
 function leaveRemain(e, Traw, ref) {
   const T = leaveTypeInfo(Traw); if (!T) return ''; ref = ref || todayISO();
-  if (T.annual) { const b = leaveBalance(e, +ref.slice(0, 4)); return `sisa ${b.left} hari (jatah ${b.quota} hari s.d. ${fmtMonth(todayISO().slice(0, 7))}${b.pending ? `, ${b.pending} menunggu` : ''})`; }
+  if (T.annual) { const b = leaveBalance(e, +ref.slice(0, 4)); return `sisa ${fmtDays(b.left)} hari (jatah ${fmtDays(b.quota)} hari s.d. ${fmtMonth(todayISO().slice(0, 7))}${b.pending ? `, ${fmtDays(b.pending)} menunggu` : ''})`; }
   if (T.per === 'bulan' && +T.quota) { const m = ref.slice(0, 7), used = Store.all('leaves', l => l.employeeId === e.id && l.type === T.name && leaveFinal(l) !== 'Ditolak' && (l.start || '').startsWith(m)).reduce((s, l) => s + leaveDaysOf(e, l), 0);
     return `${T.quota} hari per bulan · sisa ${Math.max(0, T.quota - used)} hari`; }
   if (T.per === 'kejadian' && +T.quota) return `${leaveQuotaTxt(T)} per kejadian${T.paid === false ? ', tidak dibayar' : ''}`;
@@ -6854,7 +6855,7 @@ Views.leaves = () => {
       <select class="input" id="lUnit" style="width:auto"><option value="">Semua unit</option>${units.map(u => `<option ${u === p.unit ? 'selected' : ''}>${esc(u)}</option>`).join('')}</select></div><span class="small muted">${reqs.length} pengajuan</span></div>
     ${reqs.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Karyawan</th><th>Jenis</th><th>Tanggal</th><th class="num">Hari</th><th>Alasan</th><th>Persetujuan</th><th>Status</th><th></th></tr></thead><tbody>
       ${reqs.map(l => { const e = em[l.employeeId], st = leaveStep(l), steps = Array.isArray(l.steps) ? l.steps : [];
-        return `<tr><td><b>${esc(e.name)}</b>${sampleTag(l)}<div class="small muted">${esc(e.unit || '')}</div></td><td>${esc(l.type)}${leaveType(cfg, l.type)?.paid === false ? '<div class="small muted">tidak dibayar</div>' : ''}</td><td class="small">${leaveWhen(l)}</td><td class="num">${leaveDaysOf(e, l)}</td>
+        return `<tr><td><b>${esc(e.name)}</b>${sampleTag(l)}<div class="small muted">${esc(e.unit || '')}</div></td><td>${esc(l.type)}${leaveType(cfg, l.type)?.paid === false ? '<div class="small muted">tidak dibayar</div>' : ''}</td><td class="small">${leaveWhen(l)}</td><td class="num">${fmtDays(leaveDaysOf(e, l))}</td>
           <td class="small">${esc(l.reason || '')}${l.docRef ? `<div class="muted">Dok: ${esc(l.docRef)}</div>` : ''}${hrDocLinks('leaves', l.id, l.files)}${l.substituteId ? `<div class="muted">Pengganti: ${esc(empName(l.substituteId))}</div>` : ''}</td>
           <td class="small">${steps.length ? steps.map(s => `<div><span class="lv-dot ${s.status === 'Disetujui' ? 'ok' : s.status === 'Ditolak' ? 'bad' : ''}"></span>${esc(s.name)}${s.by ? ` · <span class="muted">${esc(s.by)}</span>` : ''}${s.note ? `<div class="muted">“${esc(s.note)}”</div>` : ''}</div>`).join('') : '<span class="muted">langsung</span>'}</td>
           <td>${leaveStatusPill(l)}</td><td><div class="row" style="flex-wrap:nowrap">${st ? `<button class="btn sm primary" data-ap="${l.id}">Setujui${steps.length > 1 ? ' (' + esc(st.name) + ')' : ''}</button><button class="btn sm" data-rj="${l.id}">Tolak</button>` : ''}<button class="btn sm danger" data-del="${l.id}" aria-label="Hapus">✕</button></div></td></tr>`; }).join('')}
@@ -6876,7 +6877,7 @@ Views.leavesMount = c => {
   const lu = $('#lUnit', c); if (lu) lu.onchange = () => setP({ unit: lu.value });
   const ly = $('#lYear', c); if (ly) ly.onchange = () => setP({ year: ly.value });
   const decide = (id, ok) => { const l = Store.get('leaves', id), st = leaveStep(l), e = Store.get('employees', l.employeeId);
-    openModal({ title: `${ok ? 'Setujui' : 'Tolak'} cuti · ${e?.name || ''}`, body: `<p style="margin:0">${esc(l.type)}, ${leaveWhen(l)} (${leaveDaysOf(e, l)} hari)${st ? `<br><span class="small muted">Tahap: ${esc(st.name)}</span>` : ''}</p><label class="f">Catatan${ok ? ' (opsional)' : ''}<input class="input" id="dNote" ${ok ? '' : 'required'}></label>`,
+    openModal({ title: `${ok ? 'Setujui' : 'Tolak'} cuti · ${e?.name || ''}`, body: `<p style="margin:0">${esc(l.type)}, ${leaveWhen(l)} (${fmtDays(leaveDaysOf(e, l))} hari)${st ? `<br><span class="small muted">Tahap: ${esc(st.name)}</span>` : ''}</p><label class="f">Catatan${ok ? ' (opsional)' : ''}<input class="input" id="dNote" ${ok ? '' : 'required'}></label>`,
       foot: `<button class="btn" data-close>Batal</button><button class="btn ${ok ? 'primary' : 'danger'}" id="dGo">${ok ? 'Setujui' : 'Tolak'}</button>`,
       onMount: r => $('#dGo', r).onclick = async () => { const note = $('#dNote', r).value.trim(); if (!ok && !note) { toast('Tulis alasan penolakan'); return; }
         const cur = Store.get('leaves', id); let steps = Array.isArray(cur.steps) && cur.steps.length ? cur.steps.map(s => ({ ...s })) : [{ name: 'HRD', status: 'Menunggu' }];
@@ -6897,7 +6898,6 @@ function leaveForm() {
     <label class="f">Jenis cuti<select class="input" name="type">${leaveTypeOptions(cfg, emps[0], '')}</select></label>
     <label class="f">Pengganti selama cuti<select class="input" name="substituteId"><option value="">– tidak ada –</option>${emps.map(e => `<option value="${e.id}">${esc(e.name)}</option>`).join('')}</select></label>
     ${leavePickerHtml('lD')}
-    <label class="f">Jam mulai (tiap tanggal)<select class="input" name="t1">${leaveTimeOpts('08:00')}</select></label><label class="f">Jam selesai (tiap tanggal)<select class="input" name="t2">${leaveTimeOpts('16:00')}</select></label>
     <label class="f" style="grid-column:1/-1">Alasan<input class="input" name="reason"></label>
     <label class="f">No. surat / dokumen pendukung<input class="input" name="docRef" placeholder="misalnya surat keterangan dokter"></label>
     <label class="f">Persetujuan<select class="input" name="direct"><option value="0">Ikuti alur: ${cfg.approvals.map(esc).join(' → ')}</option><option value="1">Sudah disetujui (input data lama)</option></select></label>
@@ -6908,108 +6908,136 @@ function leaveForm() {
     onMount: r => {
       const f = $('#lF', r);
       const check = () => { const d = formData(f), e = Store.get('employees', d.employeeId);
-        return leaveCheckDates(e, cfg, d.type, f._dates || [], [d.substituteId && d.substituteId === d.employeeId ? '<b>Pengganti tidak boleh orang yang sama.</b>' : '']); };
+        return leaveCheckDates(e, cfg, d.type, f._slots || [], [d.substituteId && d.substituteId === d.employeeId ? '<b>Pengganti tidak boleh orang yang sama.</b>' : '']); };
       const prev = () => { $('#lPrev', r).innerHTML = check().msg; };
       f.oninput = prev; f.onchange = prev; hrDocInputWire(r, 'lDoc');
-      leaveTimeWire(f, () => Store.get('employees', f.employeeId.value));
-      leavePickerWire(r, f, 'lD', { cfg, emp: () => Store.get('employees', f.employeeId.value), type: () => f.type.value, onChange: () => { prev(); f._timeFill && f._timeFill(); } });
+      leavePickerWire(r, f, 'lD', { cfg, emp: () => Store.get('employees', f.employeeId.value), type: () => f.type.value, onChange: prev });
       const typeSync = () => { const e = Store.get('employees', f.employeeId.value), cur = f.type.value; f.type.innerHTML = leaveTypeOptions(cfg, e, cur); $('#lvInfo', r).innerHTML = leaveTypeNote(cfg, f.type.value); };
       f.employeeId.addEventListener('change', () => { typeSync(); f._pickReset(); prev(); });
       f.type.addEventListener('change', () => { $('#lvInfo', r).innerHTML = leaveTypeNote(cfg, f.type.value); f._pickRefresh(); prev(); }); typeSync(); f._pickRefresh(); prev();
-      f.onsubmit = async ev => { ev.preventDefault(); const d = formData(f), k = check(), ds = [...(f._dates || [])].sort(); d.start = ds[0]; d.end = ds[ds.length - 1];
-        if (!k.n) { toast('Pilih tanggal cuti lalu klik Tambah tanggal'); return; }
-        { const te = leaveTimeErr(d); if (te) { toast(te); return; } }
+      f.onsubmit = async ev => { ev.preventDefault(); const d = formData(f), k = check(), sl = [...(f._slots || [])].sort((a, b) => a.d.localeCompare(b.d)), ds = sl.map(x => x.d); d.start = ds[0]; d.end = ds[ds.length - 1]; d.t1 = sl[0]?.t1; d.t2 = sl[sl.length - 1]?.t2;
+        if (!k.n) { toast('Pilih tanggal cuti lalu klik Tambah'); return; }
         if (!k.ok) { toast('Periksa peringatan pada formulir'); return; }
         const steps = cfg.approvals.map(name => d.direct === '1' ? { name, status: 'Disetujui', by: S.user.username, at: nowISO(), note: 'input langsung' } : { name, status: 'Menunggu' });
         let files = []; try { files = await hrDocUploadAll(r, 'lDoc', Store.get('employees', d.employeeId)); } catch (x) { toast(x.message || String(x)); return; }
-        const body = { companyId: S.companyId, employeeId: d.employeeId, type: d.type, start: d.start, end: d.end, dates: ds, t1: d.t1, t2: d.t2, reason: d.reason, docRef: d.docRef, substituteId: d.substituteId, steps, files, createdAt: nowISO(), createdBy: S.user.username };
+        const body = { companyId: S.companyId, employeeId: d.employeeId, type: d.type, start: d.start, end: d.end, dates: ds, slots: sl.map(x => ({ d: x.d, t1: x.t1, t2: x.t2, f: x.f, full: !!x.full })), t1: d.t1, t2: d.t2, reason: d.reason, docRef: d.docRef, substituteId: d.substituteId, steps, files, createdAt: nowISO(), createdBy: S.user.username };
         body.status = leaveFinal(body); await Store.put('leaves', uid('l'), body);
         audit('pengajuan cuti', `${empName(d.employeeId)} · ${d.type}`); closeModal(); S.params = { ...S.params, tab: 'req', fs: body.status === 'Menunggu' ? 'Menunggu' : 'all' }; App.renderContent(); toast('Pengajuan cuti disimpan'); };
     } });
 }
 
 /* =========================================================
-   Cuti: pilih tanggal (boleh tidak berurutan) dan kunci sesuai jatah
-   l.dates = ['YYYY-MM-DD', …] (pengajuan baru); l.start/l.end = tanggal pertama/terakhir
+   Cuti: pilih tanggal (boleh tidak berurutan) + jam tiap tanggal, dikunci sesuai jatah
+   l.slots = [{ d:'YYYY-MM-DD', t1:'08:00', t2:'10:00', f:0.25 }]  (f = porsi hari yang dipakai)
+   l.dates = daftar tanggal; l.start/l.end = tanggal pertama/terakhir (untuk data lama & tampilan ringkas)
    ========================================================= */
-const leaveCovers = (l, iso) => Array.isArray(l.dates) && l.dates.length ? l.dates.includes(iso) : (l.start <= iso && l.end >= iso);
+const fmtDays = x => { const v = Math.round((+x || 0) * 100) / 100; return String(v).replace('.', ','); };
+const leaveSlotsOf = l => Array.isArray(l.slots) && l.slots.length ? l.slots : Array.isArray(l.dates) && l.dates.length ? l.dates.map(d => ({ d, t1: l.t1, t2: l.t2, f: 1 })) : null;
+const leaveCovers = (l, iso) => { const s = leaveSlotsOf(l); return s ? s.some(x => x.d === iso) : (l.start <= iso && l.end >= iso); };
 function leaveDaysOf(e, l, from, to) {
-  if (Array.isArray(l.dates) && l.dates.length) return l.dates.filter(d => (!from || d >= from) && (!to || d <= to)).length;
-  const s = from && l.start < from ? from : l.start, en = to && l.end > to ? to : l.end; return leaveDays(e, s, en);
+  const s = leaveSlotsOf(l);
+  if (s) return Math.round(s.filter(x => (!from || x.d >= from) && (!to || x.d <= to)).reduce((a, x) => a + (x.f == null ? 1 : +x.f), 0) * 100) / 100;
+  const a = from && l.start < from ? from : l.start, b = to && l.end > to ? to : l.end; return leaveDays(e, a, b);
 }
 const leaveIsWork = (e, iso) => leaveDays(e, iso, iso) === 1;
-/* kelompokkan tanggal berurutan: [['2026-12-03','2026-12-03'],['2026-12-10','2026-12-12']] */
-function leaveRanges(dates) { const out = []; [...dates].sort().forEach(d => { const L = out[out.length - 1]; if (L && addDays(L[1], 1) === d) L[1] = d; else out.push([d, d]); }); return out; }
+const leaveShiftOf = (e, iso) => { const cfg = hrCfg(e.companyId), c = attCode(e, iso, cfg).code; return c && c !== 'L' ? hrShift(cfg, c) : null; };
+const leaveNear = t => { const m = tmin(t); return m == null ? '08:00' : HALF_HOURS[Math.round(m / 30) % 48]; };
+/* porsi hari: jam cuti ÷ jam kerja shift hari itu (non-shift 8 jam), maks. 1 */
+function leaveFrac(e, iso, t1, t2, cal) {
+  if (cal) return 1; const sh = leaveShiftOf(e, iso), H = sh ? shiftHours(sh) : 8, h = otHours(t1, t2);
+  if (!h) return 0; return Math.min(1, Math.round((h / (H || 8)) * 100) / 100);
+}
+/* kelompokkan tanggal berurutan dengan jam yang sama */
+function leaveGroups(slots) {
+  const out = []; [...slots].sort((a, b) => a.d.localeCompare(b.d)).forEach(s => { const L = out[out.length - 1];
+    if (L && addDays(L.b, 1) === s.d && L.t1 === s.t1 && L.t2 === s.t2 && L.full === !!s.full) { L.b = s.d; L.n++; L.f += +s.f; } else out.push({ a: s.d, b: s.d, t1: s.t1, t2: s.t2, full: !!s.full, n: 1, f: +s.f }); });
+  return out;
+}
 const leaveRangeTxt = ([a, b]) => a === b ? fmtDate(a) : a.slice(0, 7) === b.slice(0, 7) ? `${+a.slice(8)}–${fmtDate(b)}` : `${fmtDate(a)} – ${fmtDate(b)}`;
-/* jumlah hari maksimal yang masih boleh dipilih untuk jenis cuti T, tanggal "iso", di luar tanggal "sel" */
+const leaveGroupTxt = g => `${leaveRangeTxt([g.a, g.b])}${g.full ? '' : g.t1 && g.t2 ? `, ${g.t1}–${g.t2}${g.t2 < g.t1 ? ' (+1)' : ''}` : ''}`;
 function leaveRoom(e, T, sel, iso) {
-  if (!T) return 0; const I = leaveTypeInfo(T);
-  if (T.annual) { const y = iso.slice(0, 4), b = leaveBalance(e, +y); return Math.max(0, b.left - b.pending - sel.filter(d => d.startsWith(y)).length); }
+  if (!T) return 0; const I = leaveTypeInfo(T), used = arr => arr.reduce((a, x) => a + (+x.f || 0), 0);
+  if (T.annual) { const y = iso.slice(0, 4), b = leaveBalance(e, +y); return Math.max(0, Math.round((b.left - b.pending - used(sel.filter(x => x.d.startsWith(y)))) * 100) / 100); }
   if (!(+I.quota)) return 366;
-  if (I.per === 'bulan') { const m = iso.slice(0, 7), used = Store.all('leaves', l => l.employeeId === e.id && l.type === T.name && leaveFinal(l) !== 'Ditolak').reduce((s, l) => s + leaveDaysOf(e, l, m + '-01', m + '-31'), 0);
-    return Math.max(0, I.quota - used - sel.filter(d => d.startsWith(m)).length); }
-  return Math.max(0, I.quota - sel.length);
+  if (I.per === 'bulan') { const m = iso.slice(0, 7), u = Store.all('leaves', l => l.employeeId === e.id && l.type === T.name && leaveFinal(l) !== 'Ditolak').reduce((a, l) => a + leaveDaysOf(e, l, m + '-01', m + '-31'), 0);
+    return Math.max(0, Math.round((I.quota - u - used(sel.filter(x => x.d.startsWith(m)))) * 100) / 100); }
+  return Math.max(0, Math.round((I.quota - used(sel)) * 100) / 100);
 }
 const leaveLimitTxt = (e, T) => { const I = leaveTypeInfo(T); if (!I) return ''; if (T.annual) return 'sisa cuti tahunan'; if (!(+I.quota)) return 'tanpa batas'; return I.per === 'bulan' ? `${I.quota} hari per bulan` : `${leaveQuotaTxt(I)} per kejadian`; };
 
 function leavePickerHtml(id) {
-  return `<div class="f ldp" style="grid-column:1/-1"><span>Tanggal cuti <span class="small muted">(pilih satu tanggal atau rentang, lalu klik Tambah; boleh tidak berurutan)</span></span>
-    <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center"><input class="input" type="date" id="${id}_a" value="${todayISO()}" style="width:auto"><span class="small muted">s.d.</span><input class="input" type="date" id="${id}_b" value="${todayISO()}" style="width:auto">
-      <button type="button" class="btn" id="${id}_add">+ Tambah tanggal</button></div>
+  return `<div class="f ldp" style="grid-column:1/-1"><span>Tanggal & jam cuti <span class="small muted">(pilih tanggal atau rentang, atur jam bila hanya beberapa jam, lalu klik Tambah; boleh tidak berurutan)</span></span>
+    <div class="ldp-row"><label class="f" style="margin:0">Dari tanggal<input class="input" type="date" id="${id}_a" value="${todayISO()}"></label><label class="f" style="margin:0">s.d. tanggal<input class="input" type="date" id="${id}_b" value="${todayISO()}"></label>
+      <label class="row small ldp-full"><input type="checkbox" id="${id}_full" checked> Sehari penuh (jam sesuai jadwal shift)</label>
+      <label class="f" style="margin:0">Jam mulai<select class="input" id="${id}_t1" disabled>${HALF_HOURS.map(h => `<option ${h === '08:00' ? 'selected' : ''}>${h}</option>`).join('')}</select></label>
+      <label class="f" style="margin:0">Jam selesai<select class="input" id="${id}_t2" disabled>${HALF_HOURS.map(h => `<option ${h === '16:00' ? 'selected' : ''}>${h}</option>`).join('')}</select></label>
+      <button type="button" class="btn" id="${id}_add" style="align-self:flex-end">+ Tambah</button></div>
+    <div class="small muted" id="${id}_h"></div>
     <div class="ldp-meter" id="${id}_m"></div><div class="ldp-chips" id="${id}_c"></div></div>`;
 }
-/* opts: { cfg, emp(): employee, type(): nama jenis, onChange() } ; tanggal terpilih ada di f._dates */
+/* opts: { cfg, emp(), type(), onChange() } ; hasil di f._slots */
 function leavePickerWire(r, f, id, opts) {
-  f._dates = [];
-  const A = $('#' + id + '_a', r), B = $('#' + id + '_b', r), add = $('#' + id + '_add', r), M = $('#' + id + '_m', r), C = $('#' + id + '_c', r);
+  f._slots = [];
+  const q = k => $('#' + id + '_' + k, r), A = q('a'), B = q('b'), FULL = q('full'), T1 = q('t1'), T2 = q('t2'), add = q('add'), M = q('m'), C = q('c'), H = q('h');
   const T = () => leaveType(opts.cfg, opts.type()), I = () => leaveTypeInfo(T());
-  const ok = (e, iso) => (I()?.cal || leaveIsWork(e, iso)) && !f._dates.includes(iso) && !Store.all('leaves', l => l.employeeId === e.id && leaveFinal(l) !== 'Ditolak' && leaveCovers(l, iso)).length;
-  const maxEnd = () => { const e = opts.emp(), t = T(); if (!e || !t || !A.value) return ''; let room = leaveRoom(e, t, f._dates, A.value); if (room >= 366) return ''; if (room <= 0) return A.value;
-    let d = A.value, last = A.value; for (let i = 0; i < 400 && room > 0; i++) { if (ok(e, d)) { room--; last = d; } d = addDays(d, 1); } return last; };
+  const taken = (e, iso) => f._slots.some(s => s.d === iso) || Store.all('leaves', l => l.employeeId === e.id && leaveFinal(l) !== 'Ditolak' && leaveCovers(l, iso)).length > 0;
+  const okDay = (e, iso) => (I()?.cal || leaveIsWork(e, iso)) && !taken(e, iso);
+  const slotFor = (e, iso) => { if (FULL.checked || I()?.cal) { const sh = leaveShiftOf(e, iso); return { d: iso, t1: sh ? leaveNear(sh.start) : '08:00', t2: sh ? leaveNear(sh.end) : '16:00', f: 1, full: true }; }
+    return { d: iso, t1: T1.value, t2: T2.value, f: leaveFrac(e, iso, T1.value, T2.value, false), full: false }; };
+  const syncTimes = () => { const e = opts.emp(), full = FULL.checked || !!I()?.cal; T1.disabled = T2.disabled = full; FULL.disabled = !!I()?.cal;
+    if (e && A.value) { const sh = leaveShiftOf(e, A.value);
+      if (full) { T1.value = sh ? leaveNear(sh.start) : '08:00'; T2.value = sh ? leaveNear(sh.end) : '16:00'; }
+      const s = slotFor(e, A.value);
+      H.innerHTML = sh ? `Jadwal ${fmtDate(A.value)}: <b>${esc(sh.name)} ${sh.start}–${sh.end}</b> (${hoursTxt(shiftHours(sh))}).${full ? '' : ` Cuti ${hoursTxt(otHours(T1.value, T2.value))} = <b>${fmtDays(s.f)} hari</b>.`}` : (leaveIsWork(e, A.value) ? `Hari kerja 08:00–16:00 (8 jam).${full ? '' : ` Cuti ${hoursTxt(otHours(T1.value, T2.value))} = <b>${fmtDays(s.f)} hari</b>.`}` : `${fmtDate(A.value)} libur / tidak ada jadwal.`); } };
+  const maxEnd = () => { const e = opts.emp(), t = T(); if (!e || !t || !A.value) return ''; let room = leaveRoom(e, t, f._slots, A.value); if (room >= 366) return ''; if (room <= 0) return A.value;
+    let d = A.value, last = A.value; for (let i = 0; i < 400 && room > 0.001; i++) { if (okDay(e, d)) { room -= slotFor(e, d).f; last = d; } d = addDays(d, 1); } return last; };
   const paint = () => {
-    const e = opts.emp(), t = T(), n = f._dates.length;
-    const room = e && t ? leaveRoom(e, t, f._dates, A.value || todayISO()) : 0, lim = room >= 366 ? null : n + room;
-    M.innerHTML = t ? `<span class="pill ${lim != null && room <= 0 ? 'warn' : 'info'}">${n} hari dipilih${lim != null ? ` dari jatah ${lim} hari` : ''}</span> <span class="small muted">${esc(t.name)}: ${esc(leaveLimitTxt(e, t))}${lim != null && room <= 0 && n ? ' · jatah sudah terpakai semua' : ''}</span>` : '';
-    C.innerHTML = leaveRanges(f._dates).map(([a, b]) => `<span class="hrdoc-chip">📅 ${esc(leaveRangeTxt([a, b]))}${a !== b ? ` <small>${f._dates.filter(d => d >= a && d <= b).length} hari</small>` : ''}<button type="button" data-rmr="${a}|${b}" aria-label="Hapus tanggal">✕</button></span>`).join('') || '<span class="small faint">Belum ada tanggal dipilih.</span>';
-    $$('[data-rmr]', C).forEach(x => x.onclick = () => { const [a, b] = x.dataset.rmr.split('|'); f._dates = f._dates.filter(d => d < a || d > b); paint(); opts.onChange && opts.onChange(); });
+    const e = opts.emp(), t = T(), n = f._slots.reduce((a, s) => a + s.f, 0);
+    const room = e && t ? leaveRoom(e, t, f._slots, A.value || todayISO()) : 0, lim = room >= 366 ? null : n + room;
+    M.innerHTML = t ? `<span class="pill ${lim != null && room <= 0.001 ? 'warn' : 'info'}">${fmtDays(n)} hari dipilih${lim != null ? ` dari jatah ${fmtDays(lim)} hari` : ''}</span> <span class="small muted">${esc(t.name)}: ${esc(leaveLimitTxt(e, t))}${lim != null && room <= 0.001 && n ? ' · jatah sudah terpakai semua' : ''}</span>` : '';
+    C.innerHTML = leaveGroups(f._slots).map(g => `<span class="hrdoc-chip">📅 ${esc(leaveRangeTxt([g.a, g.b]))} · ${g.full ? `sehari penuh (${esc(g.t1)}–${esc(g.t2)})` : `${esc(g.t1)}–${esc(g.t2)}`} <small>${fmtDays(g.f)} hari</small><button type="button" data-rmr="${g.a}|${g.b}" aria-label="Hapus tanggal">✕</button></span>`).join('') || '<span class="small faint">Belum ada tanggal dipilih.</span>';
+    $$('[data-rmr]', C).forEach(x => x.onclick = () => { const [a, b] = x.dataset.rmr.split('|'); f._slots = f._slots.filter(s => s.d < a || s.d > b); paint(); opts.onChange && opts.onChange(); });
     const mx = maxEnd(); B.max = mx || ''; B.min = A.value || ''; if (mx && B.value > mx) B.value = mx; if (B.value < A.value) B.value = A.value;
-    add.disabled = !t || (lim != null && room <= 0);
+    add.disabled = !t || (lim != null && room <= 0.001); syncTimes();
   };
   A.onchange = () => { if (!B.value || B.value < A.value) B.value = A.value; paint(); };
-  B.onchange = paint;
+  B.onchange = paint; T1.onchange = T2.onchange = () => { syncTimes(); paint(); }; FULL.onchange = () => { syncTimes(); paint(); };
   add.onclick = () => {
     const e = opts.emp(), t = T(); if (!e || !t) return; if (!A.value) { toast('Pilih tanggal'); return; }
+    if (!FULL.checked && !I()?.cal && T1.value === T2.value) { toast('Jam mulai dan jam selesai tidak boleh sama'); return; }
     const end = B.value && B.value >= A.value ? B.value : A.value; let added = 0, skipped = 0, full = false, d = A.value;
     for (let i = 0; i < 400 && d <= end; i++, d = addDays(d, 1)) {
-      if (!ok(e, d)) { skipped++; continue; }
-      if (leaveRoom(e, t, f._dates, d) <= 0) { full = true; break; }
-      f._dates.push(d); added++;
+      if (!okDay(e, d)) { skipped++; continue; }
+      const s = slotFor(e, d); if (!(s.f > 0)) { skipped++; continue; }
+      if (leaveRoom(e, t, f._slots, d) + 0.001 < s.f) { full = true; break; }
+      f._slots.push(s); added++;
     }
-    f._dates.sort();
-    if (full) toast(`Jatah ${t.name} hanya sampai di sini. Untuk hari tambahan, ajukan dengan jenis cuti lain (mis. Tahunan).`);
+    f._slots.sort((a, b) => a.d.localeCompare(b.d)); f._dates = f._slots.map(s => s.d);
+    if (full) toast(`Jatah ${t.name} tidak cukup untuk tanggal berikutnya. Untuk tambahan, ajukan dengan jenis cuti lain (mis. Tahunan).`);
     else if (!added) toast(skipped ? 'Tanggal tersebut libur, sudah dipilih, atau sudah ada cuti lain' : 'Tidak ada tanggal yang ditambahkan');
     const nx = addDays(end, 1); A.value = nx; B.value = nx; paint(); opts.onChange && opts.onChange();
   };
-  f._pickReset = () => { f._dates = []; paint(); };
+  f._pickReset = () => { f._slots = []; f._dates = []; paint(); };
   f._pickRefresh = () => { const e = opts.emp(), t = T();
-    if (e && t && f._dates.length) { const keep = []; for (const d of f._dates) { if ((I()?.cal || leaveIsWork(e, d)) && leaveRoom(e, t, keep, d) > 0) keep.push(d); }
-      if (keep.length < f._dates.length) toast(`Tanggal dikurangi menjadi ${keep.length} hari sesuai jatah ${t.name}`); f._dates = keep; }
+    if (e && t && f._slots.length) { const keep = []; for (const s0 of f._slots) { const s = I()?.cal ? { ...s0, f: 1, full: true } : s0; if ((I()?.cal || leaveIsWork(e, s.d)) && leaveRoom(e, t, keep, s.d) + 0.001 >= s.f) keep.push(s); }
+      if (keep.length < f._slots.length) toast(`Tanggal dikurangi sesuai jatah ${t.name}`); f._slots = keep; f._dates = keep.map(s => s.d); }
     paint(); };
   paint();
 }
-/* ringkasan & validasi pengajuan */
-function leaveCheckDates(e, cfg, type, dates, extra = []) {
-  const T = leaveType(cfg, type), msg = [], n = dates.length; if (!e || !T) return { ok: false, n: 0, msg: '' };
-  if (!n) return { ok: false, n: 0, msg: 'Pilih tanggal cuti lalu klik <b>Tambah tanggal</b>.' };
-  msg.push(`<b>${n}</b> hari: ${leaveRanges(dates).map(leaveRangeTxt).map(esc).join(', ')}.`);
+function leaveCheckDates(e, cfg, type, slots, extra = []) {
+  const T = leaveType(cfg, type), msg = []; if (!e || !T) return { ok: false, n: 0, msg: '' };
+  const n = Math.round(slots.reduce((a, s) => a + (+s.f || 0), 0) * 100) / 100;
+  if (!slots.length) return { ok: false, n: 0, msg: 'Pilih tanggal cuti lalu klik <b>Tambah</b>.' };
+  msg.push(`<b>${fmtDays(n)}</b> hari: ${leaveGroups(slots).map(leaveGroupTxt).map(esc).join('; ')}.`);
   let over = false;
-  if (T.annual) { const y = dates[0].slice(0, 4), b = leaveBalance(e, +y); msg.push(`Sisa cuti tahunan ${y}: <b>${b.left}</b> hari (jatah ${b.quota} hari dari ${b.accrued} bulan bekerja${b.adj ? `, penyesuaian ${b.adj}` : ''})${b.pending ? `, ${b.pending} hari masih menunggu` : ''}.`);
-    const per = {}; dates.forEach(d => { per[d.slice(0, 4)] = (per[d.slice(0, 4)] || 0) + 1; }); Object.entries(per).forEach(([yy, k]) => { const bb = leaveBalance(e, +yy); if (k > bb.left - bb.pending) over = true; }); }
-  else { const I = leaveTypeInfo(T); if (+I.quota) { if (I.per === 'bulan') { const per = {}; dates.forEach(d => { per[d.slice(0, 7)] = (per[d.slice(0, 7)] || 0) + 1; }); Object.entries(per).forEach(([m, k]) => { if (leaveRoom(e, T, [], m + '-01') < k) over = true; }); } else if (n > I.quota) over = true; } }
+  const sumBy = k => { const o = {}; slots.forEach(s => { const x = k(s.d); o[x] = (o[x] || 0) + (+s.f || 0); }); return o; };
+  if (T.annual) { const y = slots[0].d.slice(0, 4), b = leaveBalance(e, +y); msg.push(`Sisa cuti tahunan ${y}: <b>${fmtDays(b.left)}</b> hari (jatah ${fmtDays(b.quota)} hari dari ${b.accrued} bulan bekerja${b.adj ? `, penyesuaian ${b.adj}` : ''})${b.pending ? `, ${fmtDays(b.pending)} hari masih menunggu` : ''}.`);
+    Object.entries(sumBy(d => d.slice(0, 4))).forEach(([yy, k]) => { const bb = leaveBalance(e, +yy); if (k > bb.left - bb.pending + 0.001) over = true; }); }
+  else { const I = leaveTypeInfo(T); if (+I.quota) { if (I.per === 'bulan') Object.entries(sumBy(d => d.slice(0, 7))).forEach(([m, k]) => { if (leaveRoom(e, T, [], m + '-01') + 0.001 < k) over = true; }); else if (n > I.quota + 0.001) over = true; } }
   if (over) msg.push(`<b>Melebihi jatah ${esc(T.name)}.</b> Kurangi tanggal atau ajukan sisanya dengan jenis cuti lain.`);
   if (T.paid === false) msg.push('Cuti ini tidak dibayar: gaji dipotong sesuai jumlah hari.');
-  const clash = dates.filter(d => Store.all('leaves', l => l.employeeId === e.id && leaveFinal(l) !== 'Ditolak' && leaveCovers(l, d)).length);
-  if (clash.length) msg.push(`<b>Bentrok</b> dengan cuti lain pada ${clash.map(fmtDate).join(', ')}.`);
+  const clash = slots.filter(s => Store.all('leaves', l => l.employeeId === e.id && leaveFinal(l) !== 'Ditolak' && leaveCovers(l, s.d)).length);
+  if (clash.length) msg.push(`<b>Bentrok</b> dengan cuti lain pada ${clash.map(s => fmtDate(s.d)).join(', ')}.`);
   extra.forEach(x => x && msg.push(x));
   return { ok: !over && !clash.length && !extra.some(Boolean), n, msg: msg.join(' ') };
 }
@@ -7836,7 +7864,7 @@ Views.me = () => {
   ${al.length ? `<div class="note warn">${al.map(x => esc(x.t)).join(' · ')}. Segera perbarui ke HRD.</div>` : ''}
   <div class="grid g4">
     <button class="card kpi hr-kpibtn" data-go="myprofile"><span class="eyebrow">Status kepegawaian</span><b style="font-size:20px">${esc(e.status || '–')}</b><span class="small">${e.contractEnd && hrIsContract(e.status, e.companyId) ? 'berakhir ' + fmtDate(e.contractEnd) : 'masa kerja ' + esc(hrServiceText(e.joinDate) || '–')}</span></button>
-    <button class="card kpi hr-kpibtn" data-go="myleave"><span class="eyebrow">Sisa cuti tahunan ${y}</span><b>${b.type ? b.left + ' hari' : '–'}</b><span class="small">${b.type ? (b.eligible ? `dari ${b.quota} hari${b.pending ? ` · ${b.pending} menunggu` : ''}` : 'berhak mulai ' + fmtDate(b.eligDate)) : 'belum diatur HRD'}</span></button>
+    <button class="card kpi hr-kpibtn" data-go="myleave"><span class="eyebrow">Sisa cuti tahunan ${y}</span><b>${b.type ? fmtDays(b.left) + ' hari' : '–'}</b><span class="small">${b.type ? (b.eligible ? `dari ${b.quota} hari${b.pending ? ` · ${b.pending} menunggu` : ''}` : 'berhak mulai ' + fmtDate(b.eligDate)) : 'belum diatur HRD'}</span></button>
     <button class="card kpi hr-kpibtn" data-go="myschedule"><span class="eyebrow">Kehadiran bulan ini</span><b>${R.hadir} hari</b><span class="small">terlambat ${R.late}× · alpa ${R.alpa}</span></button>
     <button class="card kpi hr-kpibtn" data-go="mypay"><span class="eyebrow">Slip gaji terakhir</span><b style="font-size:20px">${slip ? rp(slip.slip.net) : '–'}</b><span class="small">${slip ? fmtMonth(slip.month) : 'belum ada slip terbit'}</span></button>
   </div>
@@ -7887,8 +7915,8 @@ Views.myleave = () => {
   <div class="grid g4"><div class="card kpi"><span class="eyebrow">Hak cuti tahunan ${y}</span><b>${b.type ? b.quota : '–'}</b><span class="small">hari</span></div>
     <div class="card kpi"><span class="eyebrow">Terpakai</span><b>${b.used || 0}</b><span class="small">hari disetujui</span></div>
     <div class="card kpi"><span class="eyebrow">Menunggu</span><b>${b.pending || 0}</b><span class="small">hari</span></div>
-    <div class="card kpi"><span class="eyebrow">Sisa</span><b>${b.type ? b.left : '–'}</b><span class="small">${b.type && b.next ? `hari · +1 hari pada ${fmtDate(b.next)}` : 'hari'}</span></div></div>
-  <div class="card">${L.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Jenis</th><th>Tanggal</th><th class="num">Hari</th><th>Alasan</th><th>Status</th><th></th></tr></thead><tbody>${L.map(l => `<tr><td><b>${esc(l.type)}</b></td><td class="small">${leaveWhen(l)}</td><td class="num">${leaveDaysOf(e, l)}</td><td class="small">${esc(l.reason || '')}${hrDocLinks('leaves', l.id, l.files)}</td><td>${leaveStatusPill(l)}</td>
+    <div class="card kpi"><span class="eyebrow">Sisa</span><b>${b.type ? fmtDays(b.left) : '–'}</b><span class="small">${b.type && b.next ? `hari · +1 hari pada ${fmtDate(b.next)}` : 'hari'}</span></div></div>
+  <div class="card">${L.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Jenis</th><th>Tanggal</th><th class="num">Hari</th><th>Alasan</th><th>Status</th><th></th></tr></thead><tbody>${L.map(l => `<tr><td><b>${esc(l.type)}</b></td><td class="small">${leaveWhen(l)}</td><td class="num">${fmtDays(leaveDaysOf(e, l))}</td><td class="small">${esc(l.reason || '')}${hrDocLinks('leaves', l.id, l.files)}</td><td>${leaveStatusPill(l)}</td>
     <td>${leaveFinal(l) === 'Menunggu' && (l.steps || []).every(s => s.status === 'Menunggu') ? `<button class="btn sm danger" data-lcan="${l.id}">Batalkan</button>` : ''}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">Belum ada pengajuan cuti.</div>'}</div>`;
 };
 Views.myleaveMount = c => {
@@ -7904,8 +7932,6 @@ function stLeaveForm(e) {
     <label class="f" style="grid-column:1/-1">Jenis cuti<select class="input" name="type" required>${leaveTypeOptions(cfg, e, '')}</select></label>
     <div class="small muted" id="slInfo" style="grid-column:1/-1;margin-top:-4px">${leaveTypeNote(cfg, (leaveTypesFor(cfg, e)[0] || {}).name)}</div>
     ${leavePickerHtml('slD')}
-    <label class="f">Jam mulai (tiap tanggal)<select class="input" name="t1">${leaveTimeOpts('08:00')}</select></label>
-    <label class="f">Jam selesai (tiap tanggal)<select class="input" name="t2">${leaveTimeOpts('16:00')}</select></label>
     <label class="f" style="grid-column:1/-1">Alasan<input class="input" name="reason" required placeholder="mis. acara keluarga"></label>
     <label class="f">Pengganti selama cuti (nama)<input class="input" name="substituteName" placeholder="opsional"></label>
     <label class="f">No. surat / dokumen pendukung<input class="input" name="docRef" placeholder="mis. surat dokter"></label>
@@ -7915,18 +7941,16 @@ function stLeaveForm(e) {
     foot: '<button class="btn" data-close>Batal</button><button class="btn primary" form="slF">Ajukan</button>',
     onMount: r => {
       const f = $('#slF', r);
-      const check = () => { const d = formData(f); return leaveCheckDates(e, cfg, d.type, f._dates || []); };
+      const check = () => { const d = formData(f); return leaveCheckDates(e, cfg, d.type, f._slots || []); };
       const prev = () => { $('#slPrev', r).innerHTML = check().msg; }; f.oninput = prev; f.onchange = prev; hrDocInputWire(r, 'slDoc');
-      leaveTimeWire(f, () => e);
-      leavePickerWire(r, f, 'slD', { cfg, emp: () => e, type: () => f.type.value, onChange: () => { prev(); f._timeFill && f._timeFill(); } });
+      leavePickerWire(r, f, 'slD', { cfg, emp: () => e, type: () => f.type.value, onChange: prev });
       f.type.addEventListener('change', () => { $('#slInfo', r).innerHTML = leaveTypeNote(cfg, f.type.value); f._pickRefresh(); prev(); }); prev();
-      f.onsubmit = async ev => { ev.preventDefault(); const d = formData(f), k = check(), ds = [...(f._dates || [])].sort(); d.start = ds[0]; d.end = ds[ds.length - 1];
-        if (!k.n) { toast('Pilih tanggal cuti lalu klik Tambah tanggal'); return; }
-        { const te = leaveTimeErr(d); if (te) { toast(te); return; } }
+      f.onsubmit = async ev => { ev.preventDefault(); const d = formData(f), k = check(), sl = [...(f._slots || [])].sort((a, b) => a.d.localeCompare(b.d)), ds = sl.map(x => x.d); d.start = ds[0]; d.end = ds[ds.length - 1]; d.t1 = sl[0]?.t1; d.t2 = sl[sl.length - 1]?.t2;
+        if (!k.n) { toast('Pilih tanggal cuti lalu klik Tambah'); return; }
         if (!k.ok) { toast('Periksa peringatan pada formulir'); return; }
         const sb = $('button[form=slF]', r); if (sb) { sb.disabled = true; sb.textContent = 'Mengirim…'; }
         let files = []; try { files = await hrDocUploadAll(r, 'slDoc', e); } catch (x) { toast(x.message || String(x)); if (sb) { sb.disabled = false; sb.textContent = 'Ajukan'; } return; }
-        const body = { companyId: e.companyId, employeeId: e.id, type: d.type, start: d.start, end: d.end, dates: ds, t1: d.t1, t2: d.t2, reason: d.reason, docRef: d.docRef, substituteName: d.substituteName, files, steps: cfg.approvals.map(name => ({ name, status: 'Menunggu' })), status: 'Menunggu', createdAt: nowISO(), createdBy: S.user.username, bySelf: true };
+        const body = { companyId: e.companyId, employeeId: e.id, type: d.type, start: d.start, end: d.end, dates: ds, slots: sl.map(x => ({ d: x.d, t1: x.t1, t2: x.t2, f: x.f, full: !!x.full })), t1: d.t1, t2: d.t2, reason: d.reason, docRef: d.docRef, substituteName: d.substituteName, files, steps: cfg.approvals.map(name => ({ name, status: 'Menunggu' })), status: 'Menunggu', createdAt: nowISO(), createdBy: S.user.username, bySelf: true };
         try { await Store.put('leaves', uid('l'), body); } catch (x) { toast('Gagal mengajukan: ' + (x.message || x)); return; }
         audit('ajukan cuti (staf)', `${e.name} · ${d.type}`); closeModal(); toast('Pengajuan cuti terkirim ke HRD'); App.renderContent(); };
     } });
@@ -8131,7 +8155,7 @@ Views.teamappr = () => {
   return `<div class="page-head"><div><h1>Persetujuan Tim</h1><p>Setujui atau tolak pengajuan cuti dan lembur anggota tim. Setelah Anda setujui, pengajuan diteruskan ke tahap berikutnya hingga HRD.</p></div></div>
   <div class="card"><div class="card-head"><div class="row"><select class="input" id="taFs" style="width:auto"><option value="mine" ${fs === 'mine' ? 'selected' : ''}>Menunggu persetujuan saya (${mine})</option><option value="wait" ${fs === 'wait' ? 'selected' : ''}>Semua yang masih menunggu</option><option value="all" ${fs === 'all' ? 'selected' : ''}>Semua (120 hari terakhir)</option></select><button class="btn sm" id="taRef">Muat ulang</button></div><span class="small muted">${rows.length} pengajuan</span></div>
   ${rows.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Karyawan</th><th>Pengajuan</th><th>Tanggal</th><th>Keterangan</th><th>Persetujuan</th><th>Status</th><th></th></tr></thead><tbody>${rows.map(r => { const d = r.data, e = team.get(d.employeeId) || { name: '–' }, ot = r.col === 'overtime';
-    const what = ot ? `<b>Lembur</b><div class="small muted">${nf(d.hours, 1)} jam · ${d.dayType === 'libur' ? 'hari libur' : 'hari kerja'}</div>` : `<b>Cuti ${esc(d.type || '')}</b><div class="small muted">${leaveDaysOf(e.id ? e : { ...e, companyId: S.user.companyId }, d)} hari</div>`;
+    const what = ot ? `<b>Lembur</b><div class="small muted">${nf(d.hours, 1)} jam · ${d.dayType === 'libur' ? 'hari libur' : 'hari kerja'}</div>` : `<b>Cuti ${esc(d.type || '')}</b><div class="small muted">${fmtDays(leaveDaysOf(e.id ? e : { ...e, companyId: S.user.companyId }, d))} hari</div>`;
     const when = ot ? `${fmtDate(d.date)}<div class="small muted">${esc(d.t1 || '')}${d.t2 ? '–' + esc(d.t2) : ''}</div>` : leaveWhen(d);
     return `<tr><td><b>${esc(e.name)}</b><div class="small muted">${esc(e.position || e.unit || '')}${r.lvl > 1 ? ` · bawahan tingkat ${r.lvl}` : ''}</div></td><td>${what}</td><td class="small">${when}</td>
       <td class="small">${esc(ot ? d.note || '' : d.reason || '')}${d.docRef ? `<div class="muted">Dok: ${esc(d.docRef)}</div>` : ''}${hrDocLinks('team_req', r.col + ':' + r.id, d.files)}</td><td class="small">${stepsHtml(d.steps)}</td><td>${leaveStatusPill({ ...d, status: otFinal(d) })}</td>
