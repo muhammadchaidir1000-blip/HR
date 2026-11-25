@@ -5715,7 +5715,7 @@ Views.hrmasterMount = c => {
    ========================================================= */
 /* kolom impor/ekspor: [kunci, judul kolom] */
 const EMP_COLS = [
-  ['nik', 'NIK Karyawan'], ['name', 'Nama Lengkap'], ['pin', 'PIN Mesin Absensi'], ['unit', 'Unit'], ['position', 'Jabatan'], ['level', 'Level'], ['grade', 'Golongan'], ['location', 'Lokasi Kerja'],
+  ['nik', 'NIK Karyawan'], ['name', 'Nama Lengkap'], ['pin', 'PIN Mesin Absensi'], ['unit', 'Unit'], ['position', 'Jabatan'], ['level', 'Level'], ['supNik', 'NIK Atasan'], ['grade', 'Golongan'], ['location', 'Lokasi Kerja'],
   ['status', 'Status Kepegawaian'], ['joinDate', 'Tanggal Masuk'], ['contractEnd', 'Kontrak Berakhir'], ['workType', 'Jenis Kerja (shift/nonshift)'],
   ['profession', 'Profesi'], ['gender', 'Jenis Kelamin (L/P)'], ['birthPlace', 'Tempat Lahir'], ['birthDate', 'Tanggal Lahir'], ['nikKtp', 'NIK KTP'],
   ['phone', 'No HP'], ['email', 'Email'], ['address', 'Alamat'], ['ptkp', 'Status PTKP'], ['npwp', 'NPWP'], ['bpjsKesNo', 'No BPJS Kesehatan'], ['bpjsTkNo', 'No BPJS Ketenagakerjaan'],
@@ -5892,13 +5892,13 @@ Views.employeeMount = c => {
 function empExport() {
   const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`, cfg = hrCfg();
   const head = [...EMP_COLS.map(c => c[1]), ...cfg.components.map(k => k.name), 'Aktif'];
-  const lines = [head.map(q).join(';'), ...empList().map(e => [...EMP_COLS.map(([k]) => k === 'workType' ? (e.workType || 'nonshift') : e[k]), ...cfg.components.map(k => (e.comps || {})[k.code] ?? ''), e.active === false ? 'Tidak' : 'Ya'].map(q).join(';'))];
+  const lines = [head.map(q).join(';'), ...empList().map(e => [...EMP_COLS.map(([k]) => k === 'workType' ? (e.workType || 'nonshift') : k === 'supNik' ? (Store.get('employees', e.supervisorId)?.nik || '') : e[k]), ...cfg.components.map(k => (e.comps || {})[k.code] ?? ''), e.active === false ? 'Tidak' : 'Ya'].map(q).join(';'))];
   download(`data-karyawan-${todayISO()}.csv`, '﻿' + lines.join('\n')); audit('unduh data karyawan');
 }
 function empTemplate() {
   const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`, cfg = hrCfg();
   const head = [...EMP_COLS.map(c => c[1]), ...cfg.components.map(k => k.name)];
-  const ex = { nik: 'K-0001', name: 'Contoh Nama Karyawan', pin: '101', unit: (settingsOf(S.companyId).units || [])[0]?.name || 'Keperawatan', position: 'Perawat Pelaksana', level: 'Staff', status: 'Tetap', joinDate: '2024-01-15', workType: 'shift', profession: 'Perawat', gender: 'P', basic: 4500000, fixedAllow: 500000 };
+  const ex = { nik: 'K-0001', name: 'Contoh Nama Karyawan', pin: '101', unit: (settingsOf(S.companyId).units || [])[0]?.name || 'Keperawatan', position: 'Perawat Pelaksana', level: 'Staff', status: 'Tetap', joinDate: '2024-01-15', workType: 'shift', profession: 'Perawat', gender: 'P', supNik: 'K-0000', basic: 4500000, fixedAllow: 500000 };
   download('template-data-karyawan.csv', '﻿' + [head.map(q).join(';'), [...EMP_COLS.map(([k]) => ex[k] ?? ''), ...cfg.components.map(() => '')].map(q).join(';')].join('\n'));
 }
 /* tanggal dari Excel/CSV: 2024-01-15, 15/01/2024, 15-01-2024, atau angka seri Excel */
@@ -5928,8 +5928,11 @@ function empImportDialog() {
       };
       $('#iGo', r).onclick = async () => {
         const b = $('#iGo', r); b.disabled = true; b.textContent = 'Mengimpor…';
-        for (const x of plan.add) { const id = uid('e'); const o = { ...x }; delete o.id; await Store.put('employees', id, { ...o, companyId: S.companyId, active: true, createdAt: nowISO() }); }
-        for (const x of plan.upd) { const cur = Store.get('employees', x.id); const o = { ...cur, ...x, comps: { ...(cur.comps || {}), ...(x.comps || {}) } }; o.history = empHistoryDiff(cur, o); delete o.id; await Store.put('employees', x.id, o); }
+        for (const x of plan.add) { const id = uid('e'); const o = { ...x }; delete o.id; delete o.supNik; await Store.put('employees', id, { ...o, companyId: S.companyId, active: true, createdAt: nowISO() }); }
+        for (const x of plan.upd) { const cur = Store.get('employees', x.id); const o = { ...cur, ...x, comps: { ...(cur.comps || {}), ...(x.comps || {}) } }; delete o.supNik; o.history = empHistoryDiff(cur, o); delete o.id; await Store.put('employees', x.id, o); }
+        { const byN = Object.fromEntries(empList().filter(e => e.nik).map(e => [e.nik, e]));
+          for (const x of [...plan.add, ...plan.upd]) { if (!x.supNik) continue; const me = byN[x.nik], sup = byN[x.supNik]; if (!me || !sup || me.supervisorId === sup.id) continue;
+            const o = { ...me, supervisorId: sup.id, supervisorName: sup.name }; delete o.id; delete o.supNik; await Store.put('employees', me.id, o); } }
         audit('impor data karyawan', `${plan.add.length} baru, ${plan.upd.length} diperbarui`); closeModal(); toast('Impor selesai'); App.renderContent();
       };
     }
@@ -5952,10 +5955,13 @@ function empImportPlan(rows) {
     if (seen.has(o.nik)) { bad.push(`Baris ${line}: NIK ${o.nik} ganda di file`); return; } seen.add(o.nik);
     if (o.unit && units.length && !units.includes(o.unit)) { bad.push(`Baris ${line}: unit "${o.unit}" belum terdaftar di Pengaturan Perusahaan`); return; }
     if (o.pin) { const p = pins.get(String(o.pin)); if (p && p !== o.nik) { bad.push(`Baris ${line}: PIN ${o.pin} sudah dipakai NIK ${p}`); return; } pins.set(String(o.pin), o.nik); }
+    if (o.supNik === o.nik) { bad.push(`Baris ${line}: NIK Atasan tidak boleh sama dengan NIK sendiri`); return; }
     const cur = byNik[o.nik];
     if (cur) upd.push({ ...o, id: cur.id });
     else { if (!o.name || !o.joinDate) { bad.push(`Baris ${line}: karyawan baru wajib punya nama dan tanggal masuk`); return; } add.push({ status: 'Tetap', workType: 'nonshift', bpjs: true, basic: 0, fixedAllow: 0, varAllow: 0, pph: 0, ...o }); }
   });
+  const known = new Set([...Object.keys(byNik), ...add.map(x => x.nik), ...upd.map(x => x.nik)]);
+  [...add, ...upd].forEach(x => { if (x.supNik && !known.has(x.supNik)) { bad.push(`NIK ${x.nik}: NIK Atasan ${x.supNik} tidak ditemukan, atasan dikosongkan`); delete x.supNik; } });
   return { add, upd, bad };
 }
 
