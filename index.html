@@ -1131,6 +1131,21 @@ body[data-role] .side{background:#FFFFFF}
 .co-logo-box img{max-width:72px;max-height:72px;object-fit:contain}
 .co-logo-box span{font-size:34px;font-weight:800;color:#23805C}
 @media print{body{background:#FFFFFF}.card{border:1px solid #E8EAEF}}
+/* lonceng notifikasi */
+.bell{position:relative}
+.bell-btn{appearance:none;position:relative;display:grid;place-items:center;width:40px;height:40px;border-radius:999px;border:1px solid var(--line-2);background:#fff;color:var(--muted);cursor:pointer}
+.bell-btn:hover{color:var(--text);border-color:#C9CFD9}.bell-btn.has{color:var(--brand-text,#1B6A4C)}
+.bell-btn.has svg{animation:bellwig 1.6s ease-in-out 1}
+@keyframes bellwig{0%,60%,100%{transform:rotate(0)}10%,30%{transform:rotate(14deg)}20%,40%{transform:rotate(-12deg)}}
+@media (prefers-reduced-motion:reduce){.bell-btn.has svg{animation:none}}
+.bell-n{position:absolute;top:-4px;right:-4px;min-width:19px;height:19px;padding:0 5px;border-radius:999px;background:#D92D20;color:#fff;font-size:11px;font-weight:800;line-height:19px;text-align:center;box-shadow:0 0 0 2px #fff}
+.bell-pop{position:absolute;right:0;top:calc(100% + 8px);width:min(380px,calc(100vw - 24px));max-height:70vh;overflow:auto;background:#fff;border:1px solid var(--line-2);border-radius:12px;box-shadow:0 12px 32px rgba(16,24,40,.16);z-index:40}
+.bell-h{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line-2);position:sticky;top:0;background:#fff}
+.bell-l{display:flex;flex-direction:column}
+.bell-i{appearance:none;font:inherit;text-align:left;display:flex;gap:10px;padding:11px 14px;border:0;border-bottom:1px solid var(--line-2);background:#fff;cursor:pointer;color:var(--text)}
+.bell-i:hover,.bell-i:focus-visible{background:#F4F8F6}
+.bell-ic{font-size:18px;line-height:1.2}.bell-t{display:flex;flex-direction:column;gap:2px;font-size:13.5px}.bell-t span{color:var(--text)}.bell-t small{color:var(--muted);font-size:12px}
+.bell-empty{padding:22px 16px;color:var(--muted);text-align:center;font-size:14px}
 /* lampiran dokumen */
 .hrdoc-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .hrdoc-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 8px 5px 10px;border:1px solid var(--line-2);border-radius:999px;background:var(--surface-2);font-size:13px}
@@ -2195,7 +2210,7 @@ const App = {
   saveSession() { if (!S.user) return; try { sessionStorage.setItem('hrs:session', JSON.stringify({ id: S.user.id, cid: S.companyId, ic: !!S.inCompany, ws: S.ws, t: Date.now() })); } catch (e) {} },
   async logout(msg) {
     if (S.user && !(Supa.on && !Supa.sess)) { try { await Promise.race([audit('logout'), new Promise(r => setTimeout(r, 1500))]); } catch (e) {} }
-    try { closeModal(); } catch (e) {} S.user = null; S.test = null; S.team = undefined; S._teamAtt = null; S._teamReq = null; try { sessionStorage.removeItem('hrs:session'); } catch (e) {}
+    try { closeModal(); } catch (e) {} S.user = null; S.test = null; S.team = undefined; S._teamAtt = null; S._teamReq = null; if (typeof BELL !== 'undefined') { BELL.req = null; BELL.t = 0; } document.title = document.title.replace(/^\(\d+\+?\)\s*/, ''); try { sessionStorage.removeItem('hrs:session'); } catch (e) {}
     if (Supa.on) { Store.stopPolling(); Supa.logout(); Store.reset(); }
     this.render(); if (msg) toast(msg);
   },
@@ -2238,7 +2253,7 @@ const App = {
         <header class="mbar"><button class="mbar-btn" id="mMenu" aria-label="Buka menu" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
           <div class="mbar-title"><span class="small">${esc(brandOf().name)}</span><b>${esc(cur.label)}</b></div><a class="mbar-lx" href="https://lyrionx.com" target="_blank" rel="noopener" aria-label="lyrionx.com"><img src="${LOGO_LX_MARK}" alt=""><span data-clock="short"></span></a></header>
         <div class="topbar ${S.user.role === SA ? '' : 'co-sm'}">${compSel}<div class="grow"></div>
-          <span class="small muted hide-sm">${Store.mode === 'db' ? 'Tersimpan di server' : 'Tersimpan di browser ini'}</span>
+          <span class="small muted hide-sm">${Store.mode === 'db' ? 'Tersimpan di server' : 'Tersimpan di browser ini'}</span>${typeof bellHtml === 'function' ? bellHtml() : ''}
           <div class="acct hide-sm"><button class="acct-btn" id="acctBtn" aria-haspopup="menu" aria-expanded="false"><span class="acct-av" aria-hidden="true">${esc((S.user.name || '?').trim().charAt(0).toUpperCase())}</span><span class="acct-tx"><b>${esc(S.user.name)}</b><small>${(typeof myEmp === 'function' && myEmp() ? 'Staf' : ROLE_LABEL[S.user.role])}</small></span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
             <div class="acct-menu" id="acctMenu" role="menu" hidden><button role="menuitem" id="btnPw2">Ganti password</button><button role="menuitem" id="btnOut2" class="danger">Keluar</button></div></div>
           <div class="lx-block hide-sm"><a class="lx-link" href="https://lyrionx.com" target="_blank" rel="noopener"><img src="${LOGO_LX_MARK}" alt="LyrionX.Co"><span>lyrionx.com</span></a><span class="lx-clock" data-clock></span></div></div>
@@ -2259,7 +2274,7 @@ const App = {
       am.addEventListener('keydown', e => { if (e.key === 'Escape') { closeM(); ab.focus(); } });
       ab.addEventListener('keydown', e => { if (e.key === 'Escape') closeM(); });
     }
-    startClock();
+    startClock(); if (typeof bellWire === 'function') bellWire();
     const cs = $('#compSel'); if (cs) cs.onchange = () => { S.companyId = cs.value; this.saveSession(); audit('ganti perusahaan aktif', cs.value); this.renderContent(); };
     this.renderContent();
   },
@@ -2272,6 +2287,7 @@ const App = {
     if (S.user.role === SA && !S.inCompany && PICK_IDS.includes(S.route) && !Store.get('companies', S.companyId)) S.companyId = (Store.all('companies')[0] || {}).id || null;
     const v = Views[S.route.replace(/-(\w)/g, (_, x) => x.toUpperCase())];
     c.innerHTML = v ? v() : '<p>Halaman tidak ditemukan</p>';
+    if (typeof bellPaint === 'function') setTimeout(bellPaint, 0);
     if (S.user.role === SA && !S.inCompany && PICK_IDS.includes(S.route)) {
       const cs = Store.all('companies');
       c.insertAdjacentHTML('afterbegin', `<div class="note info" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px"><b>Perusahaan:</b><select class="input" id="outCo" style="width:auto;min-width:220px">${cs.map(x => `<option value="${x.id}" ${x.id === S.companyId ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select><span class="small muted">Pengaturan di bawah berlaku untuk perusahaan yang dipilih.</span></div>`);
@@ -7447,7 +7463,7 @@ Views.me = () => {
   const lv = Store.all('leaves', l => l.employeeId === e.id).sort((a, b2) => (b2.createdAt || '').localeCompare(a.createdAt || '')).slice(0, 3);
   const week = stDays(e, t, 7);
   return `<div class="page-head"><div><div class="eyebrow">${esc(Store.get('companies', e.companyId)?.name || '')}</div><h1>Halo, ${esc(e.name.split(' ')[0])}</h1><p>${esc(e.position || '')}${e.unit ? ' · ' + esc(e.unit) : ''} · ${fmtDate(t)}</p></div>
-    <div class="row"><button class="btn" data-go="myclaim">Ajukan klaim</button><button class="btn primary" data-go="myleave" data-p='{"new":1}'>Ajukan cuti</button></div></div>
+    <div class="row"><button class="btn" data-go="myot">Ajukan lembur</button><button class="btn" data-go="myclaim">Ajukan klaim</button><button class="btn primary" data-go="myleave" data-p='{"new":1}'>Ajukan cuti</button></div></div>
   ${al.length ? `<div class="note warn">${al.map(x => esc(x.t)).join(' · ')}. Segera perbarui ke HRD.</div>` : ''}
   <div class="grid g4">
     <button class="card kpi hr-kpibtn" data-go="myprofile"><span class="eyebrow">Status kepegawaian</span><b style="font-size:20px">${esc(e.status || '–')}</b><span class="small">${e.contractEnd && hrIsContract(e.status, e.companyId) ? 'berakhir ' + fmtDate(e.contractEnd) : 'masa kerja ' + esc(hrServiceText(e.joinDate) || '–')}</span></button>
@@ -7783,6 +7799,68 @@ async function otAdminDecide(id, ok) {
   const o = { ...cur, steps }; delete o.id; o.status = leaveFinal(o); await Store.put('overtime', id, o);
   audit(ok ? 'setujui lembur' : 'tolak lembur', `${empName(cur.employeeId)} · ${cur.date}`); toast(ok ? 'Tahap disetujui' : 'Lembur ditolak'); App.renderContent();
 }
+
+/* ---------- Lonceng notifikasi (HRD & pimpinan): pengajuan cuti/lembur yang menunggu + pengumuman baru ---------- */
+const bellIsHr = () => S.user && (S.user.role === CO || (S.user.role === SA && S.inCompany));
+const bellIsLead = () => S.user && S.user.role === US && typeof myEmp === 'function' && myEmp() && Array.isArray(S.team) && S.team.length > 0;
+const bellOn = () => bellIsHr() || bellIsLead();
+const bellSeenKey = () => `hrs:bell:news:${S.user.id}:${S.companyId || S.user.companyId || ''}`;
+const bellSeen = () => { try { return localStorage.getItem(bellSeenKey()) || ''; } catch (e) { return ''; } };
+let BELL = { req: null, t: 0, busy: false };
+
+function bellItems() {
+  const out = [], seen = bellSeen();
+  if (bellIsHr()) {
+    const em = id => Store.get('employees', id);
+    Store.all('leaves', l => inScope(l) && leaveFinal(l) === 'Menunggu').forEach(l => { const st = leaveStep(l), e = em(l.employeeId); if (!e) return;
+      out.push({ kind: 'cuti', at: l.createdAt || l.start, who: e.name, what: `Cuti ${l.type} · ${fmtDate(l.start)}${l.end !== l.start ? ' – ' + fmtDate(l.end) : ''}`, step: st ? st.name : '', go: ['leaves', { tab: 'req', fs: 'Menunggu' }], mine: true }); });
+    Store.all('overtime', o => inScope(o) && Array.isArray(o.steps) && otFinal(o) === 'Menunggu').forEach(o => { const i = reqStepIdx(o), e = em(o.employeeId); if (!e) return;
+      out.push({ kind: 'lembur', at: o.createdAt || o.date, who: e.name, what: `Lembur ${nf(o.hours, 1)} jam · ${fmtDate(o.date)}`, step: i >= 0 ? o.steps[i].name : '', go: ['overtime', { month: (o.date || '').slice(0, 7) }], mine: true }); });
+  }
+  if (bellIsLead() && Array.isArray(BELL.req)) {
+    const team = new Map(S.team.map(t => [t.id, t]));
+    BELL.req.forEach(r => { const d = r.data, i = reqStepIdx(d), n = (d.steps || []).length; if (!(i >= 0 && i < n - 1 && r.lvl >= i + 1)) return; const e = team.get(d.employeeId) || { name: '–' };
+      out.push({ kind: r.col === 'overtime' ? 'lembur' : 'cuti', at: d.createdAt || d.date || d.start, who: e.name, what: r.col === 'overtime' ? `Lembur ${nf(d.hours, 1)} jam · ${fmtDate(d.date)}` : `Cuti ${d.type} · ${fmtDate(d.start)}${d.end !== d.start ? ' – ' + fmtDate(d.end) : ''}`, step: d.steps[i].name, go: ['teamappr', {}], mine: true }); });
+  }
+  const me = typeof myEmp === 'function' ? myEmp() : null;
+  Store.all('hr_news', n => (bellIsHr() ? inScope(n) : n.companyId === S.user.companyId) && (!n.unit || !me || n.unit === me.unit) && (!n.until || n.until >= todayISO()) && n.by !== S.user.name)
+    .forEach(n => { if ((n.at || '') > seen) out.push({ kind: 'info', at: n.at, who: n.by || 'HRD', what: n.title, go: [bellIsHr() ? 'news' : 'mynews', {}], news: true }); });
+  return out.sort((a, b) => (b.at || '').localeCompare(a.at || ''));
+}
+const BELL_ICON = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>';
+const bellHtml = () => bellOn() ? `<div class="bell"><button class="bell-btn" id="bellBtn" aria-haspopup="dialog" aria-expanded="false" aria-label="Notifikasi">${BELL_ICON}<span class="bell-n" id="bellN" hidden></span></button><div class="bell-pop" id="bellPop" hidden role="dialog" aria-label="Notifikasi"></div></div>` : '';
+function bellPaint() {
+  const b = $('#bellBtn'), n = $('#bellN'); if (!b || !n) return;
+  const items = bellItems(), k = items.length;
+  n.hidden = !k; n.textContent = k > 99 ? '99+' : String(k);
+  b.classList.toggle('has', k > 0);
+  b.setAttribute('aria-label', k ? `${k} notifikasi` : 'Tidak ada notifikasi');
+  const base = document.title.replace(/^\(\d+\+?\)\s*/, ''); document.title = k ? `(${k}) ${base}` : base;
+  if (!$('#bellPop').hidden) bellList();
+}
+function bellList() {
+  const pop = $('#bellPop'); if (!pop) return; const items = bellItems();
+  const ic = { cuti: '🗓️', lembur: '⏱️', info: '📢' };
+  pop.innerHTML = `<div class="bell-h"><b>Notifikasi</b>${items.some(i => i.news) ? '<button class="btn ghost sm" id="bellRead">Tandai pengumuman dibaca</button>' : ''}</div>
+    ${items.length ? `<div class="bell-l">${items.slice(0, 30).map((x, i) => `<button class="bell-i" data-bi="${i}"><span class="bell-ic" aria-hidden="true">${ic[x.kind]}</span><span class="bell-t"><b>${esc(x.who)}</b> ${x.news ? 'membuat pengumuman' : 'mengajukan'} <span>${esc(x.what)}</span>${x.step ? `<small>menunggu ${esc(x.step)}</small>` : ''}<small>${x.at ? fmtDT(x.at) : ''}</small></span></button>`).join('')}</div>${items.length > 30 ? `<div class="small muted" style="padding:8px 14px">dan ${items.length - 30} lainnya</div>` : ''}`
+      : '<div class="bell-empty">Tidak ada pengajuan yang menunggu dan tidak ada pengumuman baru.</div>'}`;
+  $$('[data-bi]', pop).forEach(b => b.onclick = () => { const x = items[+b.dataset.bi]; bellClose(); if (x.news) bellMarkRead(); App.go(x.go[0], x.go[1]); });
+  const rd = $('#bellRead', pop); if (rd) rd.onclick = e => { e.stopPropagation(); bellMarkRead(); bellPaint(); };
+}
+function bellMarkRead() { try { localStorage.setItem(bellSeenKey(), nowISO()); } catch (e) {} }
+function bellClose() { const p = $('#bellPop'), b = $('#bellBtn'); if (p) p.hidden = true; if (b) b.setAttribute('aria-expanded', 'false'); }
+function bellWire() {
+  const b = $('#bellBtn'), p = $('#bellPop'); if (!b) return;
+  b.onclick = e => { e.stopPropagation(); const open = p.hidden; p.hidden = !open; b.setAttribute('aria-expanded', String(open)); if (open) { bellList(); bellFetch(true); } };
+  p.onclick = e => e.stopPropagation();
+  if (!BELL.docWired) { BELL.docWired = true; document.addEventListener('click', () => bellClose()); document.addEventListener('keydown', e => { if (e.key === 'Escape') bellClose(); }); }
+  bellPaint(); bellFetch();
+}
+async function bellFetch(force) {
+  if (!bellIsLead() || BELL.busy) return; if (!force && Date.now() - BELL.t < 60000 && BELL.req) return;
+  BELL.busy = true; try { BELL.req = await TeamAPI.requests(); BELL.t = Date.now(); } catch (e) { console.warn('bell', e); } finally { BELL.busy = false; } bellPaint();
+}
+setInterval(() => { if (!S.user || document.hidden) return; if (S.team === undefined && typeof myEmp === 'function' && S.user.role === US && myEmp()) { S.team = null; teamRefresh(); } bellFetch(); bellPaint(); }, 15000);
 
 /* ---------- Keamanan Login: catatan login berhasil & gagal (tersimpan di server) ---------- */
 const SEC_F = { days: 7, show: 'fail', q: '' };
