@@ -5558,12 +5558,7 @@ function hrDefault(cid) {
     ],
     defaultShift: 'N', tolLate: 5, tolEarly: 0, scanBefore: 180, scanAfter: 360,
     holidays: [],
-    leaveTypes: [
-      { name: 'Tahunan', quota: +st.annualLeave || 12, paid: true, annual: true },
-      { name: 'Sakit', quota: 0, paid: true }, { name: 'Melahirkan', quota: 0, paid: true },
-      { name: 'Menikah', quota: 3, paid: true }, { name: 'Duka', quota: 2, paid: true },
-      { name: 'Izin Khusus', quota: 0, paid: true }, { name: 'Tanpa Upah', quota: 0, paid: false }
-    ],
+    leaveTypes: LEAVE_TYPES_DEFAULT(+st.annualLeave || 12),
     approvals: ['Atasan langsung', 'HRD'],
     deductAbsent: true, lateRule: 'none', latePerMinute: 0, latePerTimes: 0, lateFree: 0,
     components: [],
@@ -5585,6 +5580,29 @@ async function hrSaveCfg(cid, patch) {
 }
 /* kode jadwal: kode shift (P/S/M/N…) atau jam khusus "HH:MM-HH:MM" yang diisi langsung di sel jadwal */
 const SHIFT_RE = /^([01]\d|2[0-3]):([0-5]\d)-([01]\d|2[0-3]):([0-5]\d)$/;
+/* jenis cuti bawaan sesuai UU 13/2003 jo. UU 6/2023 (Cipta Kerja) Pasal 79, 81, 82, 93 dan UU 4/2024 (KIA) Pasal 4 & 6
+   per: 'tahun' (saldo tahunan) | 'kejadian' (kuota per peristiwa) | 'bulan' (kuota per bulan) | 'bebas' (sesuai surat/ketentuan) ; cal: kuota dihitung hari kalender ; sex: P/L */
+const LEAVE_TYPES_DEFAULT = (annualQuota = 12) => [
+  { name: 'Tahunan', quota: annualQuota, paid: true, annual: true, per: 'tahun', note: 'Bertambah 1 hari setiap bulan bekerja sejak tanggal bergabung, maks. 12 hari per tahun (UU 13/2003 jo. UU 6/2023 Ps. 79).' },
+  { name: 'Sakit', quota: 0, paid: true, per: 'bebas', note: 'Sesuai surat keterangan dokter (Ps. 93 ayat 2a).' },
+  { name: 'Haid', quota: 2, paid: true, per: 'bulan', sex: 'P', note: 'Hari pertama dan kedua haid bila merasakan sakit (Ps. 81).' },
+  { name: 'Melahirkan', quota: 90, paid: true, per: 'kejadian', cal: true, sex: 'P', note: '3 bulan pertama; dapat ditambah paling lama 3 bulan bila ada kondisi khusus dengan surat dokter. Bulan ke-1–4 dibayar penuh, bulan ke-5–6 dibayar 75% (UU 4/2024 KIA Ps. 4–5).' },
+  { name: 'Keguguran', quota: 45, paid: true, per: 'kejadian', cal: true, sex: 'P', note: 'Istirahat 1,5 bulan atau sesuai surat dokter/bidan (UU 13/2003 Ps. 82 ayat 2; UU 4/2024 Ps. 4).' },
+  { name: 'Pendampingan istri melahirkan', quota: 5, paid: true, per: 'kejadian', sex: 'L', note: '2 hari, dapat ditambah paling lama 3 hari sesuai kesepakatan (UU 4/2024 KIA Ps. 6).' },
+  { name: 'Istri keguguran', quota: 2, paid: true, per: 'kejadian', sex: 'L', note: '2 hari (UU 4/2024 KIA Ps. 6; UU 13/2003 Ps. 93).' },
+  { name: 'Menikah', quota: 3, paid: true, per: 'kejadian', note: 'Pekerja menikah: 3 hari (Ps. 93 ayat 4a).' },
+  { name: 'Menikahkan anak', quota: 2, paid: true, per: 'kejadian', note: '2 hari (Ps. 93 ayat 4b).' },
+  { name: 'Mengkhitankan anak', quota: 2, paid: true, per: 'kejadian', note: '2 hari (Ps. 93 ayat 4c).' },
+  { name: 'Membaptiskan anak', quota: 2, paid: true, per: 'kejadian', note: '2 hari (Ps. 93 ayat 4d).' },
+  { name: 'Duka keluarga inti', quota: 2, paid: true, per: 'kejadian', note: 'Suami/istri, orang tua/mertua, anak/menantu meninggal: 2 hari (Ps. 93 ayat 4f).' },
+  { name: 'Duka anggota keluarga serumah', quota: 1, paid: true, per: 'kejadian', note: 'Anggota keluarga dalam satu rumah meninggal: 1 hari (Ps. 93 ayat 4g).' },
+  { name: 'Ibadah keagamaan', quota: 0, paid: true, per: 'bebas', note: 'Menjalankan ibadah yang diwajibkan agama (mis. haji), sesuai ketentuan perusahaan (Ps. 93 ayat 2e).' },
+  { name: 'Izin Khusus', quota: 0, paid: true, per: 'bebas', note: 'Sesuai kebijakan perusahaan.' },
+  { name: 'Tanpa Upah', quota: 0, paid: false, per: 'bebas', note: 'Tidak dibayar; gaji dipotong sesuai jumlah hari.' }
+];
+/* lengkapi jenis cuti lama (tersimpan sebelum aturan baru) dengan ketentuan bawaan yang namanya sama */
+const leaveTypeInfo = T => { if (!T) return null; const d = LEAVE_TYPES_DEFAULT().find(x => x.name.toLowerCase() === String(T.name || '').toLowerCase()) || (/^duka$/i.test(T.name) ? LEAVE_TYPES_DEFAULT().find(x => x.name === 'Duka keluarga inti') : null) || {};
+  return { per: T.annual ? 'tahun' : (+T.quota > 0 ? 'kejadian' : 'bebas'), ...d, ...T, note: T.note || d.note || '' }; };
 const hrShift = (cfg, code) => cfg.shifts.find(s => s.code === code) || (SHIFT_RE.test(code || '') ? { code, name: 'Jam khusus', start: code.slice(0, 5), end: code.slice(6), color: '#0F766E', custom: true } : null);
 const shiftHours = s => { if (!s) return 0; let m = tmin(s.end) - tmin(s.start); if (m <= 0) m += 1440; return m / 60; };
 const hoursTxt = h => (Math.round(h * 10) / 10).toString().replace('.', ',') + ' jam';
@@ -5655,8 +5673,8 @@ Views.hrsettings = () => {
       <p class="small muted" style="margin:0">Upah sehari = (gaji pokok + tunjangan tetap) ÷ ${+settingsOf(S.companyId).workDays === 6 ? 25 : 21} hari. Sesuaikan aturan ini dengan Peraturan Perusahaan atau PKB yang berlaku.</p></div>`;
   if (tab === 'libur') body = `<div class="card card-pad stack"><h3>Hari libur nasional & cuti bersama</h3><p class="small muted" style="margin:0">Dipakai untuk menghitung hari kerja, saldo cuti, dan jadwal karyawan non-shift. Karyawan shift tetap mengikuti jadwalnya.</p>
       ${hrRowsTable('tHol', [{ k: 'date', label: 'Tanggal', type: 'date' }, { k: 'name', label: 'Keterangan' }], [...cfg.holidays].sort((a, b) => (a.date || '').localeCompare(b.date || '')))}</div>`;
-  if (tab === 'cuti') body = `<div class="card card-pad stack"><h3>Jenis cuti</h3><p class="small muted" style="margin:0">Kuota 0 berarti tanpa batas. Tandai satu jenis sebagai <b>cuti tahunan</b> (saldo dihitung per tahun, berhak setelah masa kerja 12 bulan). Jenis yang tidak dibayar akan memotong gaji.</p>
-      ${hrRowsTable('tLv', [{ k: 'name', label: 'Nama cuti' }, { k: 'quota', label: 'Kuota (hari)', type: 'number', w: '90px', attrs: 'min="0"' }, { k: 'paid', label: 'Dibayar', type: 'check' }, { k: 'annual', label: 'Cuti tahunan', type: 'check' }], cfg.leaveTypes)}
+  if (tab === 'cuti') body = `<div class="card card-pad stack"><h3>Jenis cuti</h3><p class="small muted" style="margin:0">Kuota 0 berarti tanpa batas. Tandai satu jenis sebagai <b>cuti tahunan</b> (bertambah 1 hari setiap bulan bekerja sejak tanggal bergabung, maksimal sesuai kuota per tahun). <button type="button" class="btn sm" id="hLvReg">Pakai ketentuan Disnaker terbaru</button> Jenis yang tidak dibayar akan memotong gaji.</p>
+      ${hrRowsTable('tLv', [{ k: 'name', label: 'Nama cuti' }, { k: 'quota', label: 'Kuota (hari)', type: 'number', w: '90px', attrs: 'min="0"' }, { k: 'per', label: 'Kuota per', type: 'select', opts: [['tahun', 'Tahun'], ['kejadian', 'Kejadian'], ['bulan', 'Bulan'], ['bebas', 'Sesuai surat / ketentuan']] }, { k: 'cal', label: 'Hari kalender', type: 'check' }, { k: 'sex', label: 'Khusus', type: 'select', opts: [['', 'Semua'], ['P', 'Perempuan'], ['L', 'Laki-laki']] }, { k: 'paid', label: 'Dibayar', type: 'check' }, { k: 'annual', label: 'Cuti tahunan', type: 'check' }, { k: 'note', label: 'Ketentuan / dasar hukum', w: '320px' }], cfg.leaveTypes.map(leaveTypeInfo))}
       <h3>Alur persetujuan</h3><p class="small muted" style="margin:0">Urutan pihak yang menyetujui pengajuan cuti. Pengajuan disetujui penuh setelah tahap terakhir.</p>
       ${hrRowsTable('tAp', [{ k: 'v', label: 'Tahap persetujuan' }], cfg.approvals.map(v => ({ v })))}</div>`;
   if (tab === 'gaji') body = `<div class="card card-pad stack"><h3>Komponen gaji tambahan</h3><p class="small muted" style="margin:0">Gaji pokok, tunjangan tetap, tunjangan tidak tetap, lembur, BPJS, dan PPh 21 sudah tersedia. Tambahkan komponen lain di sini (misalnya tunjangan jabatan, jasa medis, uang makan, potongan koperasi). Nominal per karyawan diisi di Data Karyawan.</p>
@@ -5699,7 +5717,7 @@ Views.hrsettingsMount = c => {
     if (tab === 'abs') p = { tolLate: +v('hTolL') || 0, tolEarly: +v('hTolE') || 0, scanBefore: +v('hBef') || 180, scanAfter: +v('hAft') || 360, deductAbsent: v('hDedA') === '1', lateRule: v('hLate'), latePerMinute: +v('hLpm') || 0, latePerTimes: +v('hLpt') || 0, lateFree: +v('hLfree') || 0 };
     if (tab === 'libur') p = { holidays: hrRowsRead(c, 'tHol').filter(r => r.date).sort((a, b) => a.date.localeCompare(b.date)) };
     if (tab === 'cuti') {
-      const lv = hrRowsRead(c, 'tLv').filter(r => r.name); if (lv.filter(r => r.annual).length > 1) { toast('Hanya satu jenis yang boleh ditandai cuti tahunan'); return; }
+      const lv = hrRowsRead(c, 'tLv').filter(r => r.name).map(r => ({ ...r, quota: +r.quota || 0, per: r.annual ? 'tahun' : r.per })); if (lv.filter(r => r.annual).length > 1) { toast('Hanya satu jenis yang boleh ditandai cuti tahunan'); return; }
       const ap = hrRowsRead(c, 'tAp').map(r => r.v).filter(Boolean); if (!ap.length) { toast('Minimal satu tahap persetujuan'); return; }
       p = { leaveTypes: lv, approvals: ap };
     }
@@ -5719,6 +5737,8 @@ Views.hrsettingsMount = c => {
     await hrSaveCfg(S.companyId, p); S.dirty = false; audit('ubah pengaturan kepegawaian', tab); toast('Pengaturan disimpan'); App.renderContent();
   };
   $('#hSave', c).onclick = save; trackDirty(c, save);
+  const reg = $('#hLvReg', c); if (reg) reg.onclick = async () => { if (!(await confirmBox('Ganti daftar jenis cuti dengan ketentuan terbaru (UU 13/2003 jo. UU 6/2023 dan UU 4/2024 KIA)? Jenis cuti yang Anda tambahkan sendiri akan diganti.', 'Pakai ketentuan'))) return;
+    await hrSaveCfg(S.companyId, { leaveTypes: LEAVE_TYPES_DEFAULT(hrCfg().leaveTypes.find(t => t.annual)?.quota || 12) }); audit('pakai jenis cuti ketentuan Disnaker'); S.dirty = false; toast('Jenis cuti diperbarui'); App.renderContent(); };
   if (tab === 'mesin') {
     $('#hDev', c).onchange = ev => { $('#hLanBox', c).hidden = ev.target.value !== 'lan'; };
     $('#hDevZip', c).onclick = () => lanDownloadZip();
@@ -6774,15 +6794,45 @@ function leaveDays(e, start, end, onlyMonth) {
   return n;
 }
 const leaveType = (cfg, name) => cfg.leaveTypes.find(t => t.name === name) || null;
+/* jatah cuti tahunan: 1 hari per bulan penuh bekerja sejak tanggal bergabung (dihitung dalam tahun berjalan), maks. kuota tahunan */
+function leaveAccrued(e, year, maxQ) {
+  const today = todayISO(), y0 = `${year}-01-01`, join = e.joinDate || '2000-01-01';
+  const start = join > y0 ? join : y0, end = String(year) < today.slice(0, 4) ? `${year}-12-31` : String(year) === today.slice(0, 4) ? today : null;
+  if (!end || start > end) return { months: 0, next: start > today ? start : null };
+  const s = new Date(start + 'T00:00:00'), x = new Date(end + 'T00:00:00'); x.setDate(x.getDate() + 1);
+  let m = (x.getFullYear() - s.getFullYear()) * 12 + (x.getMonth() - s.getMonth()); if (x.getDate() < s.getDate()) m--; m = Math.max(0, Math.min(m, maxQ));
+  const nx = new Date(s); nx.setMonth(nx.getMonth() + m + 1); const next = m < maxQ && nx.getFullYear() === +year ? `${nx.getFullYear()}-${pad(nx.getMonth() + 1)}-${pad(nx.getDate())}` : null;
+  return { months: m, next };
+}
 function leaveBalance(e, year) {
   const cfg = hrCfg(e.companyId), T = cfg.leaveTypes.find(t => t.annual);
-  const j = new Date((e.joinDate || '2000-01-01') + 'T00:00:00'), eligD = new Date(j); eligD.setFullYear(j.getFullYear() + 1);
-  const eligDate = `${eligD.getFullYear()}-${pad(eligD.getMonth() + 1)}-${pad(eligD.getDate())}`;
+  const eligDate = e.joinDate || '';
   if (!T) return { type: null, used: 0, pending: 0, quota: 0, left: 0, eligible: true, eligDate };
   const mine = Store.all('leaves', l => l.employeeId === e.id && l.type === T.name && (l.start || '').startsWith(String(year)));
   const sum = f => mine.filter(l => leaveFinal(l) === f).reduce((s, l) => s + leaveDays(e, l.start, l.end), 0);
-  const adj = +((e.leaveAdj || {})[year] || 0), eligible = eligDate <= `${year}-12-31`, quota = (eligible ? (+T.quota || 0) : 0) + adj, used = sum('Disetujui');
-  return { type: T.name, used, pending: sum('Menunggu'), quota, adj, left: quota - used, eligible, eligDate };
+  const maxQ = +T.quota || 12, acc = leaveAccrued(e, year, maxQ), adj = +((e.leaveAdj || {})[year] || 0), quota = acc.months + adj, used = sum('Disetujui');
+  return { type: T.name, used, pending: sum('Menunggu'), quota, adj, accrued: acc.months, maxQ, next: acc.next, left: quota - used, eligible: true, eligDate };
+}
+/* keterangan jatah tiap jenis cuti untuk karyawan e (dipakai di pilihan "Jenis cuti") */
+const leaveQuotaTxt = T => { const q = +T.quota || 0; if (!q) return ''; if (T.cal && q >= 30) { const b = q / 30; return `${String(b).replace('.', ',')} bulan (${q} hari kalender)`; } return `${q} hari`; };
+function leaveRemain(e, Traw, ref) {
+  const T = leaveTypeInfo(Traw); if (!T) return ''; ref = ref || todayISO();
+  if (T.annual) { const b = leaveBalance(e, +ref.slice(0, 4)); return `sisa ${b.left} hari (jatah ${b.quota} hari s.d. ${fmtMonth(todayISO().slice(0, 7))}${b.pending ? `, ${b.pending} menunggu` : ''})`; }
+  if (T.per === 'bulan' && +T.quota) { const m = ref.slice(0, 7), used = Store.all('leaves', l => l.employeeId === e.id && l.type === T.name && leaveFinal(l) !== 'Ditolak' && (l.start || '').startsWith(m)).reduce((s, l) => s + leaveDays(e, l.start, l.end), 0);
+    return `${T.quota} hari per bulan · sisa ${Math.max(0, T.quota - used)} hari`; }
+  if (T.per === 'kejadian' && +T.quota) return `${leaveQuotaTxt(T)} per kejadian${T.paid === false ? ', tidak dibayar' : ''}`;
+  return T.paid === false ? 'tidak dibayar' : 'sesuai surat / ketentuan';
+}
+const leaveTypesFor = (cfg, e) => cfg.leaveTypes.filter(t => { const i = leaveTypeInfo(t); return !i.sex || !e || !e.gender || i.sex === e.gender; });
+const leaveTypeOptions = (cfg, e, sel) => leaveTypesFor(cfg, e).map(t => `<option value="${esc(t.name)}" ${t.name === sel ? 'selected' : ''}>${esc(t.name)}${e ? ' — ' + esc(leaveRemain(e, t)) : ''}</option>`).join('');
+const leaveTypeNote = (cfg, name) => { const T = leaveTypeInfo(leaveType(cfg, name)); return T && T.note ? `<b>${esc(T.name)}:</b> ${esc(T.note)}` : ''; };
+/* periksa kuota non-tahunan; kembalikan pesan peringatan atau '' */
+function leaveQuotaWarn(e, Traw, start, end, n) {
+  const T = leaveTypeInfo(Traw); if (!T || T.annual || !(+T.quota)) return '';
+  if (T.per === 'kejadian') { const k = T.cal ? Math.round((new Date(end) - new Date(start)) / 864e5) + 1 : n; return k > T.quota ? `<b>Melebihi ketentuan ${esc(T.name)} (${esc(leaveQuotaTxt(T))} per kejadian).</b>` : ''; }
+  if (T.per === 'bulan') { const m = start.slice(0, 7), used = Store.all('leaves', l => l.employeeId === e.id && l.type === T.name && leaveFinal(l) !== 'Ditolak' && (l.start || '').startsWith(m)).reduce((s, l) => s + leaveDays(e, l.start, l.end), 0);
+    return used + n > T.quota ? `<b>Melebihi ${T.quota} hari ${esc(T.name)} per bulan.</b>` : ''; }
+  return n > T.quota ? `<b>Melebihi kuota ${esc(T.name)} (${T.quota} hari).</b>` : '';
 }
 
 Views.leaves = () => {
@@ -6841,7 +6891,7 @@ function leaveForm() {
   const cfg = hrCfg(), emps = empList(e => e.active !== false);
   openModal({ title: 'Pengajuan cuti', body: `<form id="lF" class="form-grid">
     <label class="f" style="grid-column:1/-1">Karyawan<select class="input" name="employeeId">${emps.map(e => `<option value="${e.id}">${esc(e.name)} · ${esc(e.unit || '')}</option>`).join('')}</select></label>
-    <label class="f">Jenis cuti<select class="input" name="type">${cfg.leaveTypes.map(t => `<option>${esc(t.name)}</option>`).join('')}</select></label>
+    <label class="f">Jenis cuti<select class="input" name="type">${leaveTypeOptions(cfg, emps[0], '')}</select></label>
     <label class="f">Pengganti selama cuti<select class="input" name="substituteId"><option value="">– tidak ada –</option>${emps.map(e => `<option value="${e.id}">${esc(e.name)}</option>`).join('')}</select></label>
     <label class="f">Mulai<input class="input" type="date" name="start" required value="${todayISO()}"></label><label class="f">Jam mulai<select class="input" name="t1">${leaveTimeOpts('08:00')}</select></label>
     <label class="f">Selesai<input class="input" type="date" name="end" required value="${todayISO()}"></label><label class="f">Jam selesai<select class="input" name="t2">${leaveTimeOpts('16:00')}</select></label>
@@ -6849,6 +6899,7 @@ function leaveForm() {
     <label class="f">No. surat / dokumen pendukung<input class="input" name="docRef" placeholder="misalnya surat keterangan dokter"></label>
     <label class="f">Persetujuan<select class="input" name="direct"><option value="0">Ikuti alur: ${cfg.approvals.map(esc).join(' → ')}</option><option value="1">Sudah disetujui (input data lama)</option></select></label>
     ${hrDocInputHtml('lDoc', 'Lampiran (surat dokter, undangan, dll)')}
+    <div class="small muted" id="lvInfo" style="grid-column:1/-1;margin-top:-4px">${leaveTypeNote(cfg, (leaveTypesFor(cfg, emps[0])[0] || {}).name)}</div>
     <div id="lPrev" class="note" style="grid-column:1/-1"></div></form>`,
     foot: '<button class="btn" data-close>Batal</button><button class="btn primary" form="lF">Simpan</button>',
     onMount: r => {
@@ -6856,8 +6907,8 @@ function leaveForm() {
       const check = () => { const d = formData(f), e = Store.get('employees', d.employeeId), T = leaveType(cfg, d.type), msg = [];
         if (!e) return { msg: '', ok: false }; if (d.end < d.start) return { msg: 'Tanggal selesai tidak boleh sebelum tanggal mulai.', ok: false };
         const n = leaveDays(e, d.start, d.end); msg.push(`<b>${n}</b> hari kerja/jadwal.`);
-        if (T?.annual) { const b = leaveBalance(e, +d.start.slice(0, 4)); msg.push(`Sisa cuti tahunan: <b>${b.left}</b> hari${b.pending ? ` (${b.pending} hari menunggu)` : ''}.`); if (!b.eligible) msg.push(`Belum berhak cuti tahunan sampai ${fmtDate(b.eligDate)}.`); if (n > b.left) msg.push('<b>Melebihi sisa cuti.</b>'); }
-        else if (T && +T.quota > 0 && n > +T.quota) msg.push(`<b>Melebihi kuota ${esc(T.name)} (${T.quota} hari).</b>`);
+        if (T?.annual) { const b = leaveBalance(e, +d.start.slice(0, 4)); msg.push(`Sisa cuti tahunan: <b>${b.left}</b> hari (jatah ${b.quota} hari dari ${b.accrued} bulan bekerja${b.adj ? `, penyesuaian ${b.adj}` : ''})${b.pending ? `, ${b.pending} hari menunggu` : ''}.`); if (n > b.left) msg.push('<b>Melebihi sisa cuti.</b>'); }
+        else { const w = leaveQuotaWarn(e, T, d.start, d.end, n); if (w) msg.push(w); }
         if (T && T.paid === false) msg.push('Cuti ini tidak dibayar: gaji dipotong sesuai jumlah hari.');
         const clash = Store.all('leaves', l => l.employeeId === e.id && leaveFinal(l) !== 'Ditolak' && l.start <= d.end && l.end >= d.start);
         if (clash.length) msg.push(`<b>Bentrok</b> dengan cuti ${esc(clash[0].type)} ${fmtDate(clash[0].start)} – ${fmtDate(clash[0].end)}.`);
@@ -6867,6 +6918,8 @@ function leaveForm() {
       const prev = () => { $('#lPrev', r).innerHTML = check().msg; };
       f.oninput = prev; f.onchange = prev; prev(); hrDocInputWire(r, 'lDoc');
       leaveTimeWire(f, () => Store.get('employees', f.employeeId.value));
+      const typeSync = () => { const e = Store.get('employees', f.employeeId.value), cur = f.type.value; f.type.innerHTML = leaveTypeOptions(cfg, e, cur); $('#lvInfo', r).innerHTML = leaveTypeNote(cfg, f.type.value); prev(); };
+      f.employeeId.addEventListener('change', typeSync); f.type.addEventListener('change', () => { $('#lvInfo', r).innerHTML = leaveTypeNote(cfg, f.type.value); }); typeSync();
       f.onsubmit = async ev => { ev.preventDefault(); const d = formData(f), k = check();
         { const te = leaveTimeErr(d); if (te) { toast(te); return; } }
         if (d.end < d.start) { toast('Periksa tanggal'); return; } if (!k.n) { toast('Tidak ada hari kerja/jadwal pada rentang tanggal ini'); return; } if (!k.ok) { toast('Periksa peringatan pada formulir'); return; }
@@ -7751,7 +7804,7 @@ Views.myleave = () => {
   <div class="grid g4"><div class="card kpi"><span class="eyebrow">Hak cuti tahunan ${y}</span><b>${b.type ? b.quota : '–'}</b><span class="small">hari</span></div>
     <div class="card kpi"><span class="eyebrow">Terpakai</span><b>${b.used || 0}</b><span class="small">hari disetujui</span></div>
     <div class="card kpi"><span class="eyebrow">Menunggu</span><b>${b.pending || 0}</b><span class="small">hari</span></div>
-    <div class="card kpi"><span class="eyebrow">Sisa</span><b>${b.type ? b.left : '–'}</b><span class="small">${b.type && !b.eligible ? 'berhak mulai ' + fmtDate(b.eligDate) : 'hari'}</span></div></div>
+    <div class="card kpi"><span class="eyebrow">Sisa</span><b>${b.type ? b.left : '–'}</b><span class="small">${b.type && b.next ? `hari · +1 hari pada ${fmtDate(b.next)}` : 'hari'}</span></div></div>
   <div class="card">${L.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Jenis</th><th>Tanggal</th><th class="num">Hari</th><th>Alasan</th><th>Status</th><th></th></tr></thead><tbody>${L.map(l => `<tr><td><b>${esc(l.type)}</b></td><td class="small">${leaveWhen(l)}</td><td class="num">${leaveDays(e, l.start, l.end)}</td><td class="small">${esc(l.reason || '')}${hrDocLinks('leaves', l.id, l.files)}</td><td>${leaveStatusPill(l)}</td>
     <td>${leaveFinal(l) === 'Menunggu' && (l.steps || []).every(s => s.status === 'Menunggu') ? `<button class="btn sm danger" data-lcan="${l.id}">Batalkan</button>` : ''}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">Belum ada pengajuan cuti.</div>'}</div>`;
 };
@@ -7765,7 +7818,8 @@ function stLeaveForm(e) {
   const cfg = hrCfg(e.companyId), types = cfg.leaveTypes || [];
   if (!types.length) { toast('Jenis cuti belum diatur HRD'); return; }
   openModal({ title: 'Ajukan cuti', body: `<form id="slF" class="form-grid">
-    <label class="f">Jenis cuti<select class="input" name="type" required>${types.map(t => `<option>${esc(t.name)}</option>`).join('')}</select></label><span></span>
+    <label class="f" style="grid-column:1/-1">Jenis cuti<select class="input" name="type" required>${leaveTypeOptions(cfg, e, '')}</select></label>
+    <div class="small muted" id="slInfo" style="grid-column:1/-1;margin-top:-4px">${leaveTypeNote(cfg, (leaveTypesFor(cfg, e)[0] || {}).name)}</div>
     <label class="f">Mulai<input class="input" type="date" name="start" required value="${todayISO()}"></label>
     <label class="f">Jam mulai<select class="input" name="t1">${leaveTimeOpts('08:00')}</select></label>
     <label class="f">Sampai<input class="input" type="date" name="end" required value="${todayISO()}"></label>
@@ -7781,14 +7835,14 @@ function stLeaveForm(e) {
       const f = $('#slF', r);
       const check = () => { const d = formData(f), T = leaveType(cfg, d.type), msg = []; if (!d.start || !d.end) return { ok: false, msg: '' }; if (d.end < d.start) return { ok: false, msg: 'Tanggal selesai tidak boleh sebelum tanggal mulai.' };
         const n = leaveDays(e, d.start, d.end); msg.push(`<b>${n}</b> hari kerja/jadwal.`);
-        if (T?.annual) { const b = leaveBalance(e, +d.start.slice(0, 4)); msg.push(`Sisa cuti tahunan: <b>${b.left}</b> hari.`); if (!b.eligible) msg.push(`Belum berhak cuti tahunan sampai ${fmtDate(b.eligDate)}.`); if (n > b.left) msg.push('<b>Melebihi sisa cuti.</b>'); }
-        else if (T && +T.quota > 0 && n > +T.quota) msg.push(`<b>Melebihi kuota ${esc(T.name)} (${T.quota} hari).</b>`);
+        if (T?.annual) { const b = leaveBalance(e, +d.start.slice(0, 4)); msg.push(`Sisa cuti tahunan: <b>${b.left}</b> hari (jatah ${b.quota} hari dari ${b.accrued} bulan bekerja).`); if (!b.eligible) msg.push(`Belum berhak cuti tahunan sampai ${fmtDate(b.eligDate)}.`); if (n > b.left) msg.push('<b>Melebihi sisa cuti.</b>'); }
+        else { const w = leaveQuotaWarn(e, T, d.start, d.end, n); if (w) msg.push(w); }
         if (T && T.paid === false) msg.push('Cuti ini tidak dibayar.');
         const clash = Store.all('leaves', l => l.employeeId === e.id && leaveFinal(l) !== 'Ditolak' && l.start <= d.end && l.end >= d.start);
         if (clash.length) msg.push(`<b>Bentrok</b> dengan pengajuan ${esc(clash[0].type)} ${fmtDate(clash[0].start)} – ${fmtDate(clash[0].end)}.`);
         return { ok: !clash.length && n > 0, n, msg: msg.join(' ') }; };
       const prev = () => { $('#slPrev', r).innerHTML = check().msg; }; f.oninput = prev; f.onchange = prev; prev(); hrDocInputWire(r, 'slDoc');
-      leaveTimeWire(f, () => e);
+      leaveTimeWire(f, () => e); f.type.addEventListener('change', () => { $('#slInfo', r).innerHTML = leaveTypeNote(cfg, f.type.value); });
       f.onsubmit = async ev => { ev.preventDefault(); const d = formData(f), k = check();
         { const te = leaveTimeErr(d); if (te) { toast(te); return; } }
         if (!k.n) { toast('Tidak ada hari kerja/jadwal pada tanggal tersebut'); return; } if (!k.ok) { toast('Periksa peringatan pada formulir'); return; }
