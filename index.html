@@ -1987,6 +1987,7 @@ const ICON = {
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   cal: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
   money: '<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/>',
+  shield: '<path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
   key: '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3"/>',
   gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
   building: '<rect x="4" y="3" width="16" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/>',
@@ -2027,6 +2028,7 @@ const NAV = [
   { id: 'accounts', label: 'Akun Pengguna', icon: 'key', roles: [SA, CO], group: 'Pengaturan', ws: 'both' },
   { id: 'skilltests', label: 'Soal Tes Kemampuan Unit', icon: 'skill', roles: [SA, CO], group: 'Pengaturan' },
   { id: 'settings', label: 'Pengaturan Perusahaan', icon: 'gear', roles: [SA, CO], group: 'Pengaturan', ws: 'both' },
+  { id: 'security', label: 'Keamanan Login', icon: 'shield', roles: [SA, CO], group: 'Pengaturan', ws: 'both' },
   { id: 'companies', label: 'Daftar Perusahaan', icon: 'building', roles: [SA], group: 'Master' },
   { id: 'master', label: 'Master Data Psikotes', icon: 'book', roles: [SA], group: 'Master' },
   { id: 'skillmaster', label: 'Master Tes Kemampuan Unit', icon: 'skill', roles: [SA], group: 'Master' },
@@ -2042,7 +2044,7 @@ const MENU_TOGGLE_V1 = ['exec', 'participants', 'meetings', 'cmppsy', 'cmpskill'
 /* halaman yang boleh dibuka Super Admin sebelum masuk ke perusahaan */
 const SETTINGS_IDS = ['accounts', 'skilltests', 'settings'];
 const PICK_IDS = [...SETTINGS_IDS, 'skillmaster'];
-const SA_OUTSIDE = ['companies', 'company', 'master', 'audit', 'menuaccess', 'reports', 'skillmaster', 'test-edit', 'test-results', ...SETTINGS_IDS];
+const SA_OUTSIDE = ['companies', 'company', 'master', 'audit', 'security', 'menuaccess', 'reports', 'skillmaster', 'test-edit', 'test-results', ...SETTINGS_IDS];
 /* menu yang bisa dibuka/ditutup per perusahaan (Super Admin > Akses Menu per RS); belum diatur = semua terbuka */
 const MENU_TOGGLE = ['exec', 'participants', 'meetings', 'cmppsy', 'cmpskill', 'reports', 'hrdash', 'employees', 'orgchart', 'directory', 'attendance', 'leaves', 'overtime', 'payroll', 'claims', 'perf', 'news', 'hrreports', 'hrmaster', 'hrsettings', ...SETTINGS_IDS];
 const ROUTE_MENU = { employee: 'employees', candidate: 'participants', candidates: 'participants', ist: 'participants', istresult: 'participants', papi: 'participants', papiresult: 'participants', kerjakan: 'participants', 'test-edit': 'skilltests', 'test-results': 'skilltests' };
@@ -2348,11 +2350,13 @@ Views.loginMount = () => {
         try { await Supa.login(u, p); }
         catch (er) {
           if (er.name === 'AbortError' || er.name === 'TypeError') { err.textContent = supaErr(er); err.hidden = false; return; }
+          Supa.rpc('log_login_fail', { p_username: u, p_reason: er.status === 429 ? 'terlalu_sering' : 'password' }, false).catch(() => {});
           t.n++; if (t.n >= LOCK.max) { t.until = Date.now() + LOCK.ms; t.n = 0; } LOCK.tries[u] = t; err.textContent = 'Username atau password salah.'; err.hidden = false; return;
         }
         let a; try { a = await App.enterSupa(false); }
         catch (er) { await Supa.logout(); Store.reset(); err.textContent = er.code === 'coexpired' ? er.message : (er.code === 'inactive' || er.code === 'noaccount') ? 'Akun belum aktif atau dinonaktifkan. Pendaftaran baru perlu disetujui Super Admin atau HRD.' : supaErr(er); err.hidden = false; return; }
         LOCK.tries[u] = { n: 0, until: 0 };
+        Supa.rpc('log_login_ok', {}).catch(() => {});
         audit('login'); App.render(); if (a.role !== US) showWelcome(a.name);
       } finally { busy(false); if (btn && btn.isConnected) { btn.disabled = false; btn.classList.remove('is-busy'); btn.textContent = lbl; } }
       return;
@@ -6397,7 +6401,7 @@ function lanCardHtml() {
   const cid = S.companyId, cfg = hrCfg(cid), devs = lanDevices(cid);
   if (cfg.device.method !== 'lan') return `<div class="card card-pad stack"><h3>Tarik otomatis dari mesin (IP)</h3><p class="small muted" style="margin:0">Mesin sidik jari Anda terhubung ke jaringan RS? Data bisa ditarik langsung lewat IP mesin tanpa flashdisk. Aktifkan di <b>Aturan Absensi & Gaji → Mesin absensi</b>, pilih <i>Tarik langsung via jaringan lokal</i>.</p><div><button class="btn" id="lanGoSet">Atur mesin absensi</button></div></div>`;
   return `<div class="card card-pad stack" id="lanCard"><div class="row" style="justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h3 style="margin:0">Tarik otomatis dari mesin (IP)</h3><span class="pill" id="lanSt">Memeriksa program penarik…</span></div>
-    ${devs.length ? `<table class="table"><thead><tr><th>Mesin</th><th>IP</th><th>Terakhir ditarik</th></tr></thead><tbody>${devs.map(d => `<tr><td>${esc(d.name || '-')}</td><td class="mono">${esc(d.ip)}:${+d.port || 4370}</td><td>${esc(lanAgo(lanLast(cid, d.ip)))}</td></tr>`).join('')}</tbody></table>`
+    ${devs.length ? `<table class="tbl"><thead><tr><th>Mesin</th><th>IP</th><th>Terakhir ditarik</th></tr></thead><tbody>${devs.map(d => `<tr><td>${esc(d.name || '-')}</td><td class="mono">${esc(d.ip)}:${+d.port || 4370}</td><td>${esc(lanAgo(lanLast(cid, d.ip)))}</td></tr>`).join('')}</tbody></table>`
       : `<div class="note warn">Belum ada IP mesin. Isi di Aturan Absensi & Gaji → Mesin absensi.</div>`}
     <div class="row" style="gap:10px;flex-wrap:wrap;align-items:center"><button class="btn primary" id="lanPull" ${devs.length ? '' : 'disabled'}>Tarik data sekarang</button>
       <label class="row small" style="gap:6px"><input type="checkbox" id="lanAuto" ${lanAutoOn(cid) ? 'checked' : ''}> Tarik otomatis setiap 15 menit selama aplikasi terbuka di komputer ini</label></div>
@@ -7449,6 +7453,75 @@ async function linkAccountEmployee(accountId, empId) {
   for (const x of Store.all('employees', x => x.accountId === accountId && x.id !== empId)) { const o = { ...x, accountId: '' }; delete o.id; await Store.put('employees', x.id, o); }
   if (empId) { const x = Store.get('employees', empId); if (x && x.accountId !== accountId) { const o = { ...x, accountId }; delete o.id; await Store.put('employees', empId, o); } }
 }
+
+/* ---------- Keamanan Login: catatan login berhasil & gagal (tersimpan di server) ---------- */
+const SEC_F = { days: 7, show: 'fail', q: '' };
+let SEC_DATA = null;
+const secUA = ua => { ua = ua || ''; const os = /Android/.test(ua) ? 'Android' : /iPhone|iPad/.test(ua) ? 'iPhone/iPad' : /Windows/.test(ua) ? 'Windows' : /Mac OS/.test(ua) ? 'Mac' : /Linux/.test(ua) ? 'Linux' : '';
+  const br = /Edg\//.test(ua) ? 'Edge' : /Chrome\//.test(ua) ? 'Chrome' : /Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : /curl|python|wget|Go-http|okhttp|Deno|node/i.test(ua) ? 'Skrip/otomatis' : ua ? 'Lainnya' : '–';
+  return [br, os].filter(Boolean).join(' · '); };
+const secBot = ua => !ua || /curl|python|wget|Go-http|okhttp|scrapy|bot|spider|httpclient|java\//i.test(ua);
+const SEC_CTRY = { ID: 'Indonesia', SG: 'Singapura', MY: 'Malaysia', US: 'Amerika Serikat', CN: 'Tiongkok', RU: 'Rusia', NL: 'Belanda', DE: 'Jerman', IN: 'India', VN: 'Vietnam', JP: 'Jepang', GB: 'Inggris', FR: 'Prancis', HK: 'Hong Kong', KR: 'Korea Selatan', BR: 'Brasil' };
+const secCtry = c => c ? (SEC_CTRY[c] ? `${SEC_CTRY[c]}` : c) : '–';
+
+/* pola mencurigakan dari data mentah */
+function secFindings(rows) {
+  const fails = rows.filter(r => !r.ok), out = [];
+  const byIp = new Map(); fails.forEach(r => { const k = r.ip || '?'; (byIp.get(k) || byIp.set(k, []).get(k)).push(r); });
+  byIp.forEach((list, ip) => { const ts = list.map(r => +new Date(r.at)).sort((a, b) => a - b); let best = 0;
+    for (let i = 0, j = 0; i < ts.length; i++) { while (ts[i] - ts[j] > 15 * 60000) j++; best = Math.max(best, i - j + 1); }
+    if (best >= 5) out.push({ lvl: 'bad', t: `IP <span class="mono">${esc(ip)}</span> (${esc(secCtry(list[0].country))}) gagal login <b>${best} kali dalam 15 menit</b>, mencoba ${new Set(list.map(r => r.username)).size} username: ${[...new Set(list.map(r => r.username))].slice(0, 6).map(esc).join(', ')}. Kemungkinan menebak kata sandi.` }); });
+  const byUser = new Map(); fails.forEach(r => { (byUser.get(r.username) || byUser.set(r.username, []).get(r.username)).push(r); });
+  byUser.forEach((list, u) => { const ips = new Set(list.map(r => r.ip)); if (list.length >= 5 && ips.size >= 3) out.push({ lvl: 'bad', t: `Akun <b>${esc(u)}</b> dicoba ${list.length} kali dari ${ips.size} IP berbeda. Pertimbangkan mengganti kata sandinya.` }); });
+  const foreign = fails.filter(r => r.country && r.country !== 'ID'); if (foreign.length) out.push({ lvl: 'warn', t: `${foreign.length} percobaan gagal dari luar Indonesia (${[...new Set(foreign.map(r => secCtry(r.country)))].slice(0, 5).map(esc).join(', ')}).` });
+  const okForeign = rows.filter(r => r.ok && r.country && r.country !== 'ID'); if (okForeign.length) out.push({ lvl: 'warn', t: `${okForeign.length} login <b>berhasil</b> dari luar Indonesia: ${[...new Set(okForeign.map(r => r.username))].slice(0, 6).map(esc).join(', ')}. Pastikan itu memang pemilik akun.` });
+  const unk = fails.filter(r => !r.company_id); if (unk.length >= 3 && S.user.role === SA) out.push({ lvl: 'warn', t: `${unk.length} percobaan memakai username yang tidak terdaftar (${[...new Set(unk.map(r => r.username))].slice(0, 6).map(esc).join(', ')}).` });
+  const bots = fails.filter(r => secBot(r.ua)); if (bots.length) out.push({ lvl: 'warn', t: `${bots.length} percobaan gagal dari program/skrip, bukan browser biasa.` });
+  return out;
+}
+Views.security = () => {
+  const head = `<div class="page-head"><div><h1>Keamanan Login</h1><p>Siapa yang masuk, siapa yang gagal masuk, kapan, dan dari mana. ${S.user.role === SA ? 'Super Admin melihat semua perusahaan.' : 'Hanya akun perusahaan Anda.'}</p></div><button class="btn" id="secCsv">Unduh CSV</button></div>`;
+  if (!Supa.on) return head + `<div class="card card-pad"><div class="note">Catatan keamanan hanya tersedia saat aplikasi tersambung ke server.</div></div>`;
+  return head + `<div class="row" style="gap:10px;flex-wrap:wrap;margin-bottom:12px">${[[1, 'Hari ini'], [7, '7 hari'], [30, '30 hari'], [90, '90 hari']].map(([d, l]) => `<button class="btn sm ${SEC_F.days === d ? 'primary' : ''}" data-secd="${d}">${l}</button>`).join('')}<button class="btn sm" id="secRef">Muat ulang</button></div><div id="secBody"><div class="card card-pad muted">Memuat catatan keamanan…</div></div>`;
+};
+function secRender(c) {
+  const box = $('#secBody', c); if (!box) return;
+  if (SEC_DATA && SEC_DATA.err) { box.innerHTML = `<div class="card card-pad"><div class="note warn">Gagal memuat: ${esc(SEC_DATA.err)}</div></div>`; return; }
+  const rows = SEC_DATA.rows, fails = rows.filter(r => !r.ok), oks = rows.filter(r => r.ok), find = secFindings(rows);
+  const ipStat = new Map(); rows.forEach(r => { const k = r.ip || '?', o = ipStat.get(k) || { ip: k, country: r.country, f: 0, s: 0, users: new Set(), last: r.at, ua: r.ua }; r.ok ? o.s++ : o.f++; o.users.add(r.username); if (r.at > o.last) o.last = r.at; ipStat.set(k, o); });
+  const topIp = [...ipStat.values()].filter(o => o.f).sort((a, b) => b.f - a.f).slice(0, 10);
+  const q = SEC_F.q.trim().toLowerCase(), list = rows.filter(r => (SEC_F.show === 'all' || (SEC_F.show === 'fail' ? !r.ok : r.ok)) && (!q || [r.username, r.ip, r.country].some(x => (x || '').toLowerCase().includes(q))));
+  const coName = id => id ? (Store.get('companies', id)?.name || '–') : '<span class="muted">tidak terdaftar</span>';
+  box.innerHTML = `<div class="grid g4">
+      <div class="card kpi ${find.some(f => f.lvl === 'bad') ? 'k-orange' : 'k-teal'}"><span class="eyebrow">Status</span><b style="font-size:22px">${find.some(f => f.lvl === 'bad') ? 'Perlu dicek' : find.length ? 'Waspada' : 'Aman'}</b><span class="small muted">${find.length ? find.length + ' temuan' : 'tidak ada pola serangan'}</span></div>
+      <div class="card kpi k-orange"><span class="eyebrow">Login gagal</span><b style="font-size:24px">${fails.length}</b><span class="small muted">dari ${new Set(fails.map(r => r.ip)).size} alamat IP</span></div>
+      <div class="card kpi k-blue"><span class="eyebrow">Login berhasil</span><b style="font-size:24px">${oks.length}</b><span class="small muted">${new Set(oks.map(r => r.username)).size} akun berbeda</span></div>
+      <div class="card kpi k-purple"><span class="eyebrow">Akun yang dicoba</span><b style="font-size:24px">${new Set(fails.map(r => r.username)).size}</b><span class="small muted">username saat gagal login</span></div></div>
+    <div class="card card-pad stack" style="margin-top:14px"><h3 style="margin:0">Temuan</h3>${find.length ? find.map(f => `<div class="note ${f.lvl === 'bad' ? 'bad' : 'warn'}">${f.t}</div>`).join('') : `<div class="note ok">Tidak ada tanda serangan pada periode ini. Login gagal yang ada wajar (misalnya salah ketik kata sandi).</div>`}</div>
+    ${topIp.length ? `<div class="card" style="margin-top:14px"><div class="card-pad" style="padding-bottom:0"><h3 style="margin:0">Alamat IP dengan login gagal terbanyak</h3></div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Alamat IP</th><th>Negara</th><th class="num">Gagal</th><th class="num">Berhasil</th><th>Username dicoba</th><th>Perangkat</th><th>Terakhir</th></tr></thead><tbody>
+      ${topIp.map(o => `<tr><td class="mono">${esc(o.ip)}</td><td>${esc(secCtry(o.country))}</td><td class="num"><b>${o.f}</b></td><td class="num">${o.s}</td><td>${[...o.users].slice(0, 5).map(esc).join(', ')}${o.users.size > 5 ? ' …' : ''}</td><td>${esc(secUA(o.ua))}</td><td>${fmtDT(o.last)}</td></tr>`).join('')}</tbody></table></div></div>` : ''}
+    <div class="card" style="margin-top:14px"><div class="card-pad row" style="gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between"><h3 style="margin:0">Riwayat login</h3>
+      <div class="row" style="gap:8px;flex-wrap:wrap"><select class="input" id="secShow" style="width:auto"><option value="fail" ${SEC_F.show === 'fail' ? 'selected' : ''}>Hanya gagal</option><option value="ok" ${SEC_F.show === 'ok' ? 'selected' : ''}>Hanya berhasil</option><option value="all" ${SEC_F.show === 'all' ? 'selected' : ''}>Semua</option></select>
+      <input class="input" id="secQ" style="width:220px" placeholder="Cari username / IP" value="${esc(SEC_F.q)}"></div></div>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Waktu</th><th>Hasil</th><th>Username</th>${S.user.role === SA ? '<th>Perusahaan</th>' : ''}<th>Alamat IP</th><th>Negara</th><th>Perangkat</th></tr></thead><tbody>
+      ${list.slice(0, 400).map(r => `<tr><td>${fmtDT(r.at)}</td><td>${r.ok ? '<span class="pill ok">Berhasil</span>' : `<span class="pill bad">Gagal</span>`}</td><td>${esc(r.username)}</td>${S.user.role === SA ? `<td>${coName(r.company_id)}</td>` : ''}<td class="mono">${esc(r.ip || '–')}</td><td>${esc(secCtry(r.country))}</td><td>${esc(secUA(r.ua))}</td></tr>`).join('') || `<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">Tidak ada data pada periode ini.</td></tr>`}</tbody></table></div>
+      ${list.length > 400 ? `<div class="card-pad small muted">Menampilkan 400 dari ${list.length}. Unduh CSV untuk semua.</div>` : ''}</div>
+    <p class="small muted" style="margin:12px 2px">Dicatat sejak 25 Nov 2026, disimpan 1 tahun. Yang tercatat adalah login lewat halaman aplikasi. Kata sandi yang pernah bocor di internet ditolak otomatis oleh server.</p>`;
+  $('#secShow', box).onchange = e => { SEC_F.show = e.target.value; secRender(c); };
+  $('#secQ', box).oninput = e => { SEC_F.q = e.target.value; const pos = e.target.selectionStart; secRender(c); const i = $('#secQ', c); i.focus(); i.setSelectionRange(pos, pos); };
+}
+Views.securityMount = c => {
+  if (!Supa.on) return;
+  const load = async () => { $('#secBody', c).innerHTML = '<div class="card card-pad muted">Memuat catatan keamanan…</div>';
+    try { SEC_DATA = { days: SEC_F.days, rows: (await Supa.rpc('security_events', { p_days: SEC_F.days })) || [] }; } catch (e) { SEC_DATA = { err: supaErr(e) }; }
+    if (c.isConnected) secRender(c); };
+  $$('[data-secd]', c).forEach(b => b.onclick = () => { SEC_F.days = +b.dataset.secd; SEC_DATA = null; App.renderContent(); });
+  $('#secRef', c).onclick = load;
+  $('#secCsv', c).onclick = () => { const rows = (SEC_DATA && SEC_DATA.rows) || []; const qv = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+    const csv = '﻿' + ['Waktu,Hasil,Username,Perusahaan,IP,Negara,Perangkat', ...rows.map(r => [fmtDT(r.at), r.ok ? 'Berhasil' : 'Gagal', r.username, Store.get('companies', r.company_id)?.name || '', r.ip, secCtry(r.country), r.ua].map(qv).join(','))].join('\r\n');
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); a.download = 'keamanan-login-' + todayISO() + '.csv'; document.body.appendChild(a); a.click(); a.remove(); };
+  if (SEC_DATA && !SEC_DATA.err && SEC_DATA.days === SEC_F.days) secRender(c); else load();
+};
 
 /* Ilustrasi halaman login (orisinal): karyawan bekerja di meja, lampu meja, tanaman */
 const LOGIN_ART = `<svg class="lg-svg" viewBox="0 0 520 560" xmlns="http://www.w3.org/2000/svg" role="img" focusable="false">
