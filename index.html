@@ -1131,6 +1131,15 @@ body[data-role] .side{background:#FFFFFF}
 .co-logo-box img{max-width:72px;max-height:72px;object-fit:contain}
 .co-logo-box span{font-size:34px;font-weight:800;color:#23805C}
 @media print{body{background:#FFFFFF}.card{border:1px solid #E8EAEF}}
+/* warna shift lebih tegas; libur merah */
+.modal .rcp-grid .rcp-b{background:var(--c,#64748B);color:#fff;border:0;box-shadow:0 1px 2px rgba(16,24,40,.12)}
+.modal .rcp-grid .rcp-b b,.modal .rcp-grid .rcp-b span{color:#fff}.modal .rcp-grid .rcp-b small{color:rgba(255,255,255,.92)}
+.modal .rcp-grid .rcp-b:hover{filter:brightness(1.08)}
+.modal .rcp-grid .rcp-b.on{box-shadow:0 0 0 3px #fff,0 0 0 5px var(--c)}
+.modal .rcp-grid .rcp-b.off{--c:#DC2626;background:#DC2626}
+.rc-pal .rc-b.off{--c:#DC2626;color:#B42318}.rc-pal .rc-b.off small{color:#B42318}
+.rc-pal .rc-b.off.on{background:#DC2626;color:#fff}.rc-pal .rc-b.off.on small{color:#fff}
+.sh-chip.off,.sh-chip.off.auto{background:#DC2626;color:#fff;border:0}
 /* lonceng notifikasi */
 .bell{position:relative}
 .bell-btn{appearance:none;position:relative;display:grid;place-items:center;width:40px;height:40px;border-radius:999px;border:1px solid var(--line-2);background:#fff;color:var(--muted);cursor:pointer}
@@ -1164,7 +1173,9 @@ body[data-role] .side{background:#FFFFFF}
 .tbl.rc-tbl thead th.rc-h.we,.tbl.rc-tbl thead th.rc-h.hol{background:#EEF1F5}
 .tbl.rc-tbl tbody tr th.rc-name{border:1px solid #9FAABA}
 .tbl.rc-tbl tbody tr td.num{border:1px solid #9FAABA}
-.tbl.rc-tbl tbody tr td.rc.off{background:var(--surface-2)}
+.tbl.rc-tbl tbody tr td.rc{background:color-mix(in srgb,var(--c,transparent) 42%,#fff);color:color-mix(in srgb,var(--c,#1E2533) 70%,#000)}
+.tbl.rc-tbl tbody tr td.rc.off{background:#FCA5A5;color:#7F1D1D}
+.tbl.rc-tbl tbody tr td.rc.auto{opacity:.6}
 .tbl.rc-tbl tbody tr td.rc:hover{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--c,#94A3B8) 70%,#000)}
 .tbl.rc-tbl tbody tr td.rc.chg{box-shadow:inset 0 0 0 2px var(--accent)}
 .rc.cus{font-size:9.5px;line-height:1.05;font-weight:700;min-width:38px}
