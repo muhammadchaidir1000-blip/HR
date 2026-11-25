@@ -1131,6 +1131,19 @@ body[data-role] .side{background:#FFFFFF}
 .co-logo-box img{max-width:72px;max-height:72px;object-fit:contain}
 .co-logo-box span{font-size:34px;font-weight:800;color:#23805C}
 @media print{body{background:#FFFFFF}.card{border:1px solid #E8EAEF}}
+/* jadwal: jam khusus & pemilih sel */
+.tbl.rc-tbl tbody tr td.rc{background:color-mix(in srgb,var(--c,transparent) 22%,var(--surface))}
+.tbl.rc-tbl tbody tr td.rc.off{background:var(--surface-2)}
+.tbl.rc-tbl tbody tr td.rc:hover{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--c,#94A3B8) 70%,#000)}
+.tbl.rc-tbl tbody tr td.rc.chg{box-shadow:inset 0 0 0 2px var(--accent)}
+.rc.cus{font-size:9.5px;line-height:1.05;font-weight:700;min-width:38px}
+.rc-t{display:inline-block;letter-spacing:-.2px}
+.rc:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.rcp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.rcp-b{appearance:none;font:inherit;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:10px;border:1px solid var(--line-2);background:color-mix(in srgb,var(--c,#94A3B8) 12%,#fff);color:var(--text);border-left:4px solid var(--c,#94A3B8)}
+.rcp-b b{font-size:15px}.rcp-b span{font-weight:700;font-size:13px}.rcp-b small{color:var(--muted);font-size:12px}
+.rcp-b:hover{border-color:var(--c,#94A3B8)}.rcp-b.on{box-shadow:0 0 0 2px var(--accent)}
+.rcp-b.off{--c:#94A3B8;background:var(--surface-2)}
 </style>
 </head>
 <body>
@@ -5449,7 +5462,7 @@ function hrDefault(cid) {
     shifts: [
       { code: 'N', name: 'Non-shift / kantor', start: '08:00', end: '16:00', color: '#2F5BEA' },
       { code: 'P', name: 'Pagi', start: '07:00', end: '14:00', color: '#0E9F6E' },
-      { code: 'S', name: 'Sore', start: '14:00', end: '21:00', color: '#E0730B' },
+      { code: 'S', name: 'Siang', start: '14:00', end: '21:00', color: '#E0730B' },
       { code: 'M', name: 'Malam', start: '21:00', end: '07:00', color: '#7C3AED' }
     ],
     defaultShift: 'N', tolLate: 5, tolEarly: 0, scanBefore: 180, scanAfter: 360,
@@ -5479,7 +5492,11 @@ async function hrSaveCfg(cid, patch) {
   const cur = Store.get('hr_config', cid) || {}; delete cur.id;
   await Store.put('hr_config', cid, { ...cur, ...patch, companyId: cid });
 }
-const hrShift = (cfg, code) => cfg.shifts.find(s => s.code === code) || null;
+/* kode jadwal: kode shift (P/S/M/N…) atau jam khusus "HH:MM-HH:MM" yang diisi langsung di sel jadwal */
+const SHIFT_RE = /^([01]\d|2[0-3]):([0-5]\d)-([01]\d|2[0-3]):([0-5]\d)$/;
+const hrShift = (cfg, code) => cfg.shifts.find(s => s.code === code) || (SHIFT_RE.test(code || '') ? { code, name: 'Jam khusus', start: code.slice(0, 5), end: code.slice(6), color: '#0F766E', custom: true } : null);
+const shiftHours = s => { if (!s) return 0; let m = tmin(s.end) - tmin(s.start); if (m <= 0) m += 1440; return m / 60; };
+const hoursTxt = h => (Math.round(h * 10) / 10).toString().replace('.', ',') + ' jam';
 const tmin = t => { const m = /^(\d{1,2})[:.](\d{2})/.exec(String(t || '')); return m ? +m[1] * 60 + +m[2] : null; };
 const hhmm = m => m == null ? '' : `${pad(Math.floor(((m % 1440) + 1440) % 1440 / 60))}:${pad(((m % 60) + 60) % 60)}`;
 const dayISO = (y, m, d) => `${y}-${pad(m)}-${pad(d)}`;
@@ -6207,6 +6224,8 @@ function attEmpModal(e, month) {
 }
 
 /* ---------- jadwal shift (grid bulanan, klik untuk mengisi) ---------- */
+const rcLabel = (cfg, code) => { const s = code && code !== 'L' ? hrShift(cfg, code) : null; return s && s.custom ? `<span class="rc-t">${s.start}<br>${s.end}</span>` : esc(code || ''); };
+const rcTitle = (cfg, code) => { if (code === 'L') return 'Libur'; const s = code ? hrShift(cfg, code) : null; return s ? `${s.name} ${s.start}–${s.end} (${hoursTxt(shiftHours(s))})` : ''; };
 function attRosterHtml(p, month, cfg, unitSel) {
   const n = daysIn(month), showAll = p.all === '1';
   const emps = empList(e => (!p.unit || e.unit === p.unit) && hrEmpActive(e, month + '-01') && (showAll || e.workType === 'shift'));
@@ -6217,25 +6236,28 @@ function attRosterHtml(p, month, cfg, unitSel) {
     const cells = Array.from({ length: n }, (_, i) => { const dd = pad(i + 1), iso = `${month}-${dd}`, ch = S._roster.ch[e.id + '|' + dd];
       const { code, auto } = ch !== undefined ? { code: ch || attCode(e, iso, cfg, { ...(doc || {}), sched: {} }).code, auto: !ch } : attCode(e, iso, cfg, doc || null);
       if (code && code !== 'L') cnt++; const s = code && code !== 'L' ? hrShift(cfg, code) : null;
-      return `<td class="rc ${code === 'L' ? 'off' : ''} ${auto ? 'auto' : ''} ${ch !== undefined ? 'chg' : ''}" data-rc="${e.id}|${dd}" style="${s ? `--c:${s.color}` : ''}">${esc(code || '')}</td>`; }).join('');
+      return `<td class="rc ${code === 'L' ? 'off' : ''} ${auto ? 'auto' : ''} ${ch !== undefined ? 'chg' : ''} ${s && s.custom ? 'cus' : ''}" data-rc="${e.id}|${dd}" tabindex="0" title="${esc(rcTitle(cfg, code))}" style="${s ? `--c:${s.color}` : ''}">${rcLabel(cfg, code)}</td>`; }).join('');
     return `<tr><th class="rc-name"><b>${esc(e.name)}</b><small>${esc(e.unit || '')}${e.workType === 'shift' ? '' : ' · non-shift'}</small></th>${cells}<td class="num small">${cnt}</td></tr>`; }).join('');
   return `<div class="card card-pad stack"><div class="row" style="justify-content:space-between"><div class="row"><input class="input" type="month" id="aMonth" value="${month}" style="width:auto">${unitSel}<label class="row small"><input type="checkbox" id="rAll" ${showAll ? 'checked' : ''}> Tampilkan juga karyawan non-shift</label></div>
       <div class="row"><button class="btn sm" id="rPat">Isi pola otomatis…</button><button class="btn sm" id="rCopy">Salin dari bulan lalu</button><button class="btn sm primary" id="rSave">Simpan jadwal</button></div></div>
-    <div class="row rc-pal" role="toolbar" aria-label="Pilih kode shift"><span class="small muted">Kuas:</span>${cfg.shifts.map(s => `<button type="button" class="rc-b ${brush === s.code ? 'on' : ''}" data-brush="${esc(s.code)}" style="--c:${s.color}" id="bk_br_${esc(s.code)}" title="${esc(s.name)} ${s.start}–${s.end}">${esc(s.code)} <small>${esc(s.name)}</small></button>`).join('')}<button type="button" class="rc-b off ${brush === 'L' ? 'on' : ''}" data-brush="L" id="bk_br_L">L <small>Libur</small></button><button type="button" class="rc-b ${brush === '' ? 'on' : ''}" data-brush="" id="bk_br_x">Hapus</button></div>
-    <p class="small muted" style="margin:0">Pilih kuas, lalu klik atau seret di sel tanggal. Sel pudar = jadwal otomatis (non-shift: hari kerja dan libur bawaan). Tekan <b>Simpan jadwal</b> setelah selesai.</p>
+    <div class="row rc-pal" role="toolbar" aria-label="Pilih kode shift"><span class="small muted">Kuas:</span>${cfg.shifts.map(s => `<button type="button" class="rc-b ${brush === s.code ? 'on' : ''}" data-brush="${esc(s.code)}" style="--c:${s.color}" id="bk_br_${esc(s.code)}" title="${esc(s.name)} ${s.start}–${s.end} (${hoursTxt(shiftHours(s))})">${esc(s.code)} <small>${esc(s.name)} ${s.start}–${s.end}</small></button>`).join('')}<button type="button" class="rc-b off ${brush === 'L' ? 'on' : ''}" data-brush="L" id="bk_br_L">L <small>Libur</small></button><button type="button" class="rc-b ${brush === '' ? 'on' : ''}" data-brush="" id="bk_br_x">Hapus</button></div>
+    <p class="small muted" style="margin:0"><b>Klik satu sel</b> untuk memilih shift atau mengatur jam masuk–pulang sendiri (kelipatan 30 menit). <b>Seret</b> beberapa sel untuk mengisi sekaligus dengan kuas. Sel pudar = jadwal otomatis (non-shift: hari kerja dan libur bawaan). Tekan <b>Simpan jadwal</b> setelah selesai.</p>
     ${emps.length ? `<div class="tbl-wrap rc-wrap"><table class="tbl no-stack rc-tbl" id="rcT"><thead><tr><th class="rc-name">Karyawan</th>${head}<th class="num small">Hari kerja</th></tr></thead><tbody>${rows}</tbody></table></div>` : `<div class="empty">Tidak ada karyawan shift${p.unit ? ' di unit ini' : ''}. Ubah jenis kerja karyawan menjadi "Shift" di Data Karyawan, atau centang "Tampilkan juga karyawan non-shift".</div>`}</div>`;
 }
 function attRosterWire(c, month) {
   const R = S._roster, cfg = hrCfg(); let painting = false;
   const mark = trackDirty(c, () => attRosterSave(month));
   $$('[data-brush]', c).forEach(b => b.onclick = () => { R.brush = b.dataset.brush; $$('[data-brush]', c).forEach(x => x.classList.toggle('on', x === b)); });
-  const paint = td => { const k = td.dataset.rc, code = R.brush ?? ((cfg.shifts[0] || {}).code || 'L'); R.ch[k] = code; const s = code && code !== 'L' ? hrShift(cfg, code) : null;
-    td.textContent = code; td.className = `rc chg ${code === 'L' ? 'off' : ''}`; td.style.cssText = s ? `--c:${s.color}` : ''; mark(); };
-  const t = $('#rcT', c);
+  const setCell = (td, code) => { const k = td.dataset.rc; R.ch[k] = code; const s = code && code !== 'L' ? hrShift(cfg, code) : null;
+    td.innerHTML = rcLabel(cfg, code); td.title = rcTitle(cfg, code); td.className = `rc chg ${code === 'L' ? 'off' : ''} ${s && s.custom ? 'cus' : ''}`; td.style.cssText = s ? `--c:${s.color}` : ''; mark(); };
+  const paint = td => setCell(td, R.brush ?? ((cfg.shifts[0] || {}).code || 'L'));
+  const t = $('#rcT', c); let start = null, moved = false;
   if (t) {
-    t.addEventListener('pointerdown', e => { const td = e.target.closest('[data-rc]'); if (!td) return; e.preventDefault(); painting = true; paint(td); });
-    t.addEventListener('pointerover', e => { if (!painting) return; const td = e.target.closest('[data-rc]'); if (td) paint(td); });
-    document.addEventListener('pointerup', () => { painting = false; }, { once: false });
+    t.addEventListener('pointerdown', e => { const td = e.target.closest('[data-rc]'); if (!td) return; e.preventDefault(); painting = true; start = td; moved = false; });
+    t.addEventListener('pointerover', e => { if (!painting) return; const td = e.target.closest('[data-rc]'); if (!td || (td === start && !moved)) return; if (!moved) { moved = true; paint(start); } paint(td); });
+    t.addEventListener('pointerup', e => { if (painting && !moved && start) { const td = start; setTimeout(() => attCellPicker(td, cfg, R, setCell), 0); } });
+    t.addEventListener('keydown', e => { const td = e.target.closest('[data-rc]'); if (td && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); attCellPicker(td, cfg, R, setCell); } });
+    document.addEventListener('pointerup', () => { painting = false; start = null; }, { once: false });
   }
   const all = $('#rAll', c); if (all) all.onchange = () => { S.params = { ...S.params, all: all.checked ? '1' : '' }; App.renderContent(); };
   $('#rSave', c).onclick = () => attRosterSave(month);
@@ -6257,6 +6279,33 @@ function attRosterWire(c, month) {
         ids.forEach((id, j) => { const off = f.shift.checked ? j : 0; for (let d = from; d <= n; d++) R.ch[id + '|' + pad(d)] = pat[(d - from + off) % pat.length]; });
         closeModal(); S.dirty = true; App.renderContent(); } });
   };
+}
+/* pilih isi satu sel: shift yang ada, libur, atau jam masuk–pulang sendiri (kelipatan 30 menit) */
+const HALF_HOURS = Array.from({ length: 48 }, (_, i) => `${pad(Math.floor(i / 2))}:${i % 2 ? '30' : '00'}`);
+function attCellPicker(td, cfg, R, setCell) {
+  const [id, dd] = td.dataset.rc.split('|'), e = Store.get('employees', id); if (!e) return;
+  const iso = `${R.month}-${dd}`, cur = R.ch[td.dataset.rc] !== undefined ? R.ch[td.dataset.rc] : attCode(e, iso, cfg).code, cs = cur && cur !== 'L' ? hrShift(cfg, cur) : null;
+  const br = R.brush && R.brush !== 'L' ? hrShift(cfg, R.brush) : null, base = cs || br || cfg.shifts[0] || { start: '08:00', end: '16:00' };
+  const near = t => { const m = tmin(t) || 0; return HALF_HOURS[Math.round(m / 30) % 48]; };
+  const opt = v => HALF_HOURS.map(h => `<option ${h === v ? 'selected' : ''}>${h}</option>`).join('');
+  openModal({ title: `${e.name} · ${HARI[dow(iso)]}, ${fmtDate(iso)}`, body: `<div class="stack">
+      <div class="small muted">Pilih shift</div>
+      <div class="rcp-grid">${cfg.shifts.map(s => `<button type="button" class="rcp-b ${cur === s.code ? 'on' : ''}" data-pick="${esc(s.code)}" style="--c:${s.color}"><b>${esc(s.code)}</b><span>${esc(s.name)}</span><small>${s.start}–${s.end} · ${hoursTxt(shiftHours(s))}</small></button>`).join('')}
+        <button type="button" class="rcp-b off ${cur === 'L' ? 'on' : ''}" data-pick="L"><b>L</b><span>Libur</span><small>tidak bekerja</small></button></div>
+      <div class="small muted" style="margin-top:6px">Atau atur jam sendiri</div>
+      <div class="row" style="gap:10px;align-items:flex-end;flex-wrap:wrap"><label class="f" style="margin:0">Jam masuk<select class="input" id="rcpS">${opt(near(base.start))}</select></label>
+        <label class="f" style="margin:0">Jam pulang<select class="input" id="rcpE">${opt(near(base.end))}</select></label>
+        <span class="pill info" id="rcpH"></span></div>
+      <p class="small muted" style="margin:0">Jam pulang lebih kecil dari jam masuk berarti pulang keesokan harinya (misalnya 21:00–07:00).</p></div>`,
+    foot: `<button class="btn" data-close>Batal</button><button class="btn" id="rcpX">Kosongkan</button><button class="btn primary" id="rcpOk">Pakai jam ini</button>`,
+    onMount: r => { const m = $('.modal', r) || r, sS = $('#rcpS', m), sE = $('#rcpE', m), h = $('#rcpH', m);
+      const upd = () => { const s0 = sS.value, e0 = sE.value; h.textContent = s0 === e0 ? 'jam masuk = jam pulang' : hoursTxt(shiftHours({ start: s0, end: e0 })); h.className = 'pill ' + (s0 === e0 ? 'warn' : 'info'); };
+      sS.onchange = upd; sE.onchange = upd; upd();
+      $$('[data-pick]', m).forEach(b => b.onclick = () => { setCell(td, b.dataset.pick); closeModal(); td.focus(); });
+      $('#rcpX', m).onclick = () => { setCell(td, ''); closeModal(); };
+      $('#rcpOk', m).onclick = () => { const s0 = sS.value, e0 = sE.value; if (s0 === e0) { toast('Jam masuk dan jam pulang tidak boleh sama'); return; }
+        const same = cfg.shifts.find(x => x.start === s0 && x.end === e0); setCell(td, same ? same.code : `${s0}-${e0}`); closeModal(); td.focus(); };
+    } });
 }
 async function attRosterSave(month) {
   const R = S._roster; if (!R || R.month !== month) return; const by = {};
