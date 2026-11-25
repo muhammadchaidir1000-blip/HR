@@ -1131,6 +1131,13 @@ body[data-role] .side{background:#FFFFFF}
 .co-logo-box img{max-width:72px;max-height:72px;object-fit:contain}
 .co-logo-box span{font-size:34px;font-weight:800;color:#23805C}
 @media print{body{background:#FFFFFF}.card{border:1px solid #E8EAEF}}
+/* lampiran dokumen */
+.hrdoc-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.hrdoc-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 8px 5px 10px;border:1px solid var(--line-2);border-radius:999px;background:var(--surface-2);font-size:13px}
+.hrdoc-chip small{color:var(--muted)}.hrdoc-chip button{appearance:none;border:0;background:transparent;cursor:pointer;color:var(--muted);font:inherit;padding:0 2px}
+.hrdoc-links{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.hrdoc-a{appearance:none;font:inherit;font-size:12px;cursor:pointer;border:1px solid var(--line-2);background:#fff;border-radius:6px;padding:2px 8px;color:var(--brand-text,#1B6A4C);font-weight:600}
+.hrdoc-a:hover{border-color:currentColor}
 /* jadwal: jam khusus & pemilih sel */
 .tbl.rc-tbl tbody tr td.rc{background:color-mix(in srgb,var(--c,transparent) 22%,var(--surface))}
 .tbl.rc-tbl tbody tr td.rc.off{background:var(--surface-2)}
@@ -5647,6 +5654,54 @@ Views.hrsettingsMount = c => {
   }
 };
 
+/* ---------- lampiran dokumen (surat dokter, undangan, dll) ----------
+   Supabase: bucket privat hr-docs, path <companyId>/<employeeId>/<file>; dibuka lewat tautan bertanda tangan 10 menit.
+   Mode lokal: disimpan sebagai data URL (maks 1,5 MB). */
+const HRDOC_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/heic'];
+const HRDOC_MAX = 5 * 1024 * 1024;
+const hrDocSize = n => n >= 1048576 ? (n / 1048576).toFixed(1).replace('.', ',') + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
+function hrDocCheck(f) {
+  if (!f) return 'File kosong';
+  const okType = HRDOC_TYPES.includes(f.type) || /\.(pdf|jpe?g|png|webp|heic)$/i.test(f.name);
+  if (!okType) return `${f.name}: hanya PDF atau foto (JPG/PNG)`;
+  if (f.size > (Supa.on ? HRDOC_MAX : 1.5 * 1048576)) return `${f.name}: ukuran ${hrDocSize(f.size)}, maksimal ${Supa.on ? '5 MB' : '1,5 MB'}`;
+  return '';
+}
+async function hrDocUpload(f, e) {
+  const ext = (/\.([a-z0-9]{2,5})$/i.exec(f.name) || [, f.type === 'application/pdf' ? 'pdf' : 'jpg'])[1].toLowerCase();
+  const meta = { name: f.name.slice(0, 120), size: f.size, type: f.type || '', at: nowISO() };
+  if (!Supa.on) { const data = await new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = no; r.readAsDataURL(f); }); return { ...meta, data }; }
+  const path = `${e.companyId}/${e.id}/${uid('f')}.${ext}`;
+  const r = await fetch(`${Supa.cfg.url}/storage/v1/object/hr-docs/${path}`, { method: 'POST', headers: { apikey: Supa.cfg.key, Authorization: 'Bearer ' + await Supa.token(), 'Content-Type': f.type || 'application/octet-stream', 'x-upsert': 'false' }, body: f });
+  if (!r.ok) { let m = 'HTTP ' + r.status; try { const j = await r.json(); m = j.message || j.error || m; } catch (x) {} throw new Error('Unggah ' + f.name + ' gagal: ' + m); }
+  return { ...meta, path };
+}
+async function hrDocOpen(a) {
+  if (!a) return;
+  if (a.data) { const w = window.open(); if (w) w.document.write(/^data:image/.test(a.data) ? `<title>${esc(a.name)}</title><img src="${a.data}" style="max-width:100%">` : `<title>${esc(a.name)}</title><iframe src="${a.data}" style="border:0;width:100%;height:100vh"></iframe>`); else toast('Izinkan pop-up untuk membuka lampiran'); return; }
+  const w = window.open('about:blank', '_blank');
+  try {
+    const j = await Supa.raw('/storage/v1/object/sign/hr-docs/' + a.path, { method: 'POST', body: { expiresIn: 600 } });
+    const url = Supa.cfg.url + '/storage/v1' + (j.signedURL || j.signedUrl);
+    if (w) w.location = url; else location.href = url;
+  } catch (x) { if (w) w.close(); toast('Lampiran tidak bisa dibuka: ' + (x.message || x)); }
+}
+/* input file di formulir; files dibaca lewat el._files */
+const hrDocInputHtml = (id, label = 'Lampiran dokumen') => `<div class="f hrdoc" style="grid-column:1/-1"><span>${label} <span class="muted small">(foto atau PDF, maks ${Supa.on ? '5 MB' : '1,5 MB'}, boleh lebih dari satu)</span></span>
+  <div class="row" style="gap:10px;flex-wrap:wrap;align-items:center"><label class="btn" style="cursor:pointer">📎 Unggah file<input type="file" id="${id}" accept=".pdf,image/*" multiple hidden></label><span class="small muted" id="${id}_n">Belum ada file</span></div>
+  <div class="hrdoc-list" id="${id}_l"></div></div>`;
+function hrDocInputWire(root, id) {
+  const inp = $('#' + id, root); if (!inp) return; inp._files = [];
+  const paint = () => { $('#' + id + '_n', root).textContent = inp._files.length ? `${inp._files.length} file dipilih` : 'Belum ada file';
+    $('#' + id + '_l', root).innerHTML = inp._files.map((f, i) => `<span class="hrdoc-chip">${/pdf/i.test(f.type) ? '📄' : '🖼️'} ${esc(f.name)} <small>${hrDocSize(f.size)}</small><button type="button" data-rm="${i}" aria-label="Hapus ${esc(f.name)}">✕</button></span>`).join('');
+    $$('[data-rm]', $('#' + id + '_l', root)).forEach(b => b.onclick = () => { inp._files.splice(+b.dataset.rm, 1); paint(); }); };
+  inp.onchange = () => { [...inp.files].forEach(f => { const er = hrDocCheck(f); if (er) toast(er); else if (inp._files.length < 5) inp._files.push(f); else toast('Maksimal 5 file'); }); inp.value = ''; paint(); };
+  paint();
+}
+async function hrDocUploadAll(root, id, e) { const inp = $('#' + id, root), out = []; for (const f of (inp && inp._files) || []) out.push(await hrDocUpload(f, e)); return out; }
+const hrDocLinks = (col, docId, files) => Array.isArray(files) && files.length ? `<div class="hrdoc-links">${files.map((a, i) => `<button type="button" class="hrdoc-a" data-hrdoc="${col}|${docId}|${i}" title="Buka ${esc(a.name)}">${/pdf/i.test(a.type) ? '📄' : '🖼️'} ${esc(a.name.length > 28 ? a.name.slice(0, 25) + '…' : a.name)}</button>`).join('')}</div>` : '';
+document.addEventListener('click', ev => { const b = ev.target.closest && ev.target.closest('[data-hrdoc]'); if (!b) return; ev.preventDefault(); ev.stopPropagation(); const [col, id, i] = b.dataset.hrdoc.split('|'); hrDocOpen(((Store.get(col, id) || {}).files || [])[+i]); }, true);
+
 /* =========================================================
    HRIS · Master Data HR
    Daftar pilihan yang dipakai di seluruh modul HRIS (jabatan, golongan,
@@ -6593,7 +6648,7 @@ Views.leaves = () => {
     ${reqs.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Karyawan</th><th>Jenis</th><th>Tanggal</th><th class="num">Hari</th><th>Alasan</th><th>Persetujuan</th><th>Status</th><th></th></tr></thead><tbody>
       ${reqs.map(l => { const e = em[l.employeeId], st = leaveStep(l), steps = Array.isArray(l.steps) ? l.steps : [];
         return `<tr><td><b>${esc(e.name)}</b>${sampleTag(l)}<div class="small muted">${esc(e.unit || '')}</div></td><td>${esc(l.type)}${leaveType(cfg, l.type)?.paid === false ? '<div class="small muted">tidak dibayar</div>' : ''}</td><td class="small">${fmtDate(l.start)} – ${fmtDate(l.end)}</td><td class="num">${leaveDays(e, l.start, l.end)}</td>
-          <td class="small">${esc(l.reason || '')}${l.docRef ? `<div class="muted">Dok: ${esc(l.docRef)}</div>` : ''}${l.substituteId ? `<div class="muted">Pengganti: ${esc(empName(l.substituteId))}</div>` : ''}</td>
+          <td class="small">${esc(l.reason || '')}${l.docRef ? `<div class="muted">Dok: ${esc(l.docRef)}</div>` : ''}${hrDocLinks('leaves', l.id, l.files)}${l.substituteId ? `<div class="muted">Pengganti: ${esc(empName(l.substituteId))}</div>` : ''}</td>
           <td class="small">${steps.length ? steps.map(s => `<div><span class="lv-dot ${s.status === 'Disetujui' ? 'ok' : s.status === 'Ditolak' ? 'bad' : ''}"></span>${esc(s.name)}${s.by ? ` · <span class="muted">${esc(s.by)}</span>` : ''}${s.note ? `<div class="muted">“${esc(s.note)}”</div>` : ''}</div>`).join('') : '<span class="muted">langsung</span>'}</td>
           <td>${leaveStatusPill(l)}</td><td><div class="row" style="flex-wrap:nowrap">${st ? `<button class="btn sm primary" data-ap="${l.id}">Setujui${steps.length > 1 ? ' (' + esc(st.name) + ')' : ''}</button><button class="btn sm" data-rj="${l.id}">Tolak</button>` : ''}<button class="btn sm danger" data-del="${l.id}" aria-label="Hapus">✕</button></div></td></tr>`; }).join('')}
     </tbody></table></div>` : `<div class="empty">${fs === 'Menunggu' ? 'Tidak ada pengajuan yang menunggu persetujuan.' : 'Belum ada data cuti.'}</div>`}</div>`;
@@ -6638,6 +6693,7 @@ function leaveForm() {
     <label class="f" style="grid-column:1/-1">Alasan<input class="input" name="reason"></label>
     <label class="f">No. surat / dokumen pendukung<input class="input" name="docRef" placeholder="misalnya surat keterangan dokter"></label>
     <label class="f">Persetujuan<select class="input" name="direct"><option value="0">Ikuti alur: ${cfg.approvals.map(esc).join(' → ')}</option><option value="1">Sudah disetujui (input data lama)</option></select></label>
+    ${hrDocInputHtml('lDoc', 'Lampiran (surat dokter, undangan, dll)')}
     <div id="lPrev" class="note" style="grid-column:1/-1"></div></form>`,
     foot: '<button class="btn" data-close>Batal</button><button class="btn primary" form="lF">Simpan</button>',
     onMount: r => {
@@ -6654,11 +6710,12 @@ function leaveForm() {
         return { msg: msg.join(' '), ok: !clash.length && n > 0 && d.substituteId !== d.employeeId, n };
       };
       const prev = () => { $('#lPrev', r).innerHTML = check().msg; };
-      f.oninput = prev; f.onchange = prev; prev();
+      f.oninput = prev; f.onchange = prev; prev(); hrDocInputWire(r, 'lDoc');
       f.onsubmit = async ev => { ev.preventDefault(); const d = formData(f), k = check();
         if (d.end < d.start) { toast('Periksa tanggal'); return; } if (!k.n) { toast('Tidak ada hari kerja/jadwal pada rentang tanggal ini'); return; } if (!k.ok) { toast('Periksa peringatan pada formulir'); return; }
         const steps = cfg.approvals.map(name => d.direct === '1' ? { name, status: 'Disetujui', by: S.user.username, at: nowISO(), note: 'input langsung' } : { name, status: 'Menunggu' });
-        const body = { companyId: S.companyId, employeeId: d.employeeId, type: d.type, start: d.start, end: d.end, reason: d.reason, docRef: d.docRef, substituteId: d.substituteId, steps, createdAt: nowISO(), createdBy: S.user.username };
+        let files = []; try { files = await hrDocUploadAll(r, 'lDoc', Store.get('employees', d.employeeId)); } catch (x) { toast(x.message || String(x)); return; }
+        const body = { companyId: S.companyId, employeeId: d.employeeId, type: d.type, start: d.start, end: d.end, reason: d.reason, docRef: d.docRef, substituteId: d.substituteId, steps, files, createdAt: nowISO(), createdBy: S.user.username };
         body.status = leaveFinal(body); await Store.put('leaves', uid('l'), body);
         audit('pengajuan cuti', `${empName(d.employeeId)} · ${d.type}`); closeModal(); S.params = { ...S.params, tab: 'req', fs: body.status === 'Menunggu' ? 'Menunggu' : 'all' }; App.renderContent(); toast('Pengajuan cuti disimpan'); };
     } });
@@ -7436,7 +7493,7 @@ Views.myleave = () => {
     <div class="card kpi"><span class="eyebrow">Terpakai</span><b>${b.used || 0}</b><span class="small">hari disetujui</span></div>
     <div class="card kpi"><span class="eyebrow">Menunggu</span><b>${b.pending || 0}</b><span class="small">hari</span></div>
     <div class="card kpi"><span class="eyebrow">Sisa</span><b>${b.type ? b.left : '–'}</b><span class="small">${b.type && !b.eligible ? 'berhak mulai ' + fmtDate(b.eligDate) : 'hari'}</span></div></div>
-  <div class="card">${L.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Jenis</th><th>Tanggal</th><th class="num">Hari</th><th>Alasan</th><th>Status</th><th></th></tr></thead><tbody>${L.map(l => `<tr><td><b>${esc(l.type)}</b></td><td class="small">${fmtDate(l.start)} – ${fmtDate(l.end)}</td><td class="num">${leaveDays(e, l.start, l.end)}</td><td class="small">${esc(l.reason || '')}</td><td>${leaveStatusPill(l)}</td>
+  <div class="card">${L.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Jenis</th><th>Tanggal</th><th class="num">Hari</th><th>Alasan</th><th>Status</th><th></th></tr></thead><tbody>${L.map(l => `<tr><td><b>${esc(l.type)}</b></td><td class="small">${fmtDate(l.start)} – ${fmtDate(l.end)}</td><td class="num">${leaveDays(e, l.start, l.end)}</td><td class="small">${esc(l.reason || '')}${hrDocLinks('leaves', l.id, l.files)}</td><td>${leaveStatusPill(l)}</td>
     <td>${leaveFinal(l) === 'Menunggu' && (l.steps || []).every(s => s.status === 'Menunggu') ? `<button class="btn sm danger" data-lcan="${l.id}">Batalkan</button>` : ''}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">Belum ada pengajuan cuti.</div>'}</div>`;
 };
 Views.myleaveMount = c => {
@@ -7455,6 +7512,7 @@ function stLeaveForm(e) {
     <label class="f" style="grid-column:1/-1">Alasan<input class="input" name="reason" required placeholder="mis. acara keluarga"></label>
     <label class="f">Pengganti selama cuti (nama)<input class="input" name="substituteName" placeholder="opsional"></label>
     <label class="f">No. surat / dokumen pendukung<input class="input" name="docRef" placeholder="mis. surat dokter"></label>
+    ${hrDocInputHtml('slDoc', 'Lampiran (surat dokter, undangan, dll)')}
     <div id="slPrev" class="note" style="grid-column:1/-1"></div></form>
     <p class="small muted" style="margin:0">Alur persetujuan: ${cfg.approvals.map(esc).join(' → ')}.</p>`,
     foot: '<button class="btn" data-close>Batal</button><button class="btn primary" form="slF">Ajukan</button>',
@@ -7468,10 +7526,12 @@ function stLeaveForm(e) {
         const clash = Store.all('leaves', l => l.employeeId === e.id && leaveFinal(l) !== 'Ditolak' && l.start <= d.end && l.end >= d.start);
         if (clash.length) msg.push(`<b>Bentrok</b> dengan pengajuan ${esc(clash[0].type)} ${fmtDate(clash[0].start)} – ${fmtDate(clash[0].end)}.`);
         return { ok: !clash.length && n > 0, n, msg: msg.join(' ') }; };
-      const prev = () => { $('#slPrev', r).innerHTML = check().msg; }; f.oninput = prev; f.onchange = prev; prev();
+      const prev = () => { $('#slPrev', r).innerHTML = check().msg; }; f.oninput = prev; f.onchange = prev; prev(); hrDocInputWire(r, 'slDoc');
       f.onsubmit = async ev => { ev.preventDefault(); const d = formData(f), k = check();
         if (!k.n) { toast('Tidak ada hari kerja/jadwal pada tanggal tersebut'); return; } if (!k.ok) { toast('Periksa peringatan pada formulir'); return; }
-        const body = { companyId: e.companyId, employeeId: e.id, type: d.type, start: d.start, end: d.end, reason: d.reason, docRef: d.docRef, substituteName: d.substituteName, steps: cfg.approvals.map(name => ({ name, status: 'Menunggu' })), status: 'Menunggu', createdAt: nowISO(), createdBy: S.user.username, bySelf: true };
+        const sb = $('button[form=slF]', r); if (sb) { sb.disabled = true; sb.textContent = 'Mengirim…'; }
+        let files = []; try { files = await hrDocUploadAll(r, 'slDoc', e); } catch (x) { toast(x.message || String(x)); if (sb) { sb.disabled = false; sb.textContent = 'Ajukan'; } return; }
+        const body = { companyId: e.companyId, employeeId: e.id, type: d.type, start: d.start, end: d.end, reason: d.reason, docRef: d.docRef, substituteName: d.substituteName, files, steps: cfg.approvals.map(name => ({ name, status: 'Menunggu' })), status: 'Menunggu', createdAt: nowISO(), createdBy: S.user.username, bySelf: true };
         try { await Store.put('leaves', uid('l'), body); } catch (x) { toast('Gagal mengajukan: ' + (x.message || x)); return; }
         audit('ajukan cuti (staf)', `${e.name} · ${d.type}`); closeModal(); toast('Pengajuan cuti terkirim ke HRD'); App.renderContent(); };
     } });
