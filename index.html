@@ -1073,7 +1073,9 @@ body[data-role] .side{background:#FFFFFF}
 .lg-card{width:100%;max-width:1120px;min-height:560px;display:grid;grid-template-columns:1.05fr 1fr;background:#FFFFFF;border-radius:28px;overflow:hidden;box-shadow:0 30px 60px rgba(16,60,44,.22)}
 .lg-art{position:relative;background:#FFFFFF;min-height:560px}
 .lg-svg{position:absolute;inset:0;width:100%;height:100%}
-.lg-art{background:linear-gradient(160deg,#E9F7F0 0%,#CDEEDD 55%,#9FDDC0 100%)!important;display:flex;flex-direction:column;justify-content:center;padding:36px 34px 30px;gap:22px}
+.lg-art{background:#BEDCC1!important;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;padding:0 0 28px;gap:10px;overflow:hidden}
+.lg-ai{display:block;width:100%;max-width:560px;height:auto;flex:1 1 auto;min-height:0;object-fit:contain;object-position:center bottom}
+.lg-art .lg-cap{padding:0 32px;text-align:center}
 .lg-team{display:grid;grid-template-columns:1fr 1.15fr 1fr;grid-template-rows:1fr 1fr;gap:12px;height:430px}
 .lg-ph{position:relative;margin:0;border-radius:18px;overflow:hidden;background:#BFE3D1;box-shadow:0 10px 24px rgba(20,86,62,.18);border:3px solid #FFFFFF}
 .lg-ph img{width:100%;height:100%;object-fit:cover;display:block}
@@ -1115,7 +1117,8 @@ body[data-role] .side{background:#FFFFFF}
 @media (max-width:860px){
   .lg-wrap{padding:0;place-items:stretch;background:#FFFFFF}
   .lg-card{grid-template-columns:1fr;border-radius:0;box-shadow:none;min-height:100dvh}
-  .lg-art{min-height:0;padding:18px 16px 14px}
+  .lg-art{min-height:0;height:260px;padding:0}
+  .lg-ai{height:100%;width:auto;max-width:100%}
   .lg-team{height:230px;gap:8px}
   .lg-ph{border-radius:12px;border-width:2px}
   .lg-ph figcaption{font-size:10px;padding:2px 7px;left:5px;bottom:5px}
@@ -2295,7 +2298,7 @@ const PAPERLESS = [
 ];
 Views.login = () => `<div class="lg-wrap">
   <div class="lg-card">
-    <section class="lg-art">${loginTeamHtml()}<p class="lg-cap">Rekrutmen, psikotes, dan kepegawaian dalam satu tempat.</p></section>
+    <section class="lg-art"><img class="lg-ai" src="https://jgwxnaytgaqkwqzlmdgt.supabase.co/storage/v1/object/public/public-assets/login-team-ai.jpg" alt="Tim karyawan dari berbagai profesi" width="900" height="900" decoding="async"><p class="lg-cap">Rekrutmen, psikotes, dan kepegawaian dalam satu tempat.</p></section>
     <section class="lg-main"><form class="lg-form" id="loginForm" autocomplete="on">
       <div class="lg-brand"><img src="${LOGO_LX_MARK}" alt="" width="44" height="33"><div><b>LyrionX <span>HR Suite</span></b><small>Kelola orang, bukan kertas.</small></div></div>
       <h1 class="sr-only" id="loginTitle">Masuk</h1>
