@@ -1140,6 +1140,40 @@ body[data-role] .side{background:#FFFFFF}
 .rc-pal .rc-b.off{--c:#DC2626;color:#B42318}.rc-pal .rc-b.off small{color:#B42318}
 .rc-pal .rc-b.off.on{background:#DC2626;color:#fff}.rc-pal .rc-b.off.on small{color:#fff}
 .sh-chip.off,.sh-chip.off.auto{background:#DC2626;color:#fff;border:0}
+/* bagan struktur jabatan */
+.oc-wrap{overflow-x:auto;padding:6px 4px 10px;position:relative}
+.oc{display:inline-block;min-width:100%}
+.oc .oc-ul{position:relative;display:flex;justify-content:center;margin:0;padding:22px 0 0}
+.oc .oc-li{list-style:none;position:relative;padding:22px 6px 0;display:flex;flex-direction:column;align-items:center}
+.oc .oc-li::before,.oc .oc-li::after{content:'';position:absolute;top:0;right:50%;width:50%;height:22px;border-top:1.5px solid #2B3445}
+.oc .oc-li::after{right:auto;left:50%;border-left:1.5px solid #2B3445}
+.oc .oc-li:only-child::before,.oc .oc-li:only-child::after{display:none}
+.oc .oc-li:only-child{padding-top:0}
+.oc .oc-li:first-child::before,.oc .oc-li:last-child::after{border:0}
+.oc .oc-li:last-child::before{border-right:1.5px solid #2B3445}
+.oc .oc-ul .oc-ul::before{content:'';position:absolute;top:0;left:50%;height:22px;border-left:1.5px solid #2B3445}
+.oc > .oc-ul{padding-top:0}.oc > .oc-ul > .oc-li{padding-top:0}.oc > .oc-ul > .oc-li::before,.oc > .oc-ul > .oc-li::after{display:none}
+.ocb{width:168px;border:1px solid #2B3445;background:#fff;font-size:12px;line-height:1.3;text-align:center;box-shadow:0 1px 2px rgba(16,24,40,.08);position:relative;z-index:1}
+.ocb-h{padding:5px 8px;font-weight:800;border-bottom:1px solid #2B3445;color:#1E2533}
+.ocb-b{padding:7px 8px;min-height:30px;font-weight:600;color:#1E2533}
+.ocb.k-top{width:220px}.ocb.k-top .ocb-h{background:#1F3864;color:#fff;letter-spacing:.06em;text-transform:uppercase}
+.ocb.k-staff .ocb-h{background:#1F4E79;color:#fff;text-transform:uppercase;letter-spacing:.04em}
+.ocb.k-bidang .ocb-h{background:#A9D18E}
+.ocb.k-sie .ocb-h{background:#FFE45C}
+.ocb.k-manajer .ocb-h{background:#FFC000}
+.ocb.k-list,.ocb.k-komite{text-align:left;padding:8px 10px}
+.ocb.k-list{background:#F8CBAD}.ocb.k-komite{background:#1565C0;color:#fff;border-color:#0D47A1;font-weight:700;text-transform:uppercase;font-size:11px}
+.ocb.k-list ul,.ocb.k-komite ul{margin:0;padding:0;list-style:none}.ocb.k-list li,.ocb.k-komite li{padding:1px 0}
+.oc-side{position:relative;display:flex;justify-content:center;width:100%;min-width:640px;padding:18px 0 4px}
+.oc-side::before{content:'';position:absolute;left:50%;top:0;bottom:-1px;border-left:1.5px solid #2B3445}
+.oc-sl,.oc-sr{flex:1;display:flex;align-items:center;gap:0}
+.oc-sl{justify-content:flex-end;padding-right:40px}.oc-sr{justify-content:flex-start;padding-left:40px}
+.oc-sl .ocb,.oc-sr .ocb{position:relative}
+.oc-sl .ocb::after{content:'';position:absolute;top:50%;left:100%;width:40px;border-top:1.5px solid #2B3445}
+.oc-sr .ocb::before{content:'';position:absolute;top:50%;right:100%;width:40px;border-top:1.5px solid #2B3445}
+.oc-foot{text-align:right;font-size:12px;margin-top:18px;color:#1E2533}
+.oe-tbl td{vertical-align:top}
+@media print{.oc-wrap{overflow:visible}.ocb{box-shadow:none}}
 /* lonceng notifikasi */
 .bell{position:relative}
 .bell-btn{appearance:none;position:relative;display:grid;place-items:center;width:40px;height:40px;border-radius:999px;border:1px solid var(--line-2);background:#fff;color:var(--muted);cursor:pointer}
@@ -7099,11 +7133,13 @@ const empInitials = n => String(n || '?').trim().split(/\s+/).slice(0, 2).map(w 
 const empAvatar = (e, big) => `<span class="emp-av${big ? ' big' : ''}" style="--h:${[...String(e.name || '')].reduce((s, ch) => s + ch.charCodeAt(0), 0) % 360}" aria-hidden="true">${esc(empInitials(e.name))}</span>`;
 
 Views.orgchart = () => {
-  const p = S.params || {}, mode = p.mode || 'unit', E = empList(e => e.active !== false), ids = new Set(E.map(e => e.id));
+  const p = S.params || {}, mode = p.mode || 'struct', E = empList(e => e.active !== false), ids = new Set(E.map(e => e.id));
   const units = [...new Set([...(settingsOf(S.companyId).units || []).map(u => u.name), ...E.map(e => e.unit).filter(Boolean)])];
   const node = e => `<button class="org-node" data-emp="${e.id}">${empAvatar(e)}<span><b>${esc(e.name)}</b><small>${esc(e.position || '–')}${mode === 'tree' && e.unit ? ' · ' + esc(e.unit) : ''}</small></span></button>`;
   let body = '';
-  if (mode === 'tree') {
+  if (mode === 'struct') {
+    body = ORG_EDIT ? `<div id="orgEditBox">${orgEditHtml(S.companyId)}</div>` : `<div class="card card-pad">${orgChartHtml(S.companyId)}</div>`;
+  } else if (mode === 'tree') {
     const kids = id => E.filter(e => e.supervisorId === id);
     const tree = (e, depth, seen) => { if (seen.has(e.id) || depth > 12) return ''; seen.add(e.id); const k = kids(e.id); return `<li>${node(e)}${k.length ? `<span class="org-count">${k.length} bawahan</span><ul>${k.map(x => tree(x, depth + 1, seen)).join('')}</ul>` : ''}</li>`; };
     const roots = E.filter(e => !e.supervisorId || !ids.has(e.supervisorId)), seen = new Set();
@@ -7119,14 +7155,16 @@ Views.orgchart = () => {
         ${rest.length ? `<div class="eyebrow">Anggota</div><div class="org-grid">${rest.map(node).join('')}</div>` : M.length ? '' : '<div class="small faint">Belum ada karyawan.</div>'}</div>`; }).join('')}
       ${E.some(e => !e.unit) ? `<div class="card card-pad org-unit"><h3 style="margin:0">Tanpa unit</h3><div class="org-grid">${E.filter(e => !e.unit).map(node).join('')}</div></div>` : ''}</div>`;
   }
-  return `<div class="page-head"><div><h1>Struktur Organisasi</h1><p>Dibentuk otomatis dari kolom Unit dan Atasan langsung di Data Karyawan. Klik nama untuk membuka profil.</p></div>
-    <div class="row"><button class="btn" id="orgPrint">Cetak</button></div></div>
-  <div class="tabs" role="tablist"><button class="tab ${mode === 'unit' ? 'on' : ''}" data-om="unit">Per unit</button><button class="tab ${mode === 'tree' ? 'on' : ''}" data-om="tree">Bagan atasan–bawahan</button></div>${body}`;
+  return `<div class="page-head"><div><h1>Struktur Organisasi</h1><p>${mode === 'struct' ? 'Bagan jabatan resmi perusahaan. Nama pejabat bisa diisi kemudian.' : 'Dibentuk otomatis dari kolom Unit dan Atasan langsung di Data Karyawan. Klik nama untuk membuka profil.'}</p></div>
+    <div class="row">${mode === 'struct' && !ORG_EDIT ? '<button class="btn" id="orgEdit">Ubah struktur</button>' : ''}<button class="btn" id="orgPrint">Cetak</button></div></div>
+  <div class="tabs" role="tablist"><button class="tab ${mode === 'struct' ? 'on' : ''}" data-om="struct">Bagan struktur</button><button class="tab ${mode === 'unit' ? 'on' : ''}" data-om="unit">Per unit</button><button class="tab ${mode === 'tree' ? 'on' : ''}" data-om="tree">Bagan atasan–bawahan</button></div>${body}`;
 };
 Views.orgchartMount = c => {
-  $$('[data-om]', c).forEach(b => b.onclick = () => { S.params = { mode: b.dataset.om }; App.renderContent(); });
+  $$('[data-om]', c).forEach(b => b.onclick = () => { ORG_EDIT = null; S.params = { mode: b.dataset.om }; App.renderContent(); });
   $$('[data-emp]', c).forEach(b => b.onclick = () => App.go('employee', { id: b.dataset.emp }));
   $('#orgPrint', c).onclick = () => window.print();
+  const ed = $('#orgEdit', c); if (ed) ed.onclick = () => { ORG_EDIT = orgOf(S.companyId); App.renderContent(); };
+  if (ORG_EDIT && $('#orgEditBox', c)) orgEditWire(c, S.companyId);
 };
 
 Views.directory = () => {
@@ -7150,6 +7188,103 @@ Views.directoryMount = c => {
   $('#du', c).onchange = e => setP({ unit: e.target.value }); const dl = $('#dl', c); if (dl) dl.onchange = e => setP({ loc: e.target.value });
   $$('[data-emp]', c).forEach(b => b.onclick = () => App.go('employee', { id: b.dataset.emp }));
 };
+
+/* =========================================================
+   HRIS · Bagan struktur jabatan (ditetapkan perusahaan, tanpa nama orang)
+   Disimpan di hr_config.org = { nodes:[{id,parent,title,kind,items[],holder,side}], place, date, by }
+   ========================================================= */
+const ORG_KINDS = { top: 'Pimpinan tertinggi', staff: 'Staf pimpinan (samping)', komite: 'Komite (samping)', bidang: 'Bidang / Departemen', sie: 'Seksi / Sie', manajer: 'Manajer', list: 'Daftar unit' };
+const ORG_TEMPLATE = () => ({
+  place: 'Bandung', date: '2026-03-01', by: 'PT. Humana Prima',
+  nodes: [
+    { id: 'dir', parent: '', title: 'Direktur', kind: 'top' },
+    { id: 'gs', parent: 'dir', title: 'General Secretary', kind: 'staff', side: true },
+    { id: 'kom', parent: 'dir', title: 'Komite', kind: 'komite', side: true, items: ['Komite Medis', 'Komite Keperawatan', 'Komite Tenaga Kesehatan Lain', 'Komite PPI', 'Komite Mutu RS', 'Komite Etik & Legal', 'Komite Farmasi & Terapi'] },
+    { id: 'bpm', parent: 'dir', title: 'Ka. Bidang Pelayanan Medik & Penunjang Medik', kind: 'bidang' },
+    { id: 'sk', parent: 'bpm', title: 'Ka. Sie Keperawatan', kind: 'sie', items: ['Ka. Unit IGD', 'Ka. Unit Rawat Jalan', 'Ka. Unit Rawat Inap', 'Ka. Unit Instalasi Bedah Sentral & CSSD'] },
+    { id: 'sc', parent: 'bpm', title: 'Ka. Sie Casemix', kind: 'sie' },
+    { id: 'mpp', parent: 'bpm', title: 'Manajer Pelayanan Pasien', kind: 'manajer' },
+    { id: 'ins', parent: 'bpm', title: 'Instalasi', kind: 'list', items: ['Ka. Instalasi IGD', 'Ka. Instalasi Rawat Jalan', 'Ka. Instalasi Rawat Inap', 'Ka. Instalasi Bedah Sentral & CSSD'] },
+    { id: 'pen', parent: 'bpm', title: 'Unit Penunjang', kind: 'list', items: ['Ka. Unit Radiologi', 'Ka. Unit Laboratorium', 'Ka. Unit Farmasi', 'Ka. Unit Rekam Medis', 'Ka. Unit Gizi'] },
+    { id: 'bus', parent: 'dir', title: 'Ka. Bidang Umum, SDM & Keuangan', kind: 'bidang' },
+    { id: 'sku', parent: 'bus', title: 'Ka. Sie Keuangan & Akuntansi', kind: 'sie', items: ['Ka. Unit Pengelolaan Arus Kas', 'Ka. Unit Kas', 'Ka. Unit Kasir & Billing', 'Ka. Unit Procurement'] },
+    { id: 'shr', parent: 'bus', title: 'Ka. Sie HRD', kind: 'sie', items: ['Ka. Unit HRD', 'Ka. Unit DIKLAT'] },
+    { id: 'sum', parent: 'bus', title: 'Ka. Sie Umum', kind: 'sie', items: ['Ka. Unit IPSRS', 'Ka. Unit KESLING & K3RS', 'Ka. Unit Security', 'Ka. Unit IT & SIMRS'] },
+    { id: 'spb', parent: 'bus', title: 'Ka. Sie Pengembangan Bisnis', kind: 'sie', items: ['Ka. Unit Sales & Marketing', 'Ka. Unit Promosi Kesehatan', 'Ka. Unit Customer Care'] }
+  ]
+});
+const orgOf = cid => { const o = hrCfg(cid).org; return o && Array.isArray(o.nodes) && o.nodes.length ? JSON.parse(JSON.stringify(o)) : ORG_TEMPLATE(); };
+const orgKids = (N, id) => N.filter(n => n.parent === id && !n.side);
+const orgSide = (N, id) => N.filter(n => n.parent === id && n.side);
+
+function orgBox(n) {
+  const e = n.holder ? Store.get('employees', n.holder) : null;
+  const items = (n.items || []).filter(Boolean);
+  if (n.kind === 'list' || n.kind === 'komite') return `<div class="ocb k-${n.kind}"${n.kind === 'list' ? ` title="${esc(n.title)}"` : ''}>${n.kind === 'komite' ? '' : ''}<ul>${items.map(t => `<li>${esc(t)}</li>`).join('') || `<li>${esc(n.title)}</li>`}</ul></div>`;
+  return `<div class="ocb k-${n.kind}"><div class="ocb-h">${esc(n.title)}</div><div class="ocb-b">${e ? esc(e.name) : '&nbsp;'}</div></div>`;
+}
+function orgTree(N, n, depth = 0) {
+  if (depth > 12) return '';
+  const kids = orgKids(N, n.id), side = orgSide(N, n.id), items = (n.items || []).filter(Boolean);
+  const itemsLi = n.kind === 'sie' && items.length ? `<li class="oc-li oc-items">${orgBox({ kind: 'list', items })}</li>` : '';
+  const left = side.filter(s => s.kind === 'komite'), right = side.filter(s => s.kind !== 'komite');
+  const sideHtml = side.length ? `<div class="oc-side"><div class="oc-sl">${left.map(orgBox).join('')}</div><div class="oc-sr">${right.map(orgBox).join('')}</div></div>` : '';
+  const sub = kids.map(k => orgTree(N, k, depth + 1)).join('') + itemsLi;
+  return `<li class="oc-li">${orgBox(n)}${sideHtml}${sub ? `<ul class="oc-ul">${sub}</ul>` : ''}</li>`;
+}
+function orgChartHtml(cid) {
+  const O = orgOf(cid), N = O.nodes, roots = N.filter(n => !n.parent || !N.some(x => x.id === n.parent));
+  const foot = (O.place || O.date || O.by) ? `<div class="oc-foot">${esc(O.place || '')}${O.place && O.date ? ', ' : ''}${O.date ? esc(fmtDate(O.date)) : ''}<br>Ditetapkan oleh :<br><b>${esc(O.by || '')}</b></div>` : '';
+  return `<div class="oc-wrap"><div class="oc"><ul class="oc-ul">${roots.map(r => orgTree(N, r)).join('')}</ul></div>${foot}</div>`;
+}
+
+/* ---------- penyunting struktur ---------- */
+let ORG_EDIT = null;
+function orgEditHtml(cid) {
+  const O = ORG_EDIT, N = O.nodes, emps = empList(e => e.active !== false).sort((a, b) => a.name.localeCompare(b.name));
+  const order = []; const walk = (id, d) => N.filter(n => (n.parent || '') === id).forEach(n => { order.push([n, d]); walk(n.id, d + 1); });
+  walk('', 0); N.filter(n => !order.some(([x]) => x === n)).forEach(n => order.push([n, 0]));
+  const opt = (sel, list) => list.map(([v, l]) => `<option value="${esc(v)}" ${v === sel ? 'selected' : ''}>${esc(l)}</option>`).join('');
+  return `<div class="card card-pad stack"><div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px"><h3 style="margin:0">Ubah struktur jabatan</h3>
+      <div class="row"><button class="btn" id="oeTpl">Pakai template RS</button><button class="btn" id="oeCancel">Batal</button><button class="btn primary" id="oeSave">Simpan struktur</button></div></div>
+    <p class="small muted" style="margin:0">Isi jabatan saja. Kolom <b>Pejabat</b> boleh dikosongkan dan diisi nanti dari data karyawan.</p>
+    <div class="tbl-wrap"><table class="tbl oe-tbl"><thead><tr><th>Jabatan</th><th>Jenis</th><th>Di bawah</th><th>Daftar unit (satu per baris)</th><th>Pejabat</th><th></th></tr></thead><tbody>
+    ${order.map(([n, d]) => `<tr data-oe="${esc(n.id)}"><td><div style="padding-left:${d * 18}px;display:flex;gap:6px;align-items:center">${d ? '<span class="muted">└</span>' : ''}<input class="input" data-f="title" value="${esc(n.title)}" style="min-width:220px"></div></td>
+      <td><select class="input" data-f="kind">${opt(n.kind, Object.entries(ORG_KINDS))}</select></td>
+      <td><select class="input" data-f="parent">${opt(n.parent || '', [['', '— (paling atas)'], ...N.filter(x => x.id !== n.id).map(x => [x.id, x.title])])}</select></td>
+      <td>${['sie', 'komite', 'list'].includes(n.kind) ? `<textarea class="input" data-f="items" rows="${Math.max(2, (n.items || []).length)}" style="min-width:220px">${esc((n.items || []).join('\n'))}</textarea>` : '<span class="small faint">–</span>'}</td>
+      <td>${['list', 'komite'].includes(n.kind) ? '<span class="small faint">–</span>' : `<select class="input" data-f="holder"><option value="">(kosong)</option>${emps.map(e => `<option value="${e.id}" ${e.id === n.holder ? 'selected' : ''}>${esc(e.name)}</option>`).join('')}</select>`}</td>
+      <td><div class="row" style="flex-wrap:nowrap"><button class="btn sm" data-oadd="${esc(n.id)}" title="Tambah jabatan di bawah ini">+ Bawahan</button><button class="btn sm danger" data-odel="${esc(n.id)}" aria-label="Hapus">✕</button></div></td></tr>`).join('')}
+    </tbody></table></div>
+    <div><button class="btn" id="oeRoot">+ Jabatan paling atas</button></div>
+    <div class="form-grid"><label class="f">Tempat penetapan<input class="input" id="oePlace" value="${esc(O.place || '')}"></label><label class="f">Tanggal penetapan<input class="input" type="date" id="oeDate" value="${esc(O.date || '')}"></label>
+      <label class="f" style="grid-column:1/-1">Ditetapkan oleh<input class="input" id="oeBy" value="${esc(O.by || '')}" placeholder="mis. PT. Humana Prima"></label></div></div>`;
+}
+function orgEditRead(c) {
+  $$('[data-oe]', c).forEach(tr => { const n = ORG_EDIT.nodes.find(x => x.id === tr.dataset.oe); if (!n) return;
+    $$('[data-f]', tr).forEach(f => { const k = f.dataset.f; n[k] = k === 'items' ? f.value.split('\n').map(s => s.trim()).filter(Boolean) : f.value; });
+    n.side = ['staff', 'komite'].includes(n.kind); });
+  ORG_EDIT.place = $('#oePlace', c).value.trim(); ORG_EDIT.date = $('#oeDate', c).value; ORG_EDIT.by = $('#oeBy', c).value.trim();
+}
+function orgEditWire(c, cid) {
+  const re = () => { $('#orgEditBox', c).innerHTML = orgEditHtml(cid); orgEditWire(c, cid); S.dirty = true; };
+  $$('[data-f]', c).forEach(f => f.onchange = () => { orgEditRead(c); if (f.dataset.f === 'kind' || f.dataset.f === 'parent') re(); else S.dirty = true; });
+  $$('[data-oadd]', c).forEach(b => b.onclick = () => { orgEditRead(c); ORG_EDIT.nodes.push({ id: uid('j'), parent: b.dataset.oadd, title: 'Jabatan baru', kind: 'sie', items: [] }); re(); });
+  $('#oeRoot', c).onclick = () => { orgEditRead(c); ORG_EDIT.nodes.push({ id: uid('j'), parent: '', title: 'Jabatan baru', kind: 'top' }); re(); };
+  $$('[data-odel]', c).forEach(b => b.onclick = async () => { orgEditRead(c); const id = b.dataset.odel, n = ORG_EDIT.nodes.find(x => x.id === id), kids = ORG_EDIT.nodes.filter(x => x.parent === id).length;
+    if (!(await confirmBox(`Hapus "${n.title}"${kids ? ` beserta ${kids} jabatan di bawahnya` : ''}?`, 'Hapus', true))) return;
+    const del = new Set([id]); let grow = true; while (grow) { grow = false; ORG_EDIT.nodes.forEach(x => { if (del.has(x.parent) && !del.has(x.id)) { del.add(x.id); grow = true; } }); }
+    ORG_EDIT.nodes = ORG_EDIT.nodes.filter(x => !del.has(x.id)); re(); });
+  $('#oeTpl', c).onclick = async () => { if (!(await confirmBox('Ganti struktur dengan template RS (Direktur, 2 Bidang, Sie, unit)? Perubahan yang belum disimpan hilang.', 'Pakai template'))) return; ORG_EDIT = ORG_TEMPLATE(); re(); };
+  $('#oeCancel', c).onclick = () => { ORG_EDIT = null; S.dirty = false; App.renderContent(); };
+  $('#oeSave', c).onclick = async () => { orgEditRead(c);
+    const N = ORG_EDIT.nodes; if (!N.length) { toast('Struktur kosong'); return; }
+    if (N.some(n => !n.title.trim())) { toast('Nama jabatan tidak boleh kosong'); return; }
+    // cegah putaran (jabatan berada di bawah dirinya sendiri)
+    for (const n of N) { let p = n.parent, k = 0; while (p && k < 50) { if (p === n.id) { toast(`"${n.title}" tidak boleh berada di bawah dirinya sendiri`); return; } p = (N.find(x => x.id === p) || {}).parent; k++; } }
+    await hrSaveCfg(cid, { org: { nodes: N.map(n => ({ id: n.id, parent: n.parent || '', title: n.title.trim(), kind: n.kind, items: n.items || [], holder: n.holder || '', side: !!n.side })), place: ORG_EDIT.place, date: ORG_EDIT.date, by: ORG_EDIT.by } });
+    audit('ubah struktur organisasi', `${N.length} jabatan`); ORG_EDIT = null; S.dirty = false; toast('Struktur organisasi disimpan'); App.renderContent(); };
+}
 
 /* =========================================================
    HRIS · Beranda HRIS, Pengumuman, Laporan HR
