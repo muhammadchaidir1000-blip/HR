@@ -1174,6 +1174,11 @@ body[data-role] .side{background:#FFFFFF}
 .oc-foot{text-align:right;font-size:12px;margin-top:18px;color:#1E2533}
 .oe-tbl td{vertical-align:top}
 @media print{.oc-wrap{overflow:visible}.ocb{box-shadow:none}}
+/* pilih banyak karyawan */
+.tbl th.chk,.tbl td.chk{width:38px;text-align:center;padding-left:10px;padding-right:4px}
+.tbl td.chk input,.tbl th.chk input{width:17px;height:17px;cursor:pointer;accent-color:#23805C}
+.tbl tr.sel td{background:#EEF7F2}
+.bulk-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 16px;background:#E8F4EE;border-top:1px solid #CFE5D9;border-bottom:1px solid #CFE5D9;position:sticky;top:0;z-index:3}
 /* lonceng notifikasi */
 .bell{position:relative}
 .bell-btn{appearance:none;position:relative;display:grid;place-items:center;width:40px;height:40px;border-radius:999px;border:1px solid var(--line-2);background:#fff;color:var(--muted);cursor:pointer}
@@ -5888,6 +5893,9 @@ Views.employees = () => {
   if (f.alert) rows = rows.filter(e => hrAlerts(e).length);
   const act = all.filter(e => e.active !== false), alertN = act.filter(e => hrAlerts(e).length).length, noPin = act.filter(e => !e.pin).length;
   const contract = act.filter(e => hrIsContract(e.status)).length;
+  const sel = S._esel || (S._esel = new Set()), vis = new Set(rows.map(e => e.id)); [...sel].forEach(id => { if (!Store.get('employees', id)) sel.delete(id); });
+  const selN = [...sel].filter(id => vis.has(id)).length, allOn = rows.length && rows.every(e => sel.has(e.id));
+  const selOff = [...sel].some(id => Store.get('employees', id)?.active === false), selOn = [...sel].some(id => Store.get('employees', id)?.active !== false);
   return `<div class="page-head"><div><h1>Data Karyawan</h1><p>Data induk karyawan untuk absensi, cuti, dan penggajian.</p></div>
     <div class="row"><button class="btn" id="eExp">Unduh Excel (CSV)</button><button class="btn" id="eImp">Impor dari Excel</button><button class="btn primary" id="addE">+ Karyawan</button></div></div>
   <div class="grid g4">
@@ -5902,8 +5910,10 @@ Views.employees = () => {
     <select class="input" id="es" style="width:auto"><option value="">Semua status</option>${hrStatusList().map(u => `<option ${u === f.status ? 'selected' : ''}>${esc(u)}</option>`).join('')}</select>
     <select class="input" id="eshow" style="width:auto"><option value="">Aktif</option><option value="off" ${f.show === 'off' ? 'selected' : ''}>Nonaktif</option><option value="all" ${f.show === 'all' ? 'selected' : ''}>Semua</option></select>
     ${f.alert ? '<button class="btn sm" id="eAlertOff">Hapus filter perhatian ✕</button>' : ''}</div><span class="small muted">${rows.length} karyawan</span></div>
-  ${rows.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>NIK</th><th>Nama</th><th>Unit / jabatan</th><th>Status</th><th>Masa kerja</th><th>PIN mesin</th><th>Jenis kerja</th><th>Perhatian</th></tr></thead><tbody>
-    ${rows.map(e => `<tr class="click" data-open="${e.id}" tabindex="0"><td class="mono small">${esc(e.nik || '–')}</td><td><b>${esc(e.name)}</b>${sampleTag(e)}${e.active === false ? ' <span class="pill">nonaktif</span>' : ''}<div class="small muted">${esc(e.profession || '')}</div></td>
+  ${sel.size ? `<div class="bulk-bar" role="region" aria-label="Aksi karyawan terpilih"><b>${sel.size} karyawan dipilih</b>${selN < sel.size ? `<span class="small muted">(${sel.size - selN} di luar filter)</span>` : ''}
+    <div class="row" style="gap:8px;margin-left:auto">${selOn ? '<button class="btn sm" id="bOff">Nonaktifkan</button>' : ''}${selOff ? '<button class="btn sm" id="bOn">Aktifkan kembali</button>' : ''}<button class="btn sm danger" id="bDel">Hapus permanen</button><button class="btn sm ghost" id="bClr">Batal pilih</button></div></div>` : ''}
+  ${rows.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th class="chk"><input type="checkbox" id="eAll" aria-label="Pilih semua yang tampil" ${allOn ? 'checked' : ''}></th><th>NIK</th><th>Nama</th><th>Unit / jabatan</th><th>Status</th><th>Masa kerja</th><th>PIN mesin</th><th>Jenis kerja</th><th>Perhatian</th></tr></thead><tbody>
+    ${rows.map(e => `<tr class="click ${sel.has(e.id) ? 'sel' : ''}" data-open="${e.id}" tabindex="0"><td class="chk"><input type="checkbox" data-sel="${e.id}" aria-label="Pilih ${esc(e.name)}" ${sel.has(e.id) ? 'checked' : ''}></td><td class="mono small">${esc(e.nik || '–')}</td><td><b>${esc(e.name)}</b>${sampleTag(e)}${e.active === false ? ' <span class="pill">nonaktif</span>' : ''}<div class="small muted">${esc(e.profession || '')}</div></td>
       <td>${esc(e.unit || '–')}<div class="small muted">${esc(e.position || '')}</div></td><td class="small">${esc(e.status || '–')}</td><td class="small">${hrServiceText(e.joinDate)}</td>
       <td class="mono">${e.pin ? esc(e.pin) : '<span class="pill warn">belum</span>'}</td><td class="small">${e.workType === 'shift' ? 'Shift' : 'Non-shift'}</td>
       <td>${hrAlerts(e).map(a => `<span class="pill ${a.lvl}">${esc(a.t)}</span>`).join(' ') || '<span class="small faint">–</span>'}</td></tr>`).join('')}
@@ -5919,7 +5929,46 @@ Views.employeesMount = c => {
   const ao = $('#eAlertOff', c); if (ao) ao.onclick = () => setP({ alert: 0 });
   $('#eExp', c).onclick = () => empExport();
   $('#eImp', c).onclick = () => empImportDialog();
+  empBulkWire(c);
 };
+/* ---------- pilih banyak: nonaktifkan / aktifkan / hapus ---------- */
+function empBulkWire(c) {
+  const sel = S._esel || (S._esel = new Set());
+  $$('[data-sel]', c).forEach(cb => { cb.onclick = ev => ev.stopPropagation(); cb.onchange = () => { cb.checked ? sel.add(cb.dataset.sel) : sel.delete(cb.dataset.sel); App.renderContent(); }; });
+  $$('td.chk', c).forEach(td => td.onclick = ev => { ev.stopPropagation(); if (ev.target.tagName !== 'INPUT') { const cb = $('input', td); cb.checked = !cb.checked; cb.onchange(); } });
+  const all = $('#eAll', c); if (all) all.onchange = () => { $$('[data-sel]', c).forEach(cb => all.checked ? sel.add(cb.dataset.sel) : sel.delete(cb.dataset.sel)); App.renderContent(); };
+  const ids = () => [...sel].filter(id => Store.get('employees', id));
+  const clr = $('#bClr', c); if (clr) clr.onclick = () => { sel.clear(); App.renderContent(); };
+  const run = async (label, list, fn) => { busy(true, label); let n = 0, fail = 0; for (const id of list) { try { await fn(id); n++; } catch (x) { fail++; } } busy(false); sel.clear(); App.renderContent(); return { n, fail }; };
+  const off = $('#bOff', c); if (off) off.onclick = () => { const list = ids().filter(id => Store.get('employees', id).active !== false);
+    openModal({ title: `Nonaktifkan ${list.length} karyawan`, body: `<form id="bOffF" class="form-grid"><label class="f">Tanggal keluar<input class="input" type="date" name="endDate" required value="${todayISO()}"></label>
+      <label class="f">Alasan<select class="input" name="endReason">${hrMaster('endReasons').map(x => `<option>${esc(x.name)}</option>`).join('')}</select></label></form>
+      <p class="small muted" style="margin:0">Data karyawan, absensi, cuti, dan riwayat gaji tetap tersimpan. Bisa diaktifkan kembali kapan saja.</p>`,
+      foot: '<button class="btn" data-close>Batal</button><button class="btn primary" form="bOffF">Nonaktifkan</button>',
+      onMount: r => $('#bOffF', r).onsubmit = async ev => { ev.preventDefault(); const d = formData(ev.target); closeModal();
+        const res = await run('Menonaktifkan…', list, id => Store.put('employees', id, { ...Store.get('employees', id), active: false, endDate: d.endDate, endReason: d.endReason }));
+        audit('nonaktifkan karyawan (massal)', `${res.n} karyawan · ${d.endReason}`); toast(`${res.n} karyawan dinonaktifkan${res.fail ? `, ${res.fail} gagal` : ''}`); } }); };
+  const on = $('#bOn', c); if (on) on.onclick = async () => { const list = ids().filter(id => Store.get('employees', id).active === false);
+    if (!(await confirmBox(`Aktifkan kembali ${list.length} karyawan?`, 'Aktifkan'))) return;
+    const res = await run('Mengaktifkan…', list, id => Store.put('employees', id, { ...Store.get('employees', id), active: true, endDate: '', endReason: '' }));
+    audit('aktifkan karyawan (massal)', `${res.n} karyawan`); toast(`${res.n} karyawan diaktifkan kembali`); };
+  const del = $('#bDel', c); if (del) del.onclick = () => { const list = ids(), names = list.map(id => Store.get('employees', id).name);
+    const linked = list.filter(id => Store.get('employees', id).accountId).length, word = `HAPUS ${list.length}`;
+    openModal({ title: `Hapus ${list.length} karyawan permanen`, body: `<div class="stack">
+      <div class="note warn"><b>Tidak bisa dibatalkan.</b> Untuk karyawan yang keluar, sebaiknya pakai <b>Nonaktifkan</b> agar riwayat absensi, cuti, dan gaji tetap ada.</div>
+      <div class="small" style="max-height:140px;overflow:auto">${names.slice(0, 60).map(esc).join(', ')}${names.length > 60 ? ` dan ${names.length - 60} lainnya` : ''}</div>
+      ${linked ? `<p class="small" style="margin:0">${linked} di antaranya punya akun login staf. Akunnya tidak ikut terhapus; hapus dari menu Akun bila perlu.</p>` : ''}
+      <label class="row small" style="gap:6px"><input type="checkbox" id="bDelRel" checked> Hapus juga data absensi, cuti, lembur, klaim, dan slip gaji mereka</label>
+      <label class="f">Ketik <b class="mono">${word}</b> untuk melanjutkan<input class="input mono" id="bDelTxt" autocomplete="off"></label></div>`,
+      foot: '<button class="btn" data-close>Batal</button><button class="btn danger" id="bDelGo" disabled>Hapus permanen</button>',
+      onMount: r => { const m = $('.modal', r) || r, t = $('#bDelTxt', m), go = $('#bDelGo', m);
+        t.oninput = () => { go.disabled = t.value.trim().toUpperCase() !== word; };
+        go.onclick = async () => { const rel = $('#bDelRel', m).checked; closeModal(); const idset = new Set(list);
+          const related = rel ? ['att_month', 'leaves', 'overtime', 'hr_claims', 'pay_slips'].flatMap(col => Store.all(col, d => idset.has(d.employeeId)).map(d => [col, d.id])) : [];
+          busy(true, 'Menghapus…'); let rn = 0; for (const [col, id] of related) { try { await Store.remove(col, id); rn++; } catch (x) {} } busy(false);
+          const res = await run('Menghapus karyawan…', list, id => Store.remove('employees', id));
+          audit('hapus karyawan (massal)', `${res.n} karyawan${rel ? `, ${rn} data terkait` : ''}`); toast(`${res.n} karyawan dihapus${res.fail ? `, ${res.fail} gagal` : ''}`); }; } }); };
+}
 
 /* ---------- form tambah/ubah ---------- */
 function employeeForm(e = {}) {
