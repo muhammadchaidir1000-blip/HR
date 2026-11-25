@@ -5536,13 +5536,22 @@ Views.hrsettings = () => {
   if (tab === 'gaji') body = `<div class="card card-pad stack"><h3>Komponen gaji tambahan</h3><p class="small muted" style="margin:0">Gaji pokok, tunjangan tetap, tunjangan tidak tetap, lembur, BPJS, dan PPh 21 sudah tersedia. Tambahkan komponen lain di sini (misalnya tunjangan jabatan, jasa medis, uang makan, potongan koperasi). Nominal per karyawan diisi di Data Karyawan.</p>
       ${hrRowsTable('tComp', [{ k: 'code', label: 'Kode', w: '90px' }, { k: 'name', label: 'Nama komponen' }, { k: 'type', label: 'Jenis', type: 'select', opts: [['earn', 'Pendapatan'], ['ded', 'Potongan']] }, { k: 'fixed', label: 'Tetap (dasar lembur & BPJS)', type: 'check' }], cfg.components)}
       <p class="small muted" style="margin:0">Iuran BPJS dan batas upahnya diatur di Pengaturan Perusahaan. PPh 21 saat ini memakai persentase per karyawan (tarif efektif TER yang Anda tentukan).</p></div>`;
-  if (tab === 'mesin') body = `<div class="card card-pad stack"><h3>Mesin absensi sidik jari</h3>
-      <label class="f" style="max-width:420px">Cara data masuk<select class="input" id="hDev">
-        <option value="import" ${cfg.device.method === 'import' ? 'selected' : ''}>Impor file dari software mesin (Excel/CSV/TXT)</option>
-        <option value="adms" ${cfg.device.method === 'adms' ? 'selected' : ''}>Kirim otomatis dari mesin (ADMS / Cloud) — tahap berikutnya</option>
-        <option value="agent" ${cfg.device.method === 'agent' ? 'selected' : ''}>Program penarik data di komputer RS — tahap berikutnya</option></select></label>
-      <label class="f">Catatan (merek, tipe, lokasi mesin)<textarea class="input" id="hDevN" placeholder="Contoh: ZKTeco K40 di pintu IGD, Solution X100-C di gedung administrasi">${esc(cfg.device.note || '')}</textarea></label>
-      <ul class="ist-notes"><li>Setiap karyawan harus punya <b>PIN / ID mesin</b> di Data Karyawan, sama dengan nomor yang terdaftar di mesin.</li><li>Impor file bisa dilakukan kapan saja di menu Absensi → Impor data mesin. Data yang sama tidak tercatat dua kali.</li><li>Untuk pengiriman otomatis, siapkan merek dan tipe mesin, lalu cek apakah ada menu <i>Cloud Server Setting</i> atau <i>ADMS</i> di mesin.</li></ul></div>`;
+  if (tab === 'mesin') { const m = cfg.device.method || 'import', devs = (cfg.device.devices || []).length ? cfg.device.devices : [{ name: '', ip: '', port: 4370 }];
+    body = `<div class="card card-pad stack"><h3>Mesin absensi sidik jari</h3>
+      <label class="f" style="max-width:520px">Cara data masuk<select class="input" id="hDev">
+        <option value="lan" ${m === 'lan' ? 'selected' : ''}>Tarik langsung via jaringan lokal (ketik IP mesin)</option>
+        <option value="import" ${m === 'import' ? 'selected' : ''}>Impor file dari software mesin (Excel/CSV/TXT)</option>
+        <option value="adms" ${m === 'adms' ? 'selected' : ''}>Kirim otomatis dari mesin (ADMS / Cloud) — tahap berikutnya</option></select></label>
+      <div id="hLanBox" class="stack" ${m === 'lan' ? '' : 'hidden'}>
+        <h3 style="margin:6px 0 0">Daftar mesin (IP)</h3><p class="small muted" style="margin:0">IP dilihat di mesin: <i>Menu → Comm. / Jaringan → IP Address</i>. Port bawaan 4370. Sebaiknya IP mesin dibuat tetap (static).</p>
+        ${hrRowsTable('tDev', [{ k: 'name', label: 'Nama / lokasi mesin' }, { k: 'ip', label: 'Alamat IP', attrs: 'placeholder="192.168.1.201" inputmode="decimal"' }, { k: 'port', label: 'Port', type: 'number', w: '100px', attrs: 'min="1" max="65535" placeholder="4370"' }], devs)}
+        <div class="row" style="gap:12px;flex-wrap:wrap;align-items:flex-end"><label class="f" style="max-width:220px;margin:0">Comm Key / sandi mesin<input class="input" id="hDevKey" type="password" inputmode="numeric" autocomplete="off" value="${esc(lanKey(S.companyId) === '0' ? '' : lanKey(S.companyId))}" placeholder="0 (bawaan)"></label>
+          <button class="btn" id="hDevTest" type="button">Tes koneksi</button><button class="btn" id="hDevZip" type="button">Unduh program penarik</button></div>
+        <p class="small muted" style="margin:0">Comm Key hanya disimpan di komputer ini, tidak dikirim ke server.</p>
+        <div id="hDevOut"></div>
+        <ol class="ist-notes"><li>Unduh program penarik, ekstrak, lalu klik dua kali <b>jalankan.bat</b> di komputer HRD yang satu jaringan dengan mesin (butuh Python 3, petunjuk ada di file BACA_SAYA).</li><li>Isi IP mesin di atas, simpan, lalu klik <b>Tes koneksi</b>. Jika browser bertanya izin mengakses perangkat di jaringan lokal, pilih <b>Izinkan</b>.</li><li>Tarik data di menu <b>Absensi → Impor data mesin</b>, atau aktifkan tarik otomatis setiap 15 menit di sana.</li></ol></div>
+      <label class="f">Catatan (merek, tipe, lokasi mesin)<textarea class="input" id="hDevN" placeholder="Contoh: Solution X100-C di pintu IGD">${esc(cfg.device.note || '')}</textarea></label>
+      <ul class="ist-notes"><li>Setiap karyawan harus punya <b>PIN / ID mesin</b> di Data Karyawan, sama dengan nomor yang terdaftar di mesin.</li><li>Data yang sama tidak tercatat dua kali, jadi aman menarik atau mengimpor ulang.</li></ul></div>`; }
   return `<div class="page-head"><div><h1>Aturan Absensi & Gaji</h1><p>Aturan yang dipakai Absensi, Cuti, dan Penggajian. Nilai bawaan bisa diubah kapan saja.</p></div><button class="btn primary" id="hSave">Simpan pengaturan</button></div>
     <div class="tabs" role="tablist">${tabs.map(([k, l]) => `<button class="tab ${tab === k ? 'on' : ''}" role="tab" aria-selected="${tab === k}" data-htab="${k}" id="bk_ht_${k}">${l}</button>`).join('')}</div>${body}`;
 };
@@ -5573,10 +5582,34 @@ Views.hrsettingsMount = c => {
       if (new Set(rows.map(r => r.code)).size !== rows.length) { toast('Kode komponen tidak boleh sama'); return; }
       p = { components: rows };
     }
-    if (tab === 'mesin') p = { device: { method: v('hDev'), note: v('hDevN') } };
+    if (tab === 'mesin') {
+      const devs = hrRowsRead(c, 'tDev').map(r => ({ name: (r.name || '').trim(), ip: (r.ip || '').trim(), port: +r.port || 4370 })).filter(r => r.ip);
+      const bad = devs.find(r => !/^(\d{1,3})(\.\d{1,3}){3}$/.test(r.ip) || r.ip.split('.').some(x => +x > 255)); if (bad) { toast(`Alamat IP "${bad.ip}" tidak valid`); return; }
+      if (v('hDev') === 'lan' && !devs.length) { toast('Isi minimal satu IP mesin'); return; }
+      const k = (v('hDevKey') || '').trim(); if (k && !/^\d{1,9}$/.test(k)) { toast('Comm Key harus berupa angka'); return; }
+      lanLS('hrs:lan:key:' + S.companyId, k && k !== '0' ? k : null);
+      p = { device: { method: v('hDev'), note: v('hDevN'), devices: devs } };
+    }
     await hrSaveCfg(S.companyId, p); S.dirty = false; audit('ubah pengaturan kepegawaian', tab); toast('Pengaturan disimpan'); App.renderContent();
   };
   $('#hSave', c).onclick = save; trackDirty(c, save);
+  if (tab === 'mesin') {
+    $('#hDev', c).onchange = ev => { $('#hLanBox', c).hidden = ev.target.value !== 'lan'; };
+    $('#hDevZip', c).onclick = () => lanDownloadZip();
+    $('#hDevTest', c).onclick = async ev => {
+      const out = $('#hDevOut', c), b = ev.currentTarget, devs = hrRowsRead(c, 'tDev').filter(r => (r.ip || '').trim()); if (!devs.length) { toast('Isi IP mesin dulu'); return; }
+      b.disabled = true; b.textContent = 'Menguji…'; out.innerHTML = '';
+      try {
+        if (!(await lanStatus())) { out.innerHTML = '<div class="note warn"><b>Program penarik belum berjalan di komputer ini.</b> Unduh program penarik, ekstrak, lalu jalankan <i>jalankan.bat</i>. Setelah jendela hitam bertuliskan "Aktif" muncul, klik Tes koneksi lagi.</div>'; return; }
+        const k = (v('hDevKey') || '').trim(), res = [];
+        for (const d of devs) { let j; try { j = await lanFetch('/test', { ip: d.ip.trim(), port: +d.port || 4370, password: +k || 0 }, 30000); } catch (e) { j = { ok: false, error: 'Waktu habis menunggu mesin' }; }
+          const i = j.device || {};
+          res.push(j.ok ? `<div class="note ok"><b>${esc(d.name || d.ip)}</b> (${esc(d.ip)}) terhubung${i.name || i.serial ? ` · ${esc([i.name, i.serial && 'SN ' + i.serial].filter(Boolean).join(' · '))}` : ''}${i.users != null ? ` · ${i.users} pengguna, ${i.records} scan tersimpan di mesin` : ''}${i.time ? ` · jam mesin ${esc(i.time)}` : ''}.</div>`
+            : `<div class="note warn"><b>${esc(d.name || d.ip)}</b> (${esc(d.ip)}) gagal: ${esc(j.error || 'tidak ada jawaban')}. Cek IP, kabel jaringan, dan Comm Key.</div>`); }
+        out.innerHTML = `<div class="stack">${res.join('')}</div>`;
+      } finally { b.disabled = false; b.textContent = 'Tes koneksi'; }
+    };
+  }
 };
 
 /* =========================================================
@@ -6111,7 +6144,7 @@ Views.attendance = () => {
           <td>${d.status ? `<span class="pill ${d.late && d.status === 'Hadir' ? 'warn' : ATT_PILL[d.status] || ''}">${esc(d.late && d.status === 'Hadir' ? 'Terlambat' : d.status)}</span>` : ''}${d.fix ? ' <span class="pill info">koreksi</span>' : ''}${d.note ? `<div class="small muted">${esc(d.note)}</div>` : ''}</td><td class="small mono">${esc(d.scans.join(' · '))}</td><td><button class="btn sm" data-fixe="${e.id}">Koreksi</button></td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">Tidak ada karyawan aktif pada tanggal ini.</div>'}</div>`;
   }
   if (tab === 'jadwal') body = attRosterHtml(p, month, cfg, unitSel);
-  if (tab === 'impor') body = `<div class="card card-pad stack"><h3>Impor data dari mesin sidik jari</h3>
+  if (tab === 'impor') body = `${lanCardHtml()}<div class="card card-pad stack"><h3>Impor data dari file</h3>
       <ol class="small" style="margin:0;padding-left:18px;line-height:1.7"><li>Di software mesin absensi (misalnya ZKTeco Attendance Management atau software bawaan Solution/Fingerspot), ekspor laporan <b>log scan / transaksi</b> ke Excel atau CSV. File <span class="mono">attlog.dat</span> dari flashdisk mesin juga bisa dipakai.</li>
         <li>Pastikan setiap karyawan punya <b>PIN mesin</b> yang sama dengan nomor di mesin (menu Data Karyawan).</li><li>Unggah file di bawah, periksa pratinjau, lalu tekan Impor. Scan yang sudah pernah masuk tidak akan tercatat dua kali.</li></ol>
       <div class="row"><label class="btn primary" style="cursor:pointer">Pilih file (.xlsx, .csv, .txt, .dat)<input type="file" id="aFile" accept=".csv,.xlsx,.xls,.txt,.dat" hidden></label></div><div id="aPrev"></div></div>
@@ -6138,6 +6171,7 @@ Views.attendanceMount = c => {
   };
   if (tab === 'jadwal') attRosterWire(c, month);
   const f = $('#aFile', c); if (f) f.onchange = ev => attImportFile(ev.target.files[0], $('#aPrev', c));
+  if (tab === 'impor') lanCardWire(c);
   const man = $('#aMan', c); if (man) man.onsubmit = async ev => { ev.preventDefault(); const d = formData(ev.target), e = Store.get('employees', d.emp); if (!e) return;
     await attPut(e, d.date.slice(0, 7), x => { const k = d.date.slice(8, 10), arr = new Set(x.scans[k] || []); arr.add(d.time); x.scans[k] = [...arr].sort(); });
     audit('tambah scan manual', `${e.name} ${d.date} ${d.time}`); toast(`Scan ${d.time} ditambahkan untuk ${e.name}`); ev.target.time.value = ''; };
@@ -6251,22 +6285,31 @@ async function attImportFile(file, box) {
     attImportPreview(recs, box, file.name);
   };
 }
-function attImportPreview(recs, box, label) {
+/* rencana impor: scan baru per karyawan per tanggal (yang sudah ada dilewati) */
+function attPlan(recs) {
   const emps = empList(), byPin = new Map(emps.filter(e => e.pin).map(e => [String(e.pin).replace(/^0+/, '') || '0', e]));
   const plan = new Map(), unknown = new Map(); let dup = 0, ok = 0, early = 0;
   recs.forEach(r => { const e = byPin.get(String(r.pin).replace(/^0+/, '') || '0'); if (!e) { unknown.set(r.pin, (unknown.get(r.pin) || 0) + 1); return; }
     if (e.joinDate && r.date < addDays(e.joinDate, -1)) { early++; return; }
     const doc = attDoc(e.id, r.date.slice(0, 7)), have = new Set(doc?.scans?.[r.date.slice(8, 10)] || []), k = e.id + '|' + r.date;
     const set = plan.get(k) || new Set(); if (have.has(r.time) || set.has(r.time)) { dup++; return; } set.add(r.time); plan.set(k, set); ok++; });
+  return { plan, unknown, dup, ok, early };
+}
+async function attSavePlan(plan) {
+  const byDoc = new Map();
+  plan.forEach((set, k) => { const [id, date] = k.split('|'), dk = id + '|' + date.slice(0, 7); const m = byDoc.get(dk) || {}; m[date.slice(8, 10)] = set; byDoc.set(dk, m); });
+  for (const [dk, days] of byDoc) { const [id, month] = dk.split('|'), e = Store.get('employees', id);
+    await attPut(e, month, x => Object.entries(days).forEach(([dd, set]) => { x.scans[dd] = [...new Set([...(x.scans[dd] || []), ...set])].sort(); })); }
+}
+function attImportPreview(recs, box, label) {
+  const { plan, unknown, dup, ok, early } = attPlan(recs);
   const dates = recs.map(r => r.date).sort(), range = dates.length ? `${fmtDate(dates[0])} – ${fmtDate(dates[dates.length - 1])}` : '–';
   box.innerHTML = `<div class="stack"><div class="note"><b>${esc(label)}</b> · ${recs.length} scan terbaca (${range}).<br><b>${ok}</b> scan baru akan disimpan untuk ${new Set([...plan.keys()].map(k => k.split('|')[0])).size} karyawan · ${dup} sudah ada sebelumnya (dilewati)${early ? ` · ${early} sebelum tanggal masuk (dilewati)` : ''}.</div>
     ${unknown.size ? `<div class="note warn"><b>${unknown.size} PIN belum terdaftar</b> di Data Karyawan, scan-nya dilewati: ${[...unknown.entries()].slice(0, 30).map(([p, n]) => `<span class="mono">${esc(p)}</span> (${n})`).join(', ')}${unknown.size > 30 ? ' …' : ''}. Isi PIN di data karyawan lalu impor ulang file yang sama.</div>` : ''}
     <div><button class="btn primary" id="mSave" ${ok ? '' : 'disabled'}>Impor ${ok} scan</button></div></div>`;
   $('#mSave', box).onclick = async () => {
-    const b = $('#mSave', box); b.disabled = true; b.textContent = 'Menyimpan…'; const byDoc = new Map();
-    plan.forEach((set, k) => { const [id, date] = k.split('|'), dk = id + '|' + date.slice(0, 7); const m = byDoc.get(dk) || {}; m[date.slice(8, 10)] = set; byDoc.set(dk, m); });
-    for (const [dk, days] of byDoc) { const [id, month] = dk.split('|'), e = Store.get('employees', id);
-      await attPut(e, month, x => Object.entries(days).forEach(([dd, set]) => { x.scans[dd] = [...new Set([...(x.scans[dd] || []), ...set])].sort(); })); }
+    const b = $('#mSave', box); b.disabled = true; b.textContent = 'Menyimpan…';
+    await attSavePlan(plan);
     audit('impor data mesin absensi', `${label}: ${ok} scan`); toast(`${ok} scan berhasil diimpor`);
     box.innerHTML = `<div class="note ok">Impor selesai: ${ok} scan tersimpan. Lihat hasilnya di tab Rekap bulanan atau Harian.</div>`;
   };
@@ -6298,6 +6341,127 @@ async function hrEnsureSamples() {
     await Store.put('hr_config', emps[0].companyId, { ...(Store.get('hr_config', emps[0].companyId) || {}), companyId: emps[0].companyId, holidays: [{ date: `${new Date().getFullYear()}-12-25`, name: 'Hari Raya Natal' }, { date: `${new Date().getFullYear()}-12-26`, name: 'Cuti bersama Natal' }] });
     await Store.put('hr_config', '__seeded', { v: 1 });
   } catch (e) { console.warn('hr sample', e); }
+}
+
+/* ---------- Tarik data langsung dari mesin absensi lewat jaringan lokal (program penarik di komputer RS) ---------- */
+const LAN_URL = 'http://127.0.0.1:8765';
+const lanLS = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } };
+const lanKey = cid => lanLS('hrs:lan:key:' + cid) || '0';
+const lanAutoOn = cid => lanLS('hrs:lan:auto:' + cid) === '1';
+const lanLast = (cid, ip) => lanLS(`hrs:lan:last:${cid}:${ip}`) || '';
+const lanDevices = cid => (hrCfg(cid).device.devices || []).filter(d => d && d.ip);
+const lanCanUse = () => S.user && (S.user.role === CO || (S.user.role === SA && S.inCompany));
+let LAN_STATE = { online: null, busy: false, msg: '' };
+
+async function lanFetch(path, body, ms = 60000) {
+  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), ms);
+  try {
+    const r = await fetch(LAN_URL + path, body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: ctl.signal } : { signal: ctl.signal, cache: 'no-store' });
+    return await r.json();
+  } finally { clearTimeout(t); }
+}
+async function lanStatus() {
+  try { const j = await lanFetch('/status', null, 3000); LAN_STATE.online = !!(j && j.ok); } catch (e) { LAN_STATE.online = false; }
+  return LAN_STATE.online;
+}
+const lanDevBody = (cid, d, extra) => ({ ip: String(d.ip).trim(), port: +d.port || 4370, password: +lanKey(cid) || 0, udp: !!d.udp, ...extra });
+
+/* tarik semua mesin; kembalikan ringkasan */
+async function lanPullAll(cid, opt = {}) {
+  cid = cid || S.companyId;
+  const devs = lanDevices(cid); if (!devs.length) return { err: 'Belum ada IP mesin. Isi di Aturan Absensi & Gaji → Mesin absensi.' };
+  if (LAN_STATE.busy) return { err: 'Penarikan sedang berjalan' };
+  LAN_STATE.busy = true;
+  const out = { devices: [], ok: 0, dup: 0, unknown: new Map(), scans: 0 };
+  try {
+    if (!(await lanStatus())) return { err: 'offline' };
+    for (const d of devs) {
+      const last = lanLast(cid, d.ip), since = opt.full || !last ? '' : addDays(last.slice(0, 10), -2);
+      let j; try { j = await lanFetch('/pull', lanDevBody(cid, d, { since })); } catch (e) { j = { ok: false, error: e.name === 'AbortError' ? 'Waktu habis menunggu mesin' : (e.message || 'gagal') }; }
+      if (!j || !j.ok) { out.devices.push({ name: d.name || d.ip, ip: d.ip, err: (j && j.error) || 'gagal' }); continue; }
+      const recs = (j.records || []).map(r => ({ pin: String(r[0]), date: String(r[1]).slice(0, 10), time: String(r[1]).slice(11, 16) })).filter(r => /^\d{4}-\d\d-\d\d$/.test(r.date) && /^\d\d:\d\d$/.test(r.time));
+      const p = attPlan(recs); if (p.ok) await attSavePlan(p.plan);
+      p.unknown.forEach((n, k) => out.unknown.set(k, (out.unknown.get(k) || 0) + n));
+      out.ok += p.ok; out.dup += p.dup; out.scans += recs.length;
+      lanLS(`hrs:lan:last:${cid}:${d.ip}`, new Date().toISOString());
+      out.devices.push({ name: d.name || d.ip, ip: d.ip, scans: recs.length, ok: p.ok, info: j.device || {} });
+    }
+    if (out.ok) audit('tarik data mesin absensi (LAN)', `${out.ok} scan baru dari ${devs.length} mesin`);
+    return out;
+  } finally { LAN_STATE.busy = false; }
+}
+
+const lanAgo = iso => { if (!iso) return 'belum pernah'; const m = Math.round((Date.now() - new Date(iso)) / 60000); return m < 1 ? 'baru saja' : m < 60 ? m + ' menit lalu' : m < 1440 ? Math.floor(m / 60) + ' jam lalu' : fmtDate(iso.slice(0, 10)); };
+
+function lanCardHtml() {
+  const cid = S.companyId, cfg = hrCfg(cid), devs = lanDevices(cid);
+  if (cfg.device.method !== 'lan') return `<div class="card card-pad stack"><h3>Tarik otomatis dari mesin (IP)</h3><p class="small muted" style="margin:0">Mesin sidik jari Anda terhubung ke jaringan RS? Data bisa ditarik langsung lewat IP mesin tanpa flashdisk. Aktifkan di <b>Aturan Absensi & Gaji → Mesin absensi</b>, pilih <i>Tarik langsung via jaringan lokal</i>.</p><div><button class="btn" id="lanGoSet">Atur mesin absensi</button></div></div>`;
+  return `<div class="card card-pad stack" id="lanCard"><div class="row" style="justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h3 style="margin:0">Tarik otomatis dari mesin (IP)</h3><span class="pill" id="lanSt">Memeriksa program penarik…</span></div>
+    ${devs.length ? `<table class="table"><thead><tr><th>Mesin</th><th>IP</th><th>Terakhir ditarik</th></tr></thead><tbody>${devs.map(d => `<tr><td>${esc(d.name || '-')}</td><td class="mono">${esc(d.ip)}:${+d.port || 4370}</td><td>${esc(lanAgo(lanLast(cid, d.ip)))}</td></tr>`).join('')}</tbody></table>`
+      : `<div class="note warn">Belum ada IP mesin. Isi di Aturan Absensi & Gaji → Mesin absensi.</div>`}
+    <div class="row" style="gap:10px;flex-wrap:wrap;align-items:center"><button class="btn primary" id="lanPull" ${devs.length ? '' : 'disabled'}>Tarik data sekarang</button>
+      <label class="row small" style="gap:6px"><input type="checkbox" id="lanAuto" ${lanAutoOn(cid) ? 'checked' : ''}> Tarik otomatis setiap 15 menit selama aplikasi terbuka di komputer ini</label></div>
+    <div id="lanOut"></div>
+    <p class="small muted" style="margin:0" id="lanHelp">Penarikan berjalan lewat <b>program penarik</b> di komputer ini (satu jaringan dengan mesin). <a href="#" id="lanZip">Unduh program penarik</a></p></div>`;
+}
+function lanResultHtml(r) {
+  if (r.err === 'offline') return `<div class="note warn"><b>Program penarik belum berjalan di komputer ini.</b> Jalankan <i>jalankan.bat</i> dari folder program penarik, lalu coba lagi. Belum punya? <a href="#" data-lanzip>Unduh program penarik</a>.</div>`;
+  if (r.err) return `<div class="note warn">${esc(r.err)}</div>`;
+  return `<div class="stack">${r.devices.map(d => d.err ? `<div class="note warn"><b>${esc(d.name)}</b> (${esc(d.ip)}): ${esc(d.err)}</div>` : `<div class="note ok"><b>${esc(d.name)}</b> (${esc(d.ip)}): ${d.scans} scan terbaca, <b>${d.ok}</b> scan baru disimpan.</div>`).join('')}
+    ${r.unknown.size ? `<div class="note warn"><b>${r.unknown.size} PIN belum terdaftar</b> di Data Karyawan, scan-nya dilewati: ${[...r.unknown.entries()].slice(0, 30).map(([p, n]) => `<span class="mono">${esc(p)}</span> (${n})`).join(', ')}${r.unknown.size > 30 ? ' …' : ''}. Isi PIN mesin di data karyawan, lalu tarik ulang.</div>` : ''}</div>`;
+}
+function lanCardWire(c) {
+  const cid = S.companyId, st = $('#lanSt', c), out = $('#lanOut', c);
+  $$('#lanZip,[data-lanzip]', c).forEach(a => a.onclick = ev => { ev.preventDefault(); lanDownloadZip(); });
+  const g = $('#lanGoSet', c); if (g) g.onclick = () => App.go('hrsettings', { tab: 'mesin' });
+  if (!st) return;
+  const paint = () => { st.className = 'pill ' + (LAN_STATE.online ? 'ok' : 'warn'); st.textContent = LAN_STATE.online ? 'Program penarik aktif' : 'Program penarik tidak aktif'; };
+  lanStatus().then(paint);
+  $('#lanAuto', c).onchange = ev => { lanLS('hrs:lan:auto:' + cid, ev.target.checked ? '1' : null); toast(ev.target.checked ? 'Tarik otomatis aktif di komputer ini' : 'Tarik otomatis dimatikan'); };
+  $('#lanPull', c).onclick = async ev => {
+    const b = ev.currentTarget; b.disabled = true; b.textContent = 'Menarik data…'; busy(true, 'Menarik data dari mesin…');
+    let r; try { r = await lanPullAll(cid); } finally { busy(false); b.disabled = false; b.textContent = 'Tarik data sekarang'; }
+    paint(); out.innerHTML = lanResultHtml(r); $$('[data-lanzip]', out).forEach(a => a.onclick = e2 => { e2.preventDefault(); lanDownloadZip(); });
+    if (!r.err) toast(`${r.ok} scan baru tersimpan`);
+  };
+}
+
+/* tarik otomatis di latar belakang (hanya di komputer yang mengaktifkannya) */
+setInterval(async () => {
+  try {
+    if (!lanCanUse() || document.hidden) return; const cid = S.companyId;
+    if (!cid || !lanAutoOn(cid) || hrCfg(cid).device.method !== 'lan') return;
+    const devs = lanDevices(cid); if (!devs.length) return;
+    const oldest = Math.min(...devs.map(d => { const t = lanLast(cid, d.ip); return t ? +new Date(t) : 0; }));
+    if (Date.now() - oldest < 15 * 60000) return;
+    const r = await lanPullAll(cid);
+    if (r && r.ok && S.route === 'attendance') App.renderContent();
+  } catch (e) {}
+}, 60000);
+
+/* ---------- ZIP sederhana (tanpa kompresi) untuk program penarik ---------- */
+const CRC_T = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+const crc32 = u => { let c = 0xFFFFFFFF; for (let i = 0; i < u.length; i++) c = CRC_T[(c ^ u[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+function zipStore(files) {
+  const enc = new TextEncoder(), parts = [], cen = []; let off = 0;
+  const d = new Date(), dt = ((d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1)), dd = (((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate());
+  files.forEach(f => {
+    const name = enc.encode(f.name), data = typeof f.data === 'string' ? enc.encode(f.data) : f.data, crc = crc32(data);
+    const h = new DataView(new ArrayBuffer(30)); h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(8, 0, true); h.setUint16(10, dt, true); h.setUint16(12, dd, true); h.setUint32(14, crc, true); h.setUint32(18, data.length, true); h.setUint32(22, data.length, true); h.setUint16(26, name.length, true); h.setUint16(28, 0, true);
+    parts.push(new Uint8Array(h.buffer), name, data);
+    const c = new DataView(new ArrayBuffer(46)); c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true); c.setUint16(10, 0, true); c.setUint16(12, dt, true); c.setUint16(14, dd, true); c.setUint32(16, crc, true); c.setUint32(20, data.length, true); c.setUint32(24, data.length, true); c.setUint16(28, name.length, true); c.setUint32(42, off, true);
+    cen.push(new Uint8Array(c.buffer), name); off += 30 + name.length + data.length;
+  });
+  const cs = cen.reduce((s, u) => s + u.length, 0), e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, cs, true); e.setUint32(16, off, true);
+  return new Blob([...parts, ...cen, new Uint8Array(e.buffer)], { type: 'application/zip' });
+}
+function lanDownloadZip() {
+  const origin = location.origin, F = { ...LAN_FILES };
+  if (/^https:\/\//.test(origin) && origin !== 'https://hr.hr-manajemen.workers.dev') F['jalankan.bat'] = F['jalankan.bat'].replace('lyrionx_absensi.py %*', `lyrionx_absensi.py --origin=${origin} %*`);
+  const blob = zipStore(Object.entries(F).map(([n, d]) => ({ name: 'LyrionX-Absensi/' + n, data: d })));
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'LyrionX-Absensi.zip'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+  toast('Program penarik diunduh. Ekstrak, lalu jalankan jalankan.bat');
 }
 
 /* =========================================================
@@ -7347,6 +7511,7 @@ const LOGIN_TEAM = [
 ];
 const loginTeamHtml = () => `<div class="lg-team">${LOGIN_TEAM.map((p, i) => `<figure class="lg-ph lg-ph${i + 1}"><img src="https://images.unsplash.com/${p.id}?auto=format&fit=crop&w=420&h=560&q=75" alt="${esc(p.label)}" loading="eager" decoding="async" style="object-position:${p.pos}" onerror="this.closest('figure').classList.add('noimg')"><figcaption>${esc(p.label)}</figcaption></figure>`).join('')}</div>`;
 
+const LAN_FILES={"lyrionx_absensi.py": "# -*- coding: utf-8 -*-\n\"\"\"\nLyrionX HR Suite - Penarik Data Mesin Absensi (jaringan lokal)\n=============================================================\nProgram kecil yang berjalan di satu komputer kantor/RS yang satu jaringan\ndengan mesin sidik jari (Solution, ZKTeco, Fingerspot dan merek lain yang\nmemakai protokol ZK, port 4370).\n\nCara kerja:\n  - Hanya mendengarkan di komputer ini sendiri: http://127.0.0.1:8765\n  - Aplikasi HR Suite di browser komputer ini meminta data scan ke program ini,\n    program ini mengambilnya dari mesin lewat IP, lalu mengembalikannya ke browser.\n  - Program ini TIDAK menyimpan password, TIDAK mengirim data ke internet, dan\n    TIDAK mengubah/menghapus data di mesin (hanya membaca).\n\nMenjalankan: klik dua kali \"jalankan.bat\" (Windows) atau:  python lyrionx_absensi.py\n\"\"\"\nimport json, sys, threading, datetime, socket\nfrom http.server import BaseHTTPRequestHandler, ThreadingHTTPServer\nfrom urllib.parse import urlparse\n\nVERSION = \"1.0.0\"\nHOST, PORT = \"127.0.0.1\", 8765\nALLOWED_ORIGINS = {\n    \"https://hr.hr-manajemen.workers.dev\",\n}\nfor a in sys.argv[1:]:\n    if a.startswith(\"--origin=\"):\n        ALLOWED_ORIGINS.add(a.split(\"=\", 1)[1].rstrip(\"/\"))\n    elif a.startswith(\"--port=\"):\n        PORT = int(a.split(\"=\", 1)[1])\n\nLOCK = threading.Lock()  # satu koneksi ke mesin pada satu waktu\n\n\ndef log(msg):\n    print(datetime.datetime.now().strftime(\"%Y-%m-%d %H:%M:%S\"), msg, flush=True)\n\n\ndef zk_connect(ip, port, password, udp, timeout):\n    try:\n        from zk import ZK  # pustaka pyzk\n    except ImportError:\n        raise RuntimeError(\"Pustaka pyzk belum terpasang. Jalankan: py -m pip install pyzk\")\n    zk = ZK(ip, port=int(port or 4370), timeout=int(timeout or 15), password=int(password or 0),\n            force_udp=bool(udp), ommit_ping=True)\n    return zk.connect()\n\n\ndef device_info(conn):\n    info = {}\n    for key, fn in ((\"serial\", \"get_serialnumber\"), (\"name\", \"get_device_name\"), (\"firmware\", \"get_firmware_version\"),\n                    (\"platform\", \"get_platform\")):\n        try:\n            info[key] = getattr(conn, fn)()\n        except Exception:\n            pass\n    try:\n        t = conn.get_time(); info[\"time\"] = t.strftime(\"%Y-%m-%d %H:%M:%S\")\n    except Exception:\n        pass\n    try:\n        conn.read_sizes(); info[\"users\"] = conn.users; info[\"records\"] = conn.records\n    except Exception:\n        pass\n    return info\n\n\ndef do_pull(body, with_logs):\n    ip = str(body.get(\"ip\", \"\")).strip()\n    if not ip:\n        raise ValueError(\"IP mesin kosong\")\n    socket.inet_aton(ip) if ip.count(\".\") == 3 else None\n    since = str(body.get(\"since\") or \"\")[:10]\n    conn = None\n    with LOCK:\n        try:\n            conn = zk_connect(ip, body.get(\"port\", 4370), body.get(\"password\", 0), body.get(\"udp\", False), body.get(\"timeout\", 15))\n            info = device_info(conn)\n            out = {\"ok\": True, \"device\": info}\n            if with_logs:\n                try:\n                    conn.disable_device()\n                except Exception:\n                    pass\n                recs = conn.get_attendance() or []\n                rows = []\n                for r in recs:\n                    ts = r.timestamp.strftime(\"%Y-%m-%d %H:%M:%S\")\n                    if since and ts[:10] < since:\n                        continue\n                    rows.append([str(r.user_id), ts, getattr(r, \"punch\", None), getattr(r, \"status\", None)])\n                out[\"records\"] = rows\n                log(f\"tarik {ip}: {len(rows)} scan\" + (f\" sejak {since}\" if since else \"\"))\n            else:\n                log(f\"tes koneksi {ip}: OK\")\n            return out\n        finally:\n            if conn is not None:\n                try:\n                    conn.enable_device()\n                except Exception:\n                    pass\n                try:\n                    conn.disconnect()\n                except Exception:\n                    pass\n\n\nclass Handler(BaseHTTPRequestHandler):\n    server_version = \"LyrionXAbsensi/\" + VERSION\n\n    def log_message(self, *a):\n        pass\n\n    def _origin_ok(self):\n        o = (self.headers.get(\"Origin\") or \"\").rstrip(\"/\")\n        return o in ALLOWED_ORIGINS, o\n\n    def _cors(self, origin):\n        self.send_header(\"Access-Control-Allow-Origin\", origin)\n        self.send_header(\"Vary\", \"Origin\")\n        self.send_header(\"Access-Control-Allow-Methods\", \"GET, POST, OPTIONS\")\n        self.send_header(\"Access-Control-Allow-Headers\", \"Content-Type\")\n        self.send_header(\"Access-Control-Allow-Private-Network\", \"true\")\n        self.send_header(\"Access-Control-Max-Age\", \"600\")\n\n    def _json(self, code, obj, origin):\n        data = json.dumps(obj).encode(\"utf-8\")\n        self.send_response(code)\n        self._cors(origin)\n        self.send_header(\"Content-Type\", \"application/json; charset=utf-8\")\n        self.send_header(\"Content-Length\", str(len(data)))\n        self.send_header(\"Cache-Control\", \"no-store\")\n        self.end_headers()\n        self.wfile.write(data)\n\n    def do_OPTIONS(self):\n        ok, o = self._origin_ok()\n        if not ok:\n            self.send_response(403); self.end_headers(); return\n        self.send_response(204); self._cors(o); self.end_headers()\n\n    def do_GET(self):\n        ok, o = self._origin_ok()\n        path = urlparse(self.path).path\n        if path == \"/status\":\n            if not ok:\n                return self._json(403, {\"ok\": False, \"error\": \"Asal permintaan tidak diizinkan\"}, o or \"null\")\n            return self._json(200, {\"ok\": True, \"app\": \"lyrionx-absensi\", \"version\": VERSION}, o)\n        self.send_response(404); self.end_headers()\n\n    def do_POST(self):\n        ok, o = self._origin_ok()\n        if not ok:\n            return self._json(403, {\"ok\": False, \"error\": \"Asal permintaan tidak diizinkan\"}, o or \"null\")\n        path = urlparse(self.path).path\n        try:\n            n = int(self.headers.get(\"Content-Length\") or 0)\n            body = json.loads(self.rfile.read(min(n, 65536)) or b\"{}\")\n        except Exception:\n            return self._json(400, {\"ok\": False, \"error\": \"Permintaan tidak valid\"}, o)\n        if path not in (\"/test\", \"/pull\"):\n            return self._json(404, {\"ok\": False, \"error\": \"Tidak ditemukan\"}, o)\n        try:\n            return self._json(200, do_pull(body, path == \"/pull\"), o)\n        except Exception as e:\n            log(f\"gagal {body.get('ip')}: {e}\")\n            return self._json(200, {\"ok\": False, \"error\": str(e) or e.__class__.__name__}, o)\n\n\ndef main():\n    srv = ThreadingHTTPServer((HOST, PORT), Handler)\n    print(\"=\" * 64)\n    print(f\" LyrionX HR Suite - Penarik Data Mesin Absensi v{VERSION}\")\n    print(f\" Aktif di http://{HOST}:{PORT}  (hanya dari komputer ini)\")\n    print(\" Biarkan jendela ini terbuka. Tutup jendela untuk berhenti.\")\n    print(\"=\" * 64, flush=True)\n    try:\n        srv.serve_forever()\n    except KeyboardInterrupt:\n        pass\n\n\nif __name__ == \"__main__\":\n    main()\n", "jalankan.bat": "@echo off\r\ntitle LyrionX - Penarik Data Mesin Absensi\r\ncd /d \"%~dp0\"\r\nwhere py >nul 2>nul\r\nif errorlevel 1 (\r\n  echo Python belum terpasang. Unduh dari https://www.python.org/downloads/ lalu centang \"Add python.exe to PATH\".\r\n  pause\r\n  exit /b 1\r\n)\r\npy -3 -c \"import zk\" 2>nul || py -3 -m pip install --user --disable-pip-version-check pyzk\r\npy -3 lyrionx_absensi.py %*\r\npause\r\n", "jalankan_tersembunyi.vbs": "Set sh = CreateObject(\"WScript.Shell\")\r\nd = CreateObject(\"Scripting.FileSystemObject\").GetParentFolderName(WScript.ScriptFullName)\r\nsh.CurrentDirectory = d\r\nsh.Run \"py -3 \"\"\" & d & \"\\lyrionx_absensi.py\"\"\", 0, False\r\n", "BACA_SAYA.txt": "LyrionX HR Suite - Penarik Data Mesin Absensi\n=============================================\n\nProgram ini menghubungkan aplikasi HR Suite dengan mesin sidik jari di jaringan\nlokal (LAN) RS, supaya data scan bisa ditarik otomatis tanpa flashdisk.\n\nMengapa perlu program kecil ini?\n  Browser tidak diizinkan menghubungi mesin absensi secara langsung (alasan\n  keamanan). Program ini menjadi perantara di komputer HRD.\n\nSATU KALI PEMASANGAN (Windows)\n1. Pasang Python 3 dari https://www.python.org/downloads/\n   Saat memasang, CENTANG \"Add python.exe to PATH\".\n2. Ekstrak folder ini, misalnya ke C:\\LyrionX-Absensi\n3. Klik dua kali \"jalankan.bat\". Pertama kali akan memasang pustaka pyzk\n   (butuh internet), lalu muncul jendela hitam bertuliskan \"Aktif di\n   http://127.0.0.1:8765\". Biarkan jendela itu terbuka.\n4. Buka HR Suite di browser KOMPUTER YANG SAMA:\n   HRIS > Aturan Absensi & Gaji > Mesin absensi > isi IP mesin > Tes koneksi.\n\nAGAR JALAN OTOMATIS SAAT KOMPUTER MENYALA (opsional)\n  Tekan Win+R, ketik  shell:startup  lalu Enter. Buat shortcut file\n  \"jalankan_tersembunyi.vbs\" ke folder yang terbuka. Program akan berjalan di\n  latar belakang tanpa jendela.\n\nSYARAT\n  - Komputer ini dan mesin satu jaringan (bisa ping IP mesin).\n  - Port mesin biasanya 4370. Comm Key / password mesin biasanya 0.\n  - IP mesin dilihat di mesin: Menu > Comm. / Jaringan / Ethernet > IP Address.\n    Sebaiknya IP mesin dibuat tetap (static), tidak berubah-ubah.\n\nKEAMANAN\n  - Hanya menerima permintaan dari komputer ini dan dari situs HR Suite.\n  - Hanya MEMBACA data scan; tidak mengubah atau menghapus data di mesin.\n  - Tidak menyimpan password dan tidak mengirim data ke mana pun selain ke\n    browser di komputer ini.\n"};
 /* ---------------- boot ---------------- */
 App.start().catch(e => { console.error(e); $('#app').innerHTML = `<div id="boot">Gagal memuat aplikasi: ${esc(e.message || e)}</div>`; });
 </script>
