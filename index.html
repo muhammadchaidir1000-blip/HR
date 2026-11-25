@@ -2030,7 +2030,10 @@ const NAV = [
   { id: 'myprofile', label: 'Profil & Status', icon: 'idcard', roles: [US], staff: true, group: 'Kepegawaian Saya' },
   { id: 'myschedule', label: 'Jadwal & Absensi', icon: 'clock', roles: [US], staff: true, group: 'Kepegawaian Saya' },
   { id: 'myleave', label: 'Cuti Saya', icon: 'cal', roles: [US], staff: true, group: 'Kepegawaian Saya' },
+  { id: 'myot', label: 'Lembur Saya', icon: 'clock', roles: [US], staff: true, group: 'Kepegawaian Saya' },
   { id: 'mypay', label: 'Slip Gaji', icon: 'money', roles: [US], staff: true, group: 'Kepegawaian Saya' },
+  { id: 'teamsched', label: 'Jadwal Tim', icon: 'cal', roles: [US], staff: true, lead: true, group: 'Pimpinan' },
+  { id: 'teamappr', label: 'Persetujuan Tim', icon: 'list', roles: [US], staff: true, lead: true, group: 'Pimpinan' },
   { id: 'myclaim', label: 'Klaim Saya', icon: 'receipt', roles: [US], staff: true, group: 'Kepegawaian Saya' },
   { id: 'mynews', label: 'Pengumuman', icon: 'mega', roles: [US], staff: true, group: 'Kepegawaian Saya' },
   { id: 'mytests', label: 'Tes Saya', icon: 'test', roles: [US], group: 'Tes' },
@@ -2192,11 +2195,12 @@ const App = {
   saveSession() { if (!S.user) return; try { sessionStorage.setItem('hrs:session', JSON.stringify({ id: S.user.id, cid: S.companyId, ic: !!S.inCompany, ws: S.ws, t: Date.now() })); } catch (e) {} },
   async logout(msg) {
     if (S.user && !(Supa.on && !Supa.sess)) { try { await Promise.race([audit('logout'), new Promise(r => setTimeout(r, 1500))]); } catch (e) {} }
-    try { closeModal(); } catch (e) {} S.user = null; S.test = null; try { sessionStorage.removeItem('hrs:session'); } catch (e) {}
+    try { closeModal(); } catch (e) {} S.user = null; S.test = null; S.team = undefined; S._teamAtt = null; S._teamReq = null; try { sessionStorage.removeItem('hrs:session'); } catch (e) {}
     if (Supa.on) { Store.stopPolling(); Supa.logout(); Store.reset(); }
     this.render(); if (msg) toast(msg);
   },
   go(route, params = {}) {
+    if (route === 'teamappr') S._teamReq = null; if (route === 'teamsched' && S.route !== 'teamsched') S._teamAtt = null;
     if (S.test && !route.endsWith('-take')) { toast('Selesaikan tes terlebih dahulu.'); return; }
     if (S.dirty && route !== S.route) { confirmBox('Ada perubahan yang belum disimpan. Tinggalkan halaman ini tanpa menyimpan?', 'Tinggalkan', true).then(ok => { if (ok) { S.dirty = false; S._set = null; this.go(route, params); } }); return; }
     if (S.user.role === SA && (route === 'companies' || PICK_IDS.includes(route) || route === 'menuaccess')) S.inCompany = false;
@@ -3395,16 +3399,19 @@ Views.overtime = () => {
   const emps = Store.all('employees', inScope); const em = Object.fromEntries(emps.map(e => [e.id, e]));
   const rows = Store.all('overtime', x => inScope(x) && (x.date || '').startsWith(month)).sort((a, b) => a.date.localeCompare(b.date));
   let tot = 0;
-  const body = rows.map(o => { const e = em[o.employeeId]; if (!e) return ''; const mult = otMultiplier(o.hours, o.dayType, st.workDays); const amt = mult * hourlyWage(e); tot += amt;
+  const pend = rows.filter(o => otFinal(o) === 'Menunggu').length;
+  const body = rows.map(o => { const e = em[o.employeeId]; if (!e) return ''; const mult = otMultiplier(o.hours, o.dayType, st.workDays); const amt = mult * hourlyWage(e), fin = otFinal(o), stp = reqStepIdx(o); if (fin === 'Disetujui') tot += amt;
     const warn = o.dayType === 'kerja' && o.hours > 4;
-    return `<tr><td class="small">${fmtDate(o.date)}</td><td><b>${esc(e.name)}</b>${sampleTag(o)}<div class="small muted">${esc(e.unit)}</div></td><td><span class="pill ${o.dayType === 'kerja' ? '' : 'acc'}">${o.dayType === 'kerja' ? 'Hari kerja' : 'Hari libur'}</span></td><td class="num">${nf(o.hours, 1)}${warn ? ' <span class="pill warn" title="PP 35/2021: maks. 4 jam/hari">>4</span>' : ''}</td><td class="num">${nf(mult, 1)}×</td><td class="num">${nf(hourlyWage(e))}</td><td class="num"><b>${nf(amt)}</b></td><td class="small muted">${esc(o.note || '')}</td><td><button class="btn sm danger" data-del="${o.id}" aria-label="Hapus">✕</button></td></tr>`; }).join('');
-  const weekly = {}; rows.forEach(o => { const d = new Date(o.date + 'T00:00:00'); const mon = new Date(d); mon.setDate(d.getDate() - ((d.getDay() + 6) % 7)); const k = o.employeeId + '|' + mon.toISOString().slice(0, 10); weekly[k] = (weekly[k] || 0) + (+o.hours || 0); });
+    return `<tr><td class="small">${fmtDate(o.date)}</td><td><b>${esc(e.name)}</b>${sampleTag(o)}<div class="small muted">${esc(e.unit)}</div></td><td><span class="pill ${o.dayType === 'kerja' ? '' : 'acc'}">${o.dayType === 'kerja' ? 'Hari kerja' : 'Hari libur'}</span></td><td class="num">${nf(o.hours, 1)}${warn ? ' <span class="pill warn" title="PP 35/2021: maks. 4 jam/hari">>4</span>' : ''}</td><td class="num">${nf(mult, 1)}×</td><td class="num">${nf(hourlyWage(e))}</td><td class="num">${fin === 'Disetujui' ? `<b>${nf(amt)}</b>` : `<span class="muted">${nf(amt)}</span>`}</td><td class="small">${o.t1 ? `<div>${esc(o.t1)}–${esc(o.t2 || '')}</div>` : ''}<span class="muted">${esc(o.note || '')}</span>${Array.isArray(o.steps) ? `<div style="margin-top:4px">${stepsHtml(o.steps)}</div>` : ''}</td>
+      <td>${leaveStatusPill({ ...o, status: fin })}</td><td><div class="row" style="flex-wrap:nowrap">${fin === 'Menunggu' && stp >= 0 ? `<button class="btn sm primary" data-otok="${o.id}">Setujui${o.steps.length > 1 ? ' (' + esc(o.steps[stp].name) + ')' : ''}</button><button class="btn sm" data-otno="${o.id}">Tolak</button>` : ''}<button class="btn sm danger" data-del="${o.id}" aria-label="Hapus">✕</button></div></td></tr>`; }).join('');
+  const weekly = {}; rows.filter(o => otFinal(o) !== 'Ditolak').forEach(o => { const d = new Date(o.date + 'T00:00:00'); const mon = new Date(d); mon.setDate(d.getDate() - ((d.getDay() + 6) % 7)); const k = o.employeeId + '|' + mon.toISOString().slice(0, 10); weekly[k] = (weekly[k] || 0) + (+o.hours || 0); });
   const over = Object.entries(weekly).filter(([, h]) => h > 18);
   return `<div class="page-head"><div><h1>Lembur</h1><p>Perhitungan sesuai PP 35/2021: upah sejam = 1/173 × (gaji pokok + tunjangan tetap). Hari kerja: jam ke-1 1,5×, jam berikutnya 2×. Hari libur (${st.workDays} hari kerja/minggu): jam ke-1–${st.workDays == 6 ? 7 : 8} 2×, jam ke-${st.workDays == 6 ? 8 : 9} 3×, selanjutnya 4×.</p></div>
     <div class="row"><input class="input" type="month" id="om" value="${month}" style="width:auto"><button class="btn primary" id="addO" ${emps.length ? '' : 'disabled'}>+ Catat lembur</button></div></div>
+  ${pend ? `<div class="note">${pend} pengajuan lembur menunggu persetujuan. Hanya lembur yang disetujui yang masuk ke penggajian.</div>` : ''}
   ${over.length ? `<div class="note warn">Melebihi batas 18 jam/minggu: ${over.map(([k, h]) => `${esc(em[k.split('|')[0]]?.name)} (minggu ${fmtDate(k.split('|')[1])}: ${h} jam)`).join('; ')}.</div>` : ''}
-  <div class="card">${rows.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Tanggal</th><th>Karyawan</th><th>Jenis hari</th><th class="num">Jam</th><th class="num">Pengali</th><th class="num">Upah/jam</th><th class="num">Upah lembur</th><th>Keterangan</th><th></th></tr></thead><tbody>${body}</tbody>
-    <tfoot><tr><td colspan="6">Total ${fmtMonth(month)}</td><td class="num">${nf(tot)}</td><td colspan="2"></td></tr></tfoot></table></div>` : `<div class="empty">Tidak ada lembur pada ${fmtMonth(month)}.</div>`}</div>`;
+  <div class="card">${rows.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Tanggal</th><th>Karyawan</th><th>Jenis hari</th><th class="num">Jam</th><th class="num">Pengali</th><th class="num">Upah/jam</th><th class="num">Upah lembur</th><th>Jam & keterangan</th><th>Status</th><th></th></tr></thead><tbody>${body}</tbody>
+    <tfoot><tr><td colspan="6">Total disetujui ${fmtMonth(month)}</td><td class="num">${nf(tot)}</td><td colspan="3"></td></tr></tfoot></table></div>` : `<div class="empty">Tidak ada lembur pada ${fmtMonth(month)}.</div>`}</div>`;
 };
 Views.overtimeMount = c => {
   $('#om', c).onchange = e => { S.params = { month: e.target.value }; App.renderContent(); };
@@ -3425,6 +3432,8 @@ Views.overtimeMount = c => {
         f.t1.onchange = f.t2.onchange = fromTimes; f.oninput = prev; f.onchange = prev; prev();
         f.onsubmit = async ev => { ev.preventDefault(); const d = formData(f); await Store.put('overtime', uid('o'), { companyId: S.companyId, employeeId: d.employeeId, date: d.date, hours: +d.hours, dayType: d.dayType, note: d.note }); audit('catat lembur', Store.get('employees', d.employeeId)?.name); closeModal(); S.params = { month: d.date.slice(0, 7) }; App.renderContent(); toast('Lembur dicatat'); }; } }); };
   $$('[data-del]', c).forEach(b => b.onclick = async () => { if (!(await confirmBox('Hapus catatan lembur ini?', 'Hapus', true))) return; await Store.remove('overtime', b.dataset.del); App.renderContent(); });
+  $$('[data-otok]', c).forEach(b => b.onclick = () => otAdminDecide(b.dataset.otok, true));
+  $$('[data-otno]', c).forEach(b => b.onclick = () => otAdminDecide(b.dataset.otno, false));
 };
 
 /* ---- Akun pengguna ---- */
@@ -6283,7 +6292,7 @@ const rcLabel = (cfg, code) => { const s = code && code !== 'L' ? hrShift(cfg, c
 const rcTitle = (cfg, code) => { if (code === 'L') return 'Libur'; const s = code ? hrShift(cfg, code) : null; return s ? `${s.name} ${s.start}–${s.end} (${hoursTxt(shiftHours(s))})` : ''; };
 function attRosterHtml(p, month, cfg, unitSel) {
   const n = daysIn(month), showAll = p.all === '1';
-  const emps = empList(e => (!p.unit || e.unit === p.unit) && hrEmpActive(e, month + '-01') && (showAll || e.workType === 'shift'));
+  const emps = empList(e => (!p.only || p.only.has(e.id)) && (!p.unit || e.unit === p.unit) && hrEmpActive(e, month + '-01') && (showAll || e.workType === 'shift'));
   S._roster = S._roster && S._roster.month === month ? S._roster : { month, ch: {} };
   const brush = S._roster.brush || (cfg.shifts[0] || {}).code || 'L';
   const head = Array.from({ length: n }, (_, i) => { const iso = `${month}-${pad(i + 1)}`, w = hrIsWeekend(iso, S.companyId), h = hrHoliday(cfg, iso); return `<th class="rc-h ${w ? 'we' : ''} ${h ? 'hol' : ''}" title="${esc(h ? h.name : HARI[dow(iso)])}">${i + 1}<small>${HARI3[dow(iso)].slice(0, 2)}</small></th>`; }).join('');
@@ -6299,9 +6308,9 @@ function attRosterHtml(p, month, cfg, unitSel) {
     <p class="small muted" style="margin:0"><b>Klik satu sel</b> untuk memilih shift atau mengatur jam masuk–pulang sendiri (kelipatan 30 menit). <b>Seret</b> beberapa sel untuk mengisi sekaligus dengan kuas. Sel pudar = jadwal otomatis (non-shift: hari kerja dan libur bawaan). Tekan <b>Simpan jadwal</b> setelah selesai.</p>
     ${emps.length ? `<div class="tbl-wrap rc-wrap"><table class="tbl no-stack rc-tbl" id="rcT"><thead><tr><th class="rc-name">Karyawan</th>${head}<th class="num small">Hari kerja</th></tr></thead><tbody>${rows}</tbody></table></div>` : `<div class="empty">Tidak ada karyawan shift${p.unit ? ' di unit ini' : ''}. Ubah jenis kerja karyawan menjadi "Shift" di Data Karyawan, atau centang "Tampilkan juga karyawan non-shift".</div>`}</div>`;
 }
-function attRosterWire(c, month) {
+function attRosterWire(c, month, save = attRosterSave) {
   const R = S._roster, cfg = hrCfg(); let painting = false;
-  const mark = trackDirty(c, () => attRosterSave(month));
+  const mark = trackDirty(c, () => save(month));
   $$('[data-brush]', c).forEach(b => b.onclick = () => { R.brush = b.dataset.brush; $$('[data-brush]', c).forEach(x => x.classList.toggle('on', x === b)); });
   const setCell = (td, code) => { const k = td.dataset.rc; R.ch[k] = code; const s = code && code !== 'L' ? hrShift(cfg, code) : null;
     td.innerHTML = rcLabel(cfg, code); td.title = rcTitle(cfg, code); td.className = `rc chg ${code === 'L' ? 'off' : ''} ${s && s.custom ? 'cus' : ''}`; td.style.cssText = s ? `--c:${s.color}` : ''; mark(); };
@@ -6315,7 +6324,7 @@ function attRosterWire(c, month) {
     document.addEventListener('pointerup', () => { painting = false; start = null; }, { once: false });
   }
   const all = $('#rAll', c); if (all) all.onchange = () => { S.params = { ...S.params, all: all.checked ? '1' : '' }; App.renderContent(); };
-  $('#rSave', c).onclick = () => attRosterSave(month);
+  $('#rSave', c).onclick = () => save(month);
   $('#rCopy', c).onclick = async () => {
     const pm = prevMonth(month), n = daysIn(month), emps = $$('[data-rc]', c).map(td => td.dataset.rc.split('|')[0]).filter((v, i, a) => a.indexOf(v) === i);
     let k = 0; emps.forEach(id => { const d = attDoc(id, pm); if (!d || !d.sched) return; for (let i = 1; i <= n; i++) { const v = d.sched[pad(i)]; if (v) { R.ch[id + '|' + pad(i)] = v; k++; } } });
@@ -6736,7 +6745,7 @@ function payrollRow(e, month, st) {
   const m1 = month + '-01', m2 = `${month}-${pad(daysIn(month))}`, from = e.joinDate && e.joinDate > m1 ? e.joinDate : m1, to = e.endDate && e.endDate < m2 ? e.endDate : m2;
   const full = payWorkdays(e.companyId, m1, m2), act = from <= to ? payWorkdays(e.companyId, from, to) : 0, factor = full && (from !== m1 || to !== m2) ? act / full : 1;
   /* lembur */
-  const ots = Store.all('overtime', o => o.employeeId === e.id && (o.date || '').startsWith(month));
+  const ots = Store.all('overtime', o => o.employeeId === e.id && (o.date || '').startsWith(month) && otFinal(o) === 'Disetujui');
   let otHours = 0, otMult = 0; ots.forEach(o => { otHours += +o.hours || 0; otMult += otMultiplier(o.hours, o.dayType, st.workDays); });
   const otPay = otMult * hr;
   /* absensi: hanya dipakai bila bulan ini ada data scan/koreksi */
@@ -7411,9 +7420,10 @@ function accImportResult(done, fail) {
    & klaim yang masih menunggu.
    ========================================================= */
 const myEmp = () => S.user && S.user.role === US ? Store.all('employees', e => e.accountId === S.user.id && e.companyId === S.user.companyId)[0] || null : null;
-const STAFF_ROUTES = ['me', 'myprofile', 'myschedule', 'myleave', 'mypay', 'myclaim', 'mynews'];
+const STAFF_ROUTES = ['me', 'myprofile', 'myschedule', 'myleave', 'myot', 'mypay', 'myclaim', 'mynews', 'teamsched', 'teamappr'];
 function navStaffOk(n) {
   if (!S.user || S.user.role !== US) return true;
+  if (n.lead) { if (!myEmp()) return false; if (S.team === undefined) { S.team = null; setTimeout(teamRefresh, 0); } return Array.isArray(S.team) && S.team.length > 0; }
   if (n.staff) return !!myEmp();
   if (n.id === 'mytests' && myEmp()) { const a = S.user; return !!(a.discAllowed || a.istAllowed || a.papiAllowed || (a.tests || []).length); }
   return true;
@@ -7581,6 +7591,197 @@ async function payRetractSlips(cid, month) {
 async function linkAccountEmployee(accountId, empId) {
   for (const x of Store.all('employees', x => x.accountId === accountId && x.id !== empId)) { const o = { ...x, accountId: '' }; delete o.id; await Store.put('employees', x.id, o); }
   if (empId) { const x = Store.get('employees', empId); if (x && x.accountId !== accountId) { const o = { ...x, accountId }; delete o.id; await Store.put('employees', empId, o); } }
+}
+
+/* =========================================================
+   Pimpinan (kepala unit/instalasi/bidang/departemen) & Lembur staf
+   - Pimpinan = karyawan yang punya bawahan (Atasan langsung) atau ber-level
+     Head of Unit / Head of Department (seluruh unitnya). Bisa mengatur jadwal tim
+     dan menyetujui tahap atasan untuk cuti & lembur. Tahap terakhir selalu HRD.
+   - Staf mengajukan lembur sendiri (keterangan wajib).
+   Keamanan di server: 006_team.sql (fungsi team_* & RLS).
+   ========================================================= */
+const OT_MIN_NOTE = 5;
+const otFinal = o => Array.isArray(o.steps) && o.steps.length ? leaveFinal(o) : (o.status || 'Disetujui');
+const reqStepIdx = d => { const st = Array.isArray(d.steps) ? d.steps : []; if (st.some(s => s.status === 'Ditolak')) return -1; return st.findIndex(s => s.status === 'Menunggu'); };
+const stepsHtml = steps => (steps || []).map(s => `<div><span class="lv-dot ${s.status === 'Disetujui' ? 'ok' : s.status === 'Ditolak' ? 'bad' : ''}"></span>${esc(s.name)}${s.by ? ` · <span class="muted">${esc(s.by)}</span>` : ''}${s.note ? `<div class="muted">“${esc(s.note)}”</div>` : ''}</div>`).join('');
+const otHours = (t1, t2) => { const a = tmin(t1), b = tmin(t2); if (a == null || b == null) return 0; let m = b - a; if (m <= 0) m += 1440; return m / 60; };
+
+/* ---------- level atasan (versi lokal, sama dengan app.lead_level di server) ---------- */
+function leadLevelLocal(me, emp) {
+  if (!me || !emp || emp.id === me.id) return 0;
+  let cur = emp, lvl = 0;
+  for (let i = 0; i < 12; i++) { const sid = cur.supervisorId; if (!sid) break; lvl++; if (sid === me.id) return lvl; cur = Store.get('employees', sid); if (!cur) break; }
+  if (['Head of Unit', 'Head of Department'].includes(me.level) && me.unit && me.unit === emp.unit) return 1;
+  return 0;
+}
+const TeamAPI = {
+  async list() {
+    if (Supa.on) return ((await Supa.rpc('team_list', {})) || []).map(r => ({ id: r.id, lvl: r.lvl, name: r.name, unit: r.unit, position: r.position, level: r.level, workType: r.work_type, joinDate: r.join_date, endDate: r.end_date, active: r.active, supervisorId: r.supervisor_id }));
+    const me = myEmp(); if (!me) return [];
+    const team = Store.all('employees', e => e.companyId === me.companyId && leadLevelLocal(me, e) > 0).map(e => ({ ...e, lvl: leadLevelLocal(me, e) }));
+    return team.length ? [{ ...me, lvl: 0 }, ...team].sort((a, b) => a.name.localeCompare(b.name)) : [];
+  },
+  async att(month) {
+    if (Supa.on) return (await Supa.rpc('team_att', { p_month: month })) || [];
+    return (S.team || []).map(t => ({ employee_id: t.id, sched: (attDoc(t.id, month) || {}).sched || {} }));
+  },
+  async setSched(empId, month, ch) {
+    if (Supa.on) return Supa.rpc('team_set_sched', { p_emp: empId, p_month: month, p_sched: ch });
+    const e = Store.get('employees', empId); await attPut(e, month, x => Object.entries(ch).forEach(([dd, v]) => { if (v) x.sched[dd] = v; else delete x.sched[dd]; }));
+  },
+  async requests() {
+    if (Supa.on) return (await Supa.rpc('team_requests', { p_days: 120 })) || [];
+    const me = myEmp(), ids = new Map((S.team || []).filter(t => t.lvl > 0).map(t => [t.id, t.lvl]));
+    return ['leaves', 'overtime'].flatMap(col => Store.all(col, d => ids.has(d.employeeId) && Array.isArray(d.steps) && d.steps.length).map(d => ({ col, id: d.id, lvl: ids.get(d.employeeId), data: d })));
+  },
+  async decide(col, id, ok, note) {
+    if (Supa.on) return Supa.rpc('team_decide', { p_col: col, p_id: id, p_ok: ok, p_note: note || '' });
+    const d = Store.get(col, id), t = (S.team || []).find(x => x.id === d.employeeId), i = reqStepIdx(d);
+    if (!t || t.lvl <= 0) throw new Error('forbidden'); if (i < 0) throw new Error('not_pending'); if (i >= d.steps.length - 1) throw new Error('hrd_step'); if (t.lvl < i + 1) throw new Error('not_your_step');
+    if (!ok && (note || '').trim().length < 3) throw new Error('note_required');
+    const steps = d.steps.map((s, k) => k === i ? { ...s, status: ok ? 'Disetujui' : 'Ditolak', by: S.user.username, at: nowISO(), note: note || '', byLead: true } : s);
+    const o = { ...d, steps }; delete o.id; o.status = leaveFinal(o); await Store.put(col, id, o); return { status: o.status, step: i };
+  }
+};
+const TEAM_MSG = { forbidden: 'Karyawan ini bukan anggota tim Anda.', not_pending: 'Pengajuan ini sudah tidak menunggu.', hrd_step: 'Tahap ini harus disetujui HRD.', not_your_step: 'Tahap ini menunggu persetujuan atasan yang lebih tinggi.', note_required: 'Tulis alasan penolakan (minimal 3 huruf).', bad_input: 'Data tidak valid.' };
+const teamErr = e => { const m = (e && (e.message || e.code)) || ''; const k = Object.keys(TEAM_MSG).find(x => m.includes(x)); return k ? TEAM_MSG[k] : supaErr(e); };
+
+/* daftar tim dimuat sekali per sesi (dan saat halaman pimpinan dibuka) */
+async function teamRefresh() {
+  try { const list = await TeamAPI.list(); const was = Array.isArray(S.team) ? S.team.length > 0 : null; S.team = list; if (was !== (list.length > 0)) App.render(); }
+  catch (e) { console.warn('team', e); S.team = []; }
+}
+function teamInject(month) {
+  if (!Supa.on || !S.team) return;
+  S.team.forEach(t => { if (t.lvl === 0) return; Store.cache.employees[t.id] = { ...t, companyId: S.user.companyId, active: t.active !== false }; delete Store.cache.employees[t.id].lvl; });
+  (S._teamAtt || {})[month]?.forEach(r => { const id = attId(r.employee_id, month), cur = Store.cache.att_month[id] || { companyId: S.user.companyId, employeeId: r.employee_id, month, scans: {}, fix: {} }; Store.cache.att_month[id] = { ...cur, sched: r.sched || {} }; });
+}
+
+/* ---------- Lembur Saya (staf) ---------- */
+Views.myot = () => {
+  const e = myEmp(); if (!e) return stNoEmp();
+  const L = Store.all('overtime', o => o.employeeId === e.id).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const cfg = hrCfg(e.companyId), m = monthISO(), apprM = L.filter(o => (o.date || '').startsWith(m) && otFinal(o) === 'Disetujui').reduce((s, o) => s + (+o.hours || 0), 0);
+  return `<div class="page-head"><div><h1>Lembur Saya</h1><p>Ajukan lembur dengan keterangan pekerjaan. Alur persetujuan: ${cfg.approvals.map(esc).join(' → ')}. Hanya lembur yang disetujui yang dibayar.</p></div><button class="btn primary" id="otNew">+ Ajukan lembur</button></div>
+  <div class="grid g4"><div class="card kpi"><span class="eyebrow">Disetujui ${fmtMonth(m)}</span><b>${nf(apprM, 1)} jam</b></div>
+    <div class="card kpi"><span class="eyebrow">Menunggu persetujuan</span><b>${L.filter(o => otFinal(o) === 'Menunggu').length}</b><span class="small">pengajuan</span></div></div>
+  <div class="card">${L.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Tanggal</th><th>Jam</th><th class="num">Lama</th><th>Keterangan</th><th>Persetujuan</th><th>Status</th><th></th></tr></thead><tbody>${L.map(o => `<tr><td>${fmtDate(o.date)}<div class="small muted">${o.dayType === 'libur' ? 'Hari libur' : 'Hari kerja'}</div></td><td class="small">${esc(o.t1 || '')}${o.t2 ? '–' + esc(o.t2) : ''}</td><td class="num">${nf(o.hours, 1)} jam</td><td class="small">${esc(o.note || '')}</td><td class="small">${Array.isArray(o.steps) ? stepsHtml(o.steps) : '<span class="muted">dicatat HRD</span>'}</td><td>${leaveStatusPill({ ...o, status: otFinal(o) })}</td>
+    <td>${otFinal(o) === 'Menunggu' && (o.steps || []).every(s => s.status === 'Menunggu') ? `<button class="btn sm danger" data-otcan="${o.id}">Batalkan</button>` : ''}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">Belum ada pengajuan lembur.</div>'}</div>`;
+};
+Views.myotMount = c => {
+  const e = myEmp(); if (!e) return;
+  $('#otNew', c).onclick = () => otForm(e);
+  $$('[data-otcan]', c).forEach(b => b.onclick = async () => { if (!(await confirmBox('Batalkan pengajuan lembur ini?', 'Batalkan', true))) return; await Store.remove('overtime', b.dataset.otcan); audit('batalkan pengajuan lembur', e.name); toast('Pengajuan dibatalkan'); App.renderContent(); });
+};
+function otForm(e) {
+  const cfg = hrCfg(e.companyId), opt = v => HALF_HOURS.map(h => `<option ${h === v ? 'selected' : ''}>${h}</option>`).join('');
+  openModal({ title: 'Ajukan lembur', body: `<form id="otF" class="form-grid">
+    <label class="f">Tanggal lembur<input class="input" type="date" name="date" required value="${todayISO()}"></label>
+    <label class="f">Jenis hari<select class="input" name="dayType"><option value="kerja">Hari kerja</option><option value="libur">Hari libur / istirahat</option></select></label>
+    <label class="f">Jam mulai<select class="input" name="t1">${opt('16:00')}</select></label>
+    <label class="f">Jam selesai<select class="input" name="t2">${opt('18:00')}</select></label>
+    <label class="f" style="grid-column:1/-1">Keterangan lembur <span style="color:var(--bad)">*</span><textarea class="input" name="note" required minlength="${OT_MIN_NOTE}" rows="3" placeholder="Wajib diisi: pekerjaan yang dikerjakan dan alasannya, mis. stok opname akhir bulan, pasien IGD penuh"></textarea></label>
+    <div id="otPrev" class="note" style="grid-column:1/-1"></div></form>
+    <p class="small muted" style="margin:0">Alur persetujuan: ${cfg.approvals.map(esc).join(' → ')}.</p>`,
+    foot: '<button class="btn" data-close>Batal</button><button class="btn primary" form="otF">Ajukan</button>',
+    onMount: r => { const f = $('#otF', r);
+      const check = () => { const d = formData(f), h = otHours(d.t1, d.t2), msg = [`Lama lembur <b>${nf(h, 1)} jam</b>${d.t2 <= d.t1 ? ' (selesai keesokan hari)' : ''}.`];
+        if (d.dayType === 'kerja' && h > 4) msg.push('<b>Lembur hari kerja maksimal 4 jam per hari</b> (PP 35/2021).');
+        if (h > 12) msg.push('<b>Terlalu panjang.</b>');
+        const dup = Store.all('overtime', o => o.employeeId === e.id && o.date === d.date && otFinal(o) !== 'Ditolak'); if (dup.length) msg.push('Sudah ada pengajuan lembur di tanggal ini.');
+        return { h, ok: h > 0 && h <= 12 && !(d.dayType === 'kerja' && h > 4), msg: msg.join(' ') }; };
+      const prev = () => { $('#otPrev', r).innerHTML = check().msg; }; f.oninput = prev; f.onchange = prev; prev();
+      f.onsubmit = async ev => { ev.preventDefault(); const d = formData(f), k = check(), note = (d.note || '').trim();
+        if (note.length < OT_MIN_NOTE) { toast(`Keterangan lembur wajib diisi (minimal ${OT_MIN_NOTE} huruf)`); f.note.focus(); return; }
+        if (!k.ok) { toast('Periksa jam lembur'); return; }
+        const body = { companyId: e.companyId, employeeId: e.id, date: d.date, t1: d.t1, t2: d.t2, hours: k.h, dayType: d.dayType, note, steps: cfg.approvals.map(name => ({ name, status: 'Menunggu' })), status: 'Menunggu', bySelf: true, createdAt: nowISO(), createdBy: S.user.username };
+        try { await Store.put('overtime', uid('o'), body); } catch (x) { toast('Gagal mengajukan: ' + (x.message || x)); return; }
+        audit('ajukan lembur (staf)', `${e.name} · ${d.date} · ${nf(k.h, 1)} jam`); closeModal(); toast('Pengajuan lembur terkirim ke atasan'); App.renderContent(); };
+    } });
+}
+
+/* ---------- Jadwal Tim (pimpinan) ---------- */
+Views.teamsched = () => {
+  const p = S.params || {}, month = p.month || monthISO(), cfg = hrCfg();
+  if (!Array.isArray(S.team) || !S._teamAtt || !S._teamAtt[month] || !S._teamAtt[prevMonth(month)]) return `<div class="page-head"><div><h1>Jadwal Tim</h1></div></div><div class="card card-pad muted">Memuat data tim…</div>`;
+  teamInject(month); teamInject(prevMonth(month));
+  const units = [...new Set(S.team.map(t => t.unit).filter(Boolean))].sort();
+  const unitSel = units.length > 1 ? `<select class="input" id="aUnit" style="width:auto"><option value="">Semua unit</option>${units.map(u => `<option ${u === p.unit ? 'selected' : ''}>${esc(u)}</option>`).join('')}</select>` : '';
+  const grid = attRosterHtml({ ...p, all: '1', only: new Set(S.team.map(t => t.id)) }, month, cfg, unitSel);
+  return `<div class="page-head"><div><h1>Jadwal Tim</h1><p>Atur jadwal shift ${S.team.length - 1} anggota tim Anda. Jadwal yang disimpan langsung terlihat oleh staf dan HRD, dan dipakai untuk menghitung absensi.</p></div></div>${grid}`;
+};
+Views.teamschedMount = c => {
+  const p = S.params || {}, month = p.month || monthISO();
+  if (!Array.isArray(S.team) || !S._teamAtt || !S._teamAtt[month] || !S._teamAtt[prevMonth(month)]) { teamLoadAtt(month).then(() => { if (S.route === 'teamsched') App.renderContent(); }); return; }
+  const m = $('#aMonth', c); if (m) m.onchange = () => { S.params = { ...p, month: m.value }; S._roster = null; App.renderContent(); };
+  const u = $('#aUnit', c); if (u) u.onchange = () => { S.params = { ...p, unit: u.value }; App.renderContent(); };
+  attRosterWire(c, month, teamSaveSched);
+};
+async function teamLoadAtt(month) {
+  try { if (!Array.isArray(S.team)) await teamRefresh(); S._teamAtt = S._teamAtt || {};
+    const [a, b] = await Promise.all([TeamAPI.att(month), TeamAPI.att(prevMonth(month))]); S._teamAtt[month] = a; S._teamAtt[prevMonth(month)] = b; }
+  catch (e) { toast('Gagal memuat jadwal tim: ' + teamErr(e)); S._teamAtt = S._teamAtt || {}; S._teamAtt[month] = S._teamAtt[month] || []; S._teamAtt[prevMonth(month)] = S._teamAtt[prevMonth(month)] || []; }
+}
+async function teamSaveSched(month) {
+  const R = S._roster; if (!R || R.month !== month) return; const by = {};
+  Object.entries(R.ch).forEach(([k, v]) => { const [id, dd] = k.split('|'); (by[id] = by[id] || {})[dd] = v || ''; });
+  const ids = Object.keys(by); if (!ids.length) { toast('Tidak ada perubahan'); return; }
+  busy(true, 'Menyimpan jadwal…');
+  try { for (const id of ids) await TeamAPI.setSched(id, month, by[id]); }
+  catch (e) { busy(false); toast('Gagal menyimpan: ' + teamErr(e)); return; }
+  busy(false); R.ch = {}; S.dirty = false; audit('simpan jadwal tim', `${fmtMonth(month)} · ${ids.length} karyawan`);
+  S._teamAtt[month] = await TeamAPI.att(month); toast('Jadwal tim disimpan'); App.renderContent();
+}
+
+/* ---------- Persetujuan Tim (pimpinan) ---------- */
+Views.teamappr = () => {
+  const p = S.params || {}, fs = p.fs || 'mine';
+  if (!S._teamReq) return `<div class="page-head"><div><h1>Persetujuan Tim</h1></div></div><div class="card card-pad muted">Memuat pengajuan tim…</div>`;
+  const team = new Map((S.team || []).map(t => [t.id, t])), cfg = hrCfg();
+  Store.cache.team_req = {}; S._teamReq.forEach(r => { Store.cache.team_req[r.col + ':' + r.id] = r.data; });
+  const canDo = r => { const i = reqStepIdx(r.data), n = (r.data.steps || []).length; return i >= 0 && i < n - 1 && r.lvl >= i + 1; };
+  const rows = S._teamReq.filter(r => fs === 'mine' ? canDo(r) : fs === 'wait' ? otFinal(r.data) === 'Menunggu' : true);
+  const mine = S._teamReq.filter(canDo).length;
+  return `<div class="page-head"><div><h1>Persetujuan Tim</h1><p>Setujui atau tolak pengajuan cuti dan lembur anggota tim. Setelah Anda setujui, pengajuan diteruskan ke tahap berikutnya hingga HRD.</p></div></div>
+  <div class="card"><div class="card-head"><div class="row"><select class="input" id="taFs" style="width:auto"><option value="mine" ${fs === 'mine' ? 'selected' : ''}>Menunggu persetujuan saya (${mine})</option><option value="wait" ${fs === 'wait' ? 'selected' : ''}>Semua yang masih menunggu</option><option value="all" ${fs === 'all' ? 'selected' : ''}>Semua (120 hari terakhir)</option></select><button class="btn sm" id="taRef">Muat ulang</button></div><span class="small muted">${rows.length} pengajuan</span></div>
+  ${rows.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Karyawan</th><th>Pengajuan</th><th>Tanggal</th><th>Keterangan</th><th>Persetujuan</th><th>Status</th><th></th></tr></thead><tbody>${rows.map(r => { const d = r.data, e = team.get(d.employeeId) || { name: '–' }, ot = r.col === 'overtime';
+    const what = ot ? `<b>Lembur</b><div class="small muted">${nf(d.hours, 1)} jam · ${d.dayType === 'libur' ? 'hari libur' : 'hari kerja'}</div>` : `<b>Cuti ${esc(d.type || '')}</b><div class="small muted">${leaveDays(e.id ? e : { ...e, companyId: S.user.companyId }, d.start, d.end)} hari</div>`;
+    const when = ot ? `${fmtDate(d.date)}<div class="small muted">${esc(d.t1 || '')}${d.t2 ? '–' + esc(d.t2) : ''}</div>` : `${fmtDate(d.start)}${d.end !== d.start ? ' – ' + fmtDate(d.end) : ''}`;
+    return `<tr><td><b>${esc(e.name)}</b><div class="small muted">${esc(e.position || e.unit || '')}${r.lvl > 1 ? ` · bawahan tingkat ${r.lvl}` : ''}</div></td><td>${what}</td><td class="small">${when}</td>
+      <td class="small">${esc(ot ? d.note || '' : d.reason || '')}${d.docRef ? `<div class="muted">Dok: ${esc(d.docRef)}</div>` : ''}${hrDocLinks('team_req', r.col + ':' + r.id, d.files)}</td><td class="small">${stepsHtml(d.steps)}</td><td>${leaveStatusPill({ ...d, status: otFinal(d) })}</td>
+      <td>${canDo(r) ? `<div class="row" style="flex-wrap:nowrap"><button class="btn sm primary" data-tok="${r.col}|${r.id}">Setujui</button><button class="btn sm" data-tno="${r.col}|${r.id}">Tolak</button></div>` : ''}</td></tr>`; }).join('')}</tbody></table></div>`
+    : `<div class="empty">${fs === 'mine' ? 'Tidak ada pengajuan yang menunggu persetujuan Anda.' : 'Belum ada pengajuan.'}</div>`}</div>`;
+};
+Views.teamapprMount = c => {
+  if (!S._teamReq) { (async () => { try { if (!Array.isArray(S.team)) await teamRefresh(); S._teamReq = await TeamAPI.requests(); } catch (e) { toast('Gagal memuat: ' + teamErr(e)); S._teamReq = []; } if (S.route === 'teamappr') App.renderContent(); })(); return; }
+  const reload = async () => { busy(true, 'Memuat…'); try { await teamRefresh(); S._teamReq = await TeamAPI.requests(); } catch (e) { toast(teamErr(e)); } busy(false); App.renderContent(); };
+  $('#taFs', c).onchange = e => { S.params = { ...S.params, fs: e.target.value }; App.renderContent(); };
+  $('#taRef', c).onclick = reload;
+  const act = async (key, ok) => { const [col, id] = key.split('|'); let note = '';
+    if (!ok) { note = await noteBox('Alasan penolakan', 'Tulis alasan agar karyawan mengerti, mis. jadwal jaga tidak bisa ditinggal.'); if (note == null) return; }
+    busy(true, ok ? 'Menyetujui…' : 'Menolak…');
+    try { const res = await TeamAPI.decide(col, id, ok, note); audit(ok ? 'setujui pengajuan tim' : 'tolak pengajuan tim', `${col} ${id}`); toast(ok ? (res && res.status === 'Menunggu' ? 'Disetujui, diteruskan ke tahap berikutnya' : 'Disetujui') : 'Pengajuan ditolak'); }
+    catch (e) { toast(teamErr(e)); }
+    busy(false); await reload(); };
+  $$('[data-tok]', c).forEach(b => b.onclick = () => act(b.dataset.tok, true));
+  $$('[data-tno]', c).forEach(b => b.onclick = () => act(b.dataset.tno, false));
+};
+function noteBox(title, ph) {
+  return new Promise(res => { let done = false;
+    openModal({ title, body: `<form id="nbF" class="stack"><textarea class="input" name="n" rows="3" required minlength="3" placeholder="${esc(ph || '')}"></textarea></form>`, foot: '<button class="btn" data-close>Batal</button><button class="btn danger" form="nbF">Tolak pengajuan</button>',
+      onMount: r => { const f = $('#nbF', r); setTimeout(() => f.n.focus(), 50); f.onsubmit = ev => { ev.preventDefault(); const v = f.n.value.trim(); if (v.length < 3) { toast('Tulis alasan minimal 3 huruf'); return; } done = true; closeModal(); res(v); };
+        const iv = setInterval(() => { if (!document.getElementById('nbF')) { clearInterval(iv); if (!done) res(null); } }, 300); } });
+  });
+}
+
+/* ---------- HRD: setujui tahap lembur yang diajukan staf ---------- */
+async function otAdminDecide(id, ok) {
+  const cur = Store.get('overtime', id); if (!cur) return; const i = reqStepIdx(cur); if (i < 0) return;
+  let note = ''; if (!ok) { note = await noteBox('Alasan penolakan lembur', 'mis. tidak ada surat perintah lembur'); if (note == null) return; }
+  const steps = cur.steps.map((s, k) => k === i ? { ...s, status: ok ? 'Disetujui' : 'Ditolak', by: S.user.username, at: nowISO(), note } : s);
+  const o = { ...cur, steps }; delete o.id; o.status = leaveFinal(o); await Store.put('overtime', id, o);
+  audit(ok ? 'setujui lembur' : 'tolak lembur', `${empName(cur.employeeId)} · ${cur.date}`); toast(ok ? 'Tahap disetujui' : 'Lembur ditolak'); App.renderContent();
 }
 
 /* ---------- Keamanan Login: catatan login berhasil & gagal (tersimpan di server) ---------- */
