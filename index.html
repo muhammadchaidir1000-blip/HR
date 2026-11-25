@@ -735,7 +735,7 @@ tr.hr-off td{background:var(--surface-2)}
 .hr-edit .input{min-width:0}
 .sh-chip{display:inline-grid;place-items:center;min-width:28px;height:24px;padding:0 6px;border-radius:7px;font-weight:800;font-size:12.5px;color:#fff;background:var(--c,#64748b)}
 .sh-chip.off{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
-.sh-chip.auto{opacity:.55}
+.sh-chip.auto{opacity:1}
 .lv-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);margin-right:6px;vertical-align:1px}
 .lv-dot.ok{background:#0E9F6E}.lv-dot.bad{background:#DC2626}
 .rc-pal{gap:6px}
@@ -757,7 +757,7 @@ tr.hr-off td{background:var(--surface-2)}
 .rc-h.we{background:var(--surface-2)!important}.rc-h.hol{color:#DC2626}
 .rc{height:30px;min-width:30px;font-weight:800;font-size:12px;cursor:pointer;border:1px solid var(--surface);background:color-mix(in srgb,var(--c,transparent) 22%,var(--surface));color:var(--text)}
 .rc.off{background:var(--surface-2);color:var(--faint)}
-.rc.auto{opacity:.5}
+.rc.auto{opacity:1}
 .rc.chg{box-shadow:inset 0 0 0 2px var(--accent)}
 .rc:hover{outline:2px solid var(--brand);outline-offset:-2px}
 
@@ -1218,7 +1218,7 @@ body[data-role] .side{background:#FFFFFF}
 .tbl.rc-tbl tbody tr td.num{border:1px solid #9FAABA}
 .tbl.rc-tbl tbody tr td.rc{background:color-mix(in srgb,var(--c,transparent) 42%,#fff);color:color-mix(in srgb,var(--c,#1E2533) 70%,#000)}
 .tbl.rc-tbl tbody tr td.rc.off{background:#FCA5A5;color:#7F1D1D}
-.tbl.rc-tbl tbody tr td.rc.auto{opacity:.6}
+.tbl.rc-tbl tbody tr td.rc.auto{opacity:1}
 .tbl.rc-tbl tbody tr td.rc:hover{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--c,#94A3B8) 70%,#000)}
 .tbl.rc-tbl tbody tr td.rc.chg{box-shadow:inset 0 0 0 2px var(--accent)}
 .rc.cus{font-size:9.5px;line-height:1.05;font-weight:700;min-width:38px}
@@ -2078,6 +2078,9 @@ function workingDaysBetween(start, end, workDays, onlyMonth) {
 /* ---------------- App state ---------------- */
 const S = { user: null, companyId: null, route: 'dash', params: {}, lastActive: Date.now(), test: null };
 const ROLE_LABEL = { superadmin: 'Super Admin', company: 'Admin Perusahaan', user: 'Peserta' };
+/* label di pojok kanan atas: peran + jabatan, agar akun admin dan akun pribadi orang yang sama mudah dibedakan */
+function acctLabel(u = S.user) { if (!u) return ''; const em = typeof myEmp === 'function' ? myEmp() : null;
+  if (em) return `Akun pribadi · ${em.position || em.unit || 'Staf'}`; return `${ROLE_LABEL[u.role] || u.role}${u.role !== US && u.position ? ' · ' + u.position : ''}`; }
 const SA = 'superadmin', CO = 'company', US = 'user';
 const ICON = {
   org: '<rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-4h12v4"/>',
@@ -2310,14 +2313,14 @@ const App = {
     app.innerHTML = `<div class="shell">
       <div class="side-backdrop" id="sideBg" hidden></div>
       <aside class="side" id="side" aria-label="Menu utama"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><div class="brandmark">${brandOf().logo}<span class="brand-text">${esc(brandOf().name)}</span></div><button class="nav-close" id="sideClose" aria-label="Tutup menu">✕</button></div>${wsSwitchHtml()}${navHtml}
-        <div class="side-foot"><div><b style="color:var(--ink-text)">${esc(S.user.name)}</b><br>${(typeof myEmp === 'function' && myEmp() ? 'Staf' : ROLE_LABEL[S.user.role])}</div>
+        <div class="side-foot"><div><b style="color:var(--ink-text)">${esc(S.user.name)}</b><br>${esc(acctLabel())}</div>
           <div class="row"><button class="btn sm side-btn" id="btnPw">Ganti password</button><button class="btn sm side-btn" id="btnOut">Keluar</button></div></div></aside>
       <div class="main">
         <header class="mbar"><button class="mbar-btn" id="mMenu" aria-label="Buka menu" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
           <div class="mbar-title"><span class="small">${esc(brandOf().name)}</span><b>${esc(cur.label)}</b></div><a class="mbar-lx" href="https://lyrionx.com" target="_blank" rel="noopener" aria-label="lyrionx.com"><img src="${LOGO_LX_MARK}" alt=""><span data-clock="short"></span></a></header>
         <div class="topbar ${S.user.role === SA ? '' : 'co-sm'}">${compSel}<div class="grow"></div>
           <span class="small muted hide-sm">${Store.mode === 'db' || Store.mode === 'supa' ? 'Tersimpan di server' : 'Tersimpan di browser ini'}</span>${typeof bellHtml === 'function' ? bellHtml() : ''}
-          <div class="acct hide-sm"><button class="acct-btn" id="acctBtn" aria-haspopup="menu" aria-expanded="false"><span class="acct-av" aria-hidden="true">${esc((S.user.name || '?').trim().charAt(0).toUpperCase())}</span><span class="acct-tx"><b>${esc(S.user.name)}</b><small>${(typeof myEmp === 'function' && myEmp() ? 'Staf' : ROLE_LABEL[S.user.role])}</small></span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+          <div class="acct hide-sm"><button class="acct-btn" id="acctBtn" aria-haspopup="menu" aria-expanded="false"><span class="acct-av" aria-hidden="true">${esc((S.user.name || '?').trim().charAt(0).toUpperCase())}</span><span class="acct-tx"><b>${esc(S.user.name)}</b><small>${esc(acctLabel())}</small></span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
             <div class="acct-menu" id="acctMenu" role="menu" hidden><button role="menuitem" id="btnPw2">Ganti password</button><button role="menuitem" id="btnOut2" class="danger">Keluar</button></div></div>
           <div class="lx-block hide-sm"><a class="lx-link" href="https://lyrionx.com" target="_blank" rel="noopener"><img src="${LOGO_LX_MARK}" alt="LyrionX.Co"><span>lyrionx.com</span></a><span class="lx-clock" data-clock></span></div></div>
         <main class="content" id="content"></main>
@@ -3552,7 +3555,7 @@ function accountForm(a = {}) {
     ${isSA ? `<label class="f">Perusahaan<select class="input" name="companyId">${comps.map(c => `<option value="${c.id}" ${c.id === cid ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select></label>` : ''}
     <label class="f">${a.id ? 'Password baru (kosongkan jika tidak diubah)' : 'Password awal'}<input class="input" name="pw" type="text" autocomplete="new-password" ${a.id ? '' : 'required'} placeholder="min. 8, huruf besar/kecil & angka"></label>
     <label class="f">Unit (peserta)<select class="input" name="unit">${unitOptions(cid, a.unit)}</select></label>
-    <label class="f">Posisi yang dilamar / jabatan${posSelect(a.position || '')}</label>
+    <label class="f">Posisi yang dilamar / jabatan<input class="input" name="position" list="aPosL" value="${esc(a.position || '')}" placeholder="mis. Kepala HRD"><datalist id="aPosL">${POSISI.map(x => `<option value="${esc(x)}">`).join('')}</datalist><span class="small muted">Untuk akun admin, jabatan tampil di pojok kanan atas (mis. Admin Perusahaan · Kepala HRD).</span></label>
     ${(() => { const linked = a.id ? Store.all('employees', e => e.accountId === a.id)[0] : null, cur = a.employeeId || linked?.id || '';
       const E = Store.all('employees', e => e.companyId === cid && e.active !== false && (!e.accountId || e.accountId === a.id || e.id === cur)).sort((x, y) => x.name.localeCompare(y.name));
       return `<label class="f" id="aEmpW" style="grid-column:1/-1">Akses HRIS staf — tautkan ke data karyawan<select class="input" name="employeeId"><option value="">Tidak ditautkan (hanya peserta tes)</option>${E.map(e => `<option value="${e.id}" ${e.id === cur ? 'selected' : ''}>${esc(e.name)}${e.nik ? ' · ' + esc(e.nik) : ''}${e.unit ? ' · ' + esc(e.unit) : ''}</option>`).join('')}</select><span class="small muted">Bila ditautkan, akun ini bisa melihat jadwal, absensi, status, slip gaji, serta mengajukan cuti dan klaim miliknya sendiri.</span></label>`; })()}
@@ -6459,7 +6462,7 @@ function attRosterHtml(p, month, cfg, unitSel) {
   return `<div class="card card-pad stack"><div class="row" style="justify-content:space-between"><div class="row"><input class="input" type="month" id="aMonth" value="${month}" style="width:auto">${unitSel}<label class="row small"><input type="checkbox" id="rAll" ${showAll ? 'checked' : ''}> Tampilkan juga karyawan non-shift</label></div>
       <div class="row"><button class="btn sm" id="rPat">Isi pola otomatis…</button><button class="btn sm" id="rCopy">Salin dari bulan lalu</button><button class="btn sm primary" id="rSave">Simpan jadwal</button></div></div>
     <div class="row rc-pal" role="toolbar" aria-label="Pilih kode shift"><span class="small muted">Kuas:</span>${cfg.shifts.map(s => `<button type="button" class="rc-b ${brush === s.code ? 'on' : ''}" data-brush="${esc(s.code)}" style="--c:${s.color}" id="bk_br_${esc(s.code)}" title="${esc(s.name)} ${s.start}–${s.end} (${hoursTxt(shiftHours(s))})">${esc(s.code)} <small>${esc(s.name)} ${s.start}–${s.end}</small></button>`).join('')}<button type="button" class="rc-b off ${brush === 'L' ? 'on' : ''}" data-brush="L" id="bk_br_L">L <small>Libur</small></button><button type="button" class="rc-b ${brush === '' ? 'on' : ''}" data-brush="" id="bk_br_x">Hapus</button></div>
-    <p class="small muted" style="margin:0"><b>Klik satu sel</b> untuk memilih shift atau mengatur jam masuk–pulang sendiri (kelipatan 30 menit). <b>Seret</b> beberapa sel untuk mengisi sekaligus dengan kuas. Sel pudar = jadwal otomatis (non-shift: hari kerja dan libur bawaan). Tekan <b>Simpan jadwal</b> setelah selesai.</p>
+    <p class="small muted" style="margin:0"><b>Klik satu sel</b> untuk memilih shift atau mengatur jam masuk–pulang sendiri (kelipatan 30 menit). <b>Seret</b> beberapa sel untuk mengisi sekaligus dengan kuas. Sel yang belum diatur memakai jadwal otomatis (non-shift: hari kerja dan libur bawaan). Tekan <b>Simpan jadwal</b> setelah selesai.</p>
     ${emps.length ? `<div class="tbl-wrap rc-wrap"><table class="tbl no-stack rc-tbl" id="rcT"><thead><tr><th class="rc-name">Karyawan</th>${head}<th class="num small">Hari kerja</th></tr></thead><tbody>${rows}</tbody></table></div>` : `<div class="empty">Tidak ada karyawan shift${p.unit ? ' di unit ini' : ''}. Ubah jenis kerja karyawan menjadi "Shift" di Data Karyawan, atau centang "Tampilkan juga karyawan non-shift".</div>`}</div>`;
 }
 function attRosterWire(c, month, save = attRosterSave) {
