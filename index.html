@@ -1154,7 +1154,16 @@ body[data-role] .side{background:#FFFFFF}
 .hrdoc-a{appearance:none;font:inherit;font-size:12px;cursor:pointer;border:1px solid var(--line-2);background:#fff;border-radius:6px;padding:2px 8px;color:var(--brand-text,#1B6A4C);font-weight:600}
 .hrdoc-a:hover{border-color:currentColor}
 /* jadwal: jam khusus & pemilih sel */
-.tbl.rc-tbl tbody tr td.rc{background:color-mix(in srgb,var(--c,transparent) 22%,var(--surface))}
+.tbl.rc-tbl{border-collapse:collapse}
+.tbl.rc-tbl tbody tr td.rc{background:color-mix(in srgb,var(--c,transparent) 22%,var(--surface));border:1px solid #9FAABA}
+.tbl.rc-tbl thead th.rc-h{border:1px solid #9FAABA;border-bottom:2px solid #AEB7C4}
+.tbl.rc-tbl tbody tr td.rc:empty{background:#FFFFFF}
+.tbl.rc-tbl tbody tr td.rc.we:empty{background:#EEF1F5}
+.tbl.rc-tbl tbody tr td.rc:empty::after{content:'+';color:#C3CAD5;font-weight:600;font-size:13px}
+.tbl.rc-tbl tbody tr td.rc:empty:hover::after{color:var(--brand-text,#1B6A4C)}
+.tbl.rc-tbl thead th.rc-h.we,.tbl.rc-tbl thead th.rc-h.hol{background:#EEF1F5}
+.tbl.rc-tbl tbody tr th.rc-name{border:1px solid #9FAABA}
+.tbl.rc-tbl tbody tr td.num{border:1px solid #9FAABA}
 .tbl.rc-tbl tbody tr td.rc.off{background:var(--surface-2)}
 .tbl.rc-tbl tbody tr td.rc:hover{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--c,#94A3B8) 70%,#000)}
 .tbl.rc-tbl tbody tr td.rc.chg{box-shadow:inset 0 0 0 2px var(--accent)}
@@ -6316,7 +6325,7 @@ function attRosterHtml(p, month, cfg, unitSel) {
     const cells = Array.from({ length: n }, (_, i) => { const dd = pad(i + 1), iso = `${month}-${dd}`, ch = S._roster.ch[e.id + '|' + dd];
       const { code, auto } = ch !== undefined ? { code: ch || attCode(e, iso, cfg, { ...(doc || {}), sched: {} }).code, auto: !ch } : attCode(e, iso, cfg, doc || null);
       if (code && code !== 'L') cnt++; const s = code && code !== 'L' ? hrShift(cfg, code) : null;
-      return `<td class="rc ${code === 'L' ? 'off' : ''} ${auto ? 'auto' : ''} ${ch !== undefined ? 'chg' : ''} ${s && s.custom ? 'cus' : ''}" data-rc="${e.id}|${dd}" tabindex="0" title="${esc(rcTitle(cfg, code))}" style="${s ? `--c:${s.color}` : ''}">${rcLabel(cfg, code)}</td>`; }).join('');
+      return `<td class="rc ${hrIsWeekend(iso, S.companyId) || hrHoliday(cfg, iso) ? 'we' : ''} ${code === 'L' ? 'off' : ''} ${auto ? 'auto' : ''} ${ch !== undefined ? 'chg' : ''} ${s && s.custom ? 'cus' : ''}" data-rc="${e.id}|${dd}" tabindex="0" title="${esc(rcTitle(cfg, code))}" style="${s ? `--c:${s.color}` : ''}">${rcLabel(cfg, code)}</td>`; }).join('');
     return `<tr><th class="rc-name"><b>${esc(e.name)}</b><small>${esc(e.unit || '')}${e.workType === 'shift' ? '' : ' · non-shift'}</small></th>${cells}<td class="num small">${cnt}</td></tr>`; }).join('');
   return `<div class="card card-pad stack"><div class="row" style="justify-content:space-between"><div class="row"><input class="input" type="month" id="aMonth" value="${month}" style="width:auto">${unitSel}<label class="row small"><input type="checkbox" id="rAll" ${showAll ? 'checked' : ''}> Tampilkan juga karyawan non-shift</label></div>
       <div class="row"><button class="btn sm" id="rPat">Isi pola otomatis…</button><button class="btn sm" id="rCopy">Salin dari bulan lalu</button><button class="btn sm primary" id="rSave">Simpan jadwal</button></div></div>
@@ -6329,7 +6338,7 @@ function attRosterWire(c, month, save = attRosterSave) {
   const mark = trackDirty(c, () => save(month));
   $$('[data-brush]', c).forEach(b => b.onclick = () => { R.brush = b.dataset.brush; $$('[data-brush]', c).forEach(x => x.classList.toggle('on', x === b)); });
   const setCell = (td, code) => { const k = td.dataset.rc; R.ch[k] = code; const s = code && code !== 'L' ? hrShift(cfg, code) : null;
-    td.innerHTML = rcLabel(cfg, code); td.title = rcTitle(cfg, code); td.className = `rc chg ${code === 'L' ? 'off' : ''} ${s && s.custom ? 'cus' : ''}`; td.style.cssText = s ? `--c:${s.color}` : ''; mark(); };
+    td.innerHTML = rcLabel(cfg, code); td.title = rcTitle(cfg, code); td.className = `rc chg ${td.classList.contains('we') ? 'we' : ''} ${code === 'L' ? 'off' : ''} ${s && s.custom ? 'cus' : ''}`; td.style.cssText = s ? `--c:${s.color}` : ''; mark(); };
   const paint = td => setCell(td, R.brush ?? ((cfg.shifts[0] || {}).code || 'L'));
   const t = $('#rcT', c); let start = null, moved = false;
   if (t) {
