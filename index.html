@@ -3767,7 +3767,37 @@ function istIqCat(iq) {
   if (iq == null) return 'Defisien (di bawah tabel)';
   return iq >= 130 ? 'Sangat superior' : iq >= 120 ? 'Superior' : iq >= 110 ? 'Di atas rata-rata' : iq >= 90 ? 'Rata-rata' : iq >= 80 ? 'Di bawah rata-rata' : iq >= 70 ? 'Borderline' : 'Defisien';
 }
-function istGeRS(r) { if (r.geRS != null && r.geRS !== '') return +r.geRS; if (Array.isArray(r.geScores)) return r.geScores.reduce((s, x) => s + (+x || 0), 0); return null; }
+/* Penilaian otomatis subtes GE (Kata Pengertian Umum): 2 = kategori umum yang tepat, 1 = sebagian benar, 0 = salah/kosong.
+   Kunci kata kunci di bawah dapat dikoreksi HRD per peserta di halaman hasil IST. */
+const IST_GE_KEY = [
+  { two: ['bunga', 'kembang', 'tanaman hias berbunga'], one: ['tanaman', 'tumbuhan', 'flora', 'harum', 'wangi', 'taman'] },
+  { two: ['indera', 'indra', 'pancaindera', 'pancaindra', 'panca indera', 'panca indra'], one: ['organ', 'anggota tubuh', 'bagian tubuh', 'alat tubuh', 'kepala', 'wajah', 'muka'] },
+  { two: ['kristal', 'hablur'], one: ['berkilau', 'mengkilat', 'mengkilap', 'kilau', 'mineral', 'padat', 'butir', 'keras', 'putih'] },
+  { two: ['presipitasi', 'curah', 'endapan', 'air yang turun', 'turun dari langit'], one: ['air', 'cuaca', 'iklim', 'musim', 'dingin', 'awan'] },
+  { two: ['komunikasi', 'perhubungan', 'penyampai', 'penghubung', 'media informasi', 'sarana informasi', 'alat informasi'], one: ['informasi', 'berita', 'pesan', 'kabar', 'hubungan', 'surat', 'kirim'] },
+  { two: ['optik', 'lensa'], one: ['kaca', 'penglihatan', 'melihat', 'lihat', 'mata', 'alat'] },
+  { two: ['pencernaan', 'cerna'], one: ['organ', 'perut', 'isi perut', 'alat tubuh', 'jeroan', 'bagian tubuh', 'makanan'] },
+  { two: ['jumlah', 'kuantitas', 'takaran', 'banyaknya', 'kuantum'], one: ['ukuran', 'kadar', 'perbandingan', 'ukur', 'nilai', 'besaran', 'volume'] },
+  { two: ['asal kehidupan', 'awal kehidupan', 'sumber kehidupan', 'bibit', 'cikal bakal', 'permulaan', 'perkembangbiakan', 'berkembang biak', 'reproduksi', 'calon'], one: ['makhluk hidup', 'kehidupan', 'hidup', 'keturunan', 'tumbuh', 'berkembang', 'awal', 'asal'] },
+  { two: ['lambang', 'simbol', 'tanda pengenal', 'identitas', 'emblem', 'logo'], one: ['tanda', 'atribut', 'kain', 'hiasan', 'pengenal'] },
+  { two: ['makhluk hidup', 'mahluk hidup', 'organisme', 'hidup', 'hayati'], one: ['makhluk', 'mahluk', 'alam', 'ciptaan', 'rantai makanan', 'ekosistem'] },
+  { two: ['wadah', 'tempat', 'penampung', 'penyimpan', 'menampung'], one: ['alat', 'bawa', 'membawa', 'isi', 'mengisi'] },
+  { two: ['batas', 'waktu', 'ujung', 'kurun'], one: ['urutan', 'saat', 'proses', 'tahap', 'periode', 'masa'] },
+  { two: ['uang', 'harta', 'keuangan', 'pengeluaran', 'ekonomi', 'belanja', 'membelanjakan'], one: ['sifat', 'sikap', 'watak', 'karakter', 'perilaku', 'kebiasaan', 'tabiat'] },
+  { two: ['ekonomi', 'pasar', 'perdagangan', 'transaksi', 'jual beli', 'niaga', 'perniagaan'], one: ['harga', 'bisnis', 'dagang', 'usaha', 'barang'] },
+  { two: ['arah', 'letak', 'posisi', 'kedudukan', 'ruang', 'dimensi'], one: ['tempat', 'tingkat', 'lokasi', 'sisi'] }
+];
+function istGeNorm(t) { return ' ' + String(t || '').toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim() + ' '; }
+function istGeLev(a, b) { if (Math.abs(a.length - b.length) > 1) return 9; const d = Array.from({ length: a.length + 1 }, (_, i) => [i]); for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); return d[a.length][b.length]; }
+function istGeHit(ans, words) {
+  const n = istGeNorm(ans); if (n.trim() === '') return false; const toks = n.trim().split(' ');
+  return words.some(w => { const k = istGeNorm(w); if (n.includes(k)) return true; if (!k.trim().includes(' ') && k.trim().length >= 5) return toks.some(t => t.length >= 4 && istGeLev(t, k.trim()) <= 1); return false; });
+}
+function istGeAuto(geAns) { return IST_GE_KEY.map((k, i) => { const a = (geAns || [])[i]; return istGeHit(a, k.two) ? 2 : istGeHit(a, k.one) ? 1 : 0; }); }
+const istGeHasAns = r => Array.isArray(r.geAns) && r.geAns.some(x => String(x || '').trim());
+function istGeRS(r) { if (r.geRS != null && r.geRS !== '') return +r.geRS; if (Array.isArray(r.geScores)) return r.geScores.reduce((s, x) => s + (+x || 0), 0); if (Array.isArray(r.geAns)) return istGeAuto(r.geAns).reduce((s, x) => s + x, 0); return null; }
+const istGeIsAuto = r => (r.geRS == null || r.geRS === '') && !Array.isArray(r.geScores) && Array.isArray(r.geAns);
 function istRaw(r, ks) {
   ks = 'koreksi'; const o = {};
   IST_ORDER.forEach(s => {
@@ -4143,9 +4173,9 @@ Views.istresult = () => {
     <div class="row">${C.pending ? '' : '<button class="btn primary" id="bPdf">Cetak / Unduh PDF</button>'}<button class="btn danger" id="bDel">Hapus</button></div></div>`;
   let geBox = '';
   if (C.pending || (r.geAns && !r.geScores) || (r.geAns && r.geScores)) {
-    const sc = r.geScores || Array(16).fill(null);
-    geBox = `<div class="card card-pad stack"><div class="row" style="justify-content:space-between"><div class="eyebrow">Penilaian subtes GE (manual)</div>${C.pending ? '<span class="pill warn">Belum dinilai</span>' : `<span class="pill ok">RS ${istGeRS(r)} / 32</span>`}</div>
-      ${r.geAns ? `<div class="note">Beri nilai tiap jawaban: <b>2</b> = kata yang meliputi kedua kata dengan tepat (kategori umum), <b>1</b> = sebagian benar, <b>0</b> = salah atau kosong. Pedoman rinci tidak ada pada file sumber, sehingga penilaian mengikuti pertimbangan HRD.</div>
+    const auto = istGeIsAuto(r), sc = r.geScores || (r.geAns ? istGeAuto(r.geAns) : Array(16).fill(null));
+    geBox = `<div class="card card-pad stack"><div class="row" style="justify-content:space-between"><div class="eyebrow">Penilaian subtes GE</div>${C.pending ? '<span class="pill warn">Belum dinilai</span>' : `<span class="row" style="gap:6px">${auto ? '<span class="pill info">Dinilai otomatis</span>' : '<span class="pill">Diperiksa HRD</span>'}<span class="pill ok">RS ${istGeRS(r)} / 32</span></span>`}</div>
+      ${r.geAns ? `<div class="note">${auto ? 'Nilai di bawah <b>diisi otomatis</b> dengan mencocokkan jawaban ke kata kunci kategori umum. Hasil IST sudah dihitung dengan nilai ini. Periksa sekilas; bila ada yang kurang tepat, ubah lalu tekan Simpan.' : 'Nilai sudah diperiksa/diubah HRD.'} <b>2</b> = kata yang meliputi kedua kata dengan tepat (kategori umum), <b>1</b> = sebagian benar, <b>0</b> = salah atau kosong.</div>
       <div class="ist-ge">${IST_ITEMS.GE.map((q, i) => `<div class="ist-gr"><span class="ist-n">${61 + i}</span><div><b>${esc(q)}</b><div class="small ${r.geAns[i] ? '' : 'faint'}">${r.geAns[i] ? esc(r.geAns[i]) : '(tidak dijawab)'}</div></div><select class="input" data-ge="${i}"><option value="">–</option>${[0, 1, 2].map(v => `<option ${sc[i] === v ? 'selected' : ''}>${v}</option>`).join('')}</select></div>`).join('')}</div>
       <div class="row"><button class="btn primary" id="geSave">Simpan penilaian GE</button><span class="small muted" id="geSum"></span></div>`
       : `<div class="row"><label class="f" style="max-width:220px">Skor GE (RS 0–32)<input class="input" id="geRS" inputmode="numeric" value="${r.geRS ?? ''}"></label><div style="align-self:end"><button class="btn primary" id="geSave2">Simpan</button></div></div>`}</div>`;
