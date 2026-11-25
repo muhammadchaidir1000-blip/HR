@@ -1179,6 +1179,9 @@ body[data-role] .side{background:#FFFFFF}
 .tbl td.chk input,.tbl th.chk input{width:17px;height:17px;cursor:pointer;accent-color:#23805C}
 .tbl tr.sel td{background:#EEF7F2}
 .bulk-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 16px;background:#E8F4EE;border-top:1px solid #CFE5D9;border-bottom:1px solid #CFE5D9;position:sticky;top:0;z-index:3}
+/* pemilih tanggal cuti */
+.ldp-meter{margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ldp-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 /* lonceng notifikasi */
 .bell{position:relative}
 .bell-btn{appearance:none;position:relative;display:grid;place-items:center;width:40px;height:40px;border-radius:999px;border:1px solid var(--line-2);background:#fff;color:var(--muted);cursor:pointer}
@@ -6070,7 +6073,7 @@ Views.employee = () => {
       ${attRecapChips(R)}${attDaysTable(e, A)}</div>`; }
   if (tab === 'cuti') { const year = new Date().getFullYear(), b = leaveBalance(e, year), L = Store.all('leaves', l => l.employeeId === e.id).sort((a, c) => (c.start || '').localeCompare(a.start || ''));
     body = `<div class="card card-pad stack"><div class="row" style="justify-content:space-between"><div class="eyebrow">Saldo cuti tahunan ${year}</div><button class="btn sm" id="eLadj">Sesuaikan saldo</button></div><div class="row">${b.type ? `<span class="pill info">Hak ${b.quota} hari${b.adj ? ` (termasuk penyesuaian ${b.adj > 0 ? '+' : ''}${b.adj})` : ''}</span><span class="pill">Terpakai ${b.used}</span><span class="pill warn">Menunggu ${b.pending}</span><span class="pill ok">Sisa ${b.left}</span>${b.eligible ? '' : `<span class="pill warn">berhak mulai ${fmtDate(b.eligDate)}</span>`}` : '<span class="small muted">Belum ada jenis cuti yang ditandai sebagai cuti tahunan.</span>'}</div></div>
-      <div class="card">${L.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Jenis</th><th>Tanggal</th><th class="num">Hari</th><th>Alasan</th><th>Status</th></tr></thead><tbody>${L.map(l => `<tr><td>${esc(l.type)}</td><td class="small">${leaveWhen(l)}</td><td class="num">${leaveDays(e, l.start, l.end)}</td><td class="small">${esc(l.reason || '')}</td><td>${leaveStatusPill(l)}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">Belum ada riwayat cuti.</div>'}</div>`; }
+      <div class="card">${L.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Jenis</th><th>Tanggal</th><th class="num">Hari</th><th>Alasan</th><th>Status</th></tr></thead><tbody>${L.map(l => `<tr><td>${esc(l.type)}</td><td class="small">${leaveWhen(l)}</td><td class="num">${leaveDaysOf(e, l)}</td><td class="small">${esc(l.reason || '')}</td><td>${leaveStatusPill(l)}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">Belum ada riwayat cuti.</div>'}</div>`; }
   if (['keluarga', 'kualifikasi', 'riwayat', 'dokumen'].includes(tab)) body = empTabBody(e, tab);
   if (tab === 'gaji' && gw) body = `<div class="card card-pad" style="border-color:var(--warn,#E0730B)"><b>Perhatian:</b> ${esc(gw)}</div>` + body;
   const tabs = [['profil', 'Profil'], ['keluarga', 'Keluarga & darurat'], ['kualifikasi', 'Kualifikasi'], ['riwayat', 'Riwayat'], ['dokumen', 'Dokumen'], ['absen', 'Absensi'], ['cuti', 'Cuti'], ['gaji', 'Gaji']];
@@ -6310,7 +6313,7 @@ function attMonth(e, month) {
     if (i === 0 || i === info.length - 1) return; /* hari pinggir hanya untuk memakai scan lintas bulan */
     if (fix && fix.in) tin = (sh ? i * 1440 : i * 1440) + tmin(fix.in);
     if (fix && fix.out) { tout = i * 1440 + tmin(fix.out); if (tin != null && tout <= tin) tout += 1440; }
-    const lv = leaves.find(l => l.start <= d.iso && l.end >= d.iso), hol = hrHoliday(cfg, d.iso);
+    const lv = leaves.find(l => leaveCovers(l, d.iso)), hol = hrHoliday(cfg, d.iso);
     let status = '', late = 0, early = 0, note = '';
     if (sh && tin != null && tin - S0 > cfg.tolLate) late = tin - S0;
     if (sh && tout != null && E0 - tout > cfg.tolEarly) early = E0 - tout;
@@ -6752,7 +6755,7 @@ function lanDownloadZip() {
 }
 
 /* tanggal & jam cuti: "21 Des 2026 08:00 – 22 Des 2026 16:00" */
-const leaveWhen = l => l.start === l.end && l.t1 && l.t2 ? `${fmtDate(l.start)}, ${l.t1}–${l.t2}${l.t2 < l.t1 ? ' (esok hari)' : ''}` : `${fmtDate(l.start)}${l.t1 ? ' ' + l.t1 : ''} – ${fmtDate(l.end)}${l.t2 ? ' ' + l.t2 : ''}`;
+const leaveWhen = l => Array.isArray(l.dates) && l.dates.length > 1 && leaveRanges(l.dates).length > 1 ? `${leaveRanges(l.dates).map(leaveRangeTxt).join(', ')}${l.t1 && l.t2 ? `, ${l.t1}–${l.t2}` : ''}` : l.start === l.end && l.t1 && l.t2 ? `${fmtDate(l.start)}, ${l.t1}–${l.t2}${l.t2 < l.t1 ? ' (esok hari)' : ''}` : `${fmtDate(l.start)}${l.t1 ? ' ' + l.t1 : ''} – ${fmtDate(l.end)}${l.t2 ? ' ' + l.t2 : ''}`;
 const leaveTimeOpts = v => HALF_HOURS.map(h => `<option ${h === v ? 'selected' : ''}>${h}</option>`).join('');
 /* isi jam otomatis dari jadwal shift karyawan (selama jam belum diubah manual) */
 function leaveTimeWire(f, empOf) {
@@ -6760,10 +6763,10 @@ function leaveTimeWire(f, empOf) {
   const near = t => { const m = tmin(t); return m == null ? null : HALF_HOURS[Math.round(m / 30) % 48]; };
   const fill = () => { const e = empOf(); if (!e) return; const cfg = hrCfg(e.companyId);
     const sh = iso => { if (!/^\d{4}-\d\d-\d\d$/.test(iso || '')) return null; const c = attCode(e, iso, cfg).code; return c && c !== 'L' ? hrShift(cfg, c) : null; };
-    const a = sh(f.start.value), b = sh(f.end.value);
+    const ds = f._dates && f._dates.length ? f._dates : [todayISO()], a = sh(ds[0]), b = sh(ds[ds.length - 1]);
     if (!touched.t1 && a && near(a.start)) f.t1.value = near(a.start);
     if (!touched.t2 && b && near(b.end)) f.t2.value = near(b.end); };
-  f.start.addEventListener('change', fill); f.end.addEventListener('change', fill); if (f.employeeId) f.employeeId.addEventListener('change', fill); fill();
+  f._timeFill = fill; if (f.employeeId) f.employeeId.addEventListener('change', fill); fill();
 }
 const leaveTimeErr = d => d.start === d.end && d.t1 && d.t1 === d.t2 ? 'Jam mulai dan jam selesai tidak boleh sama' : '';
 /* =========================================================
@@ -6809,7 +6812,7 @@ function leaveBalance(e, year) {
   const eligDate = e.joinDate || '';
   if (!T) return { type: null, used: 0, pending: 0, quota: 0, left: 0, eligible: true, eligDate };
   const mine = Store.all('leaves', l => l.employeeId === e.id && l.type === T.name && (l.start || '').startsWith(String(year)));
-  const sum = f => mine.filter(l => leaveFinal(l) === f).reduce((s, l) => s + leaveDays(e, l.start, l.end), 0);
+  const sum = f => mine.filter(l => leaveFinal(l) === f).reduce((s, l) => s + leaveDaysOf(e, l), 0);
   const maxQ = +T.quota || 12, acc = leaveAccrued(e, year, maxQ), adj = +((e.leaveAdj || {})[year] || 0), quota = acc.months + adj, used = sum('Disetujui');
   return { type: T.name, used, pending: sum('Menunggu'), quota, adj, accrued: acc.months, maxQ, next: acc.next, left: quota - used, eligible: true, eligDate };
 }
@@ -6818,7 +6821,7 @@ const leaveQuotaTxt = T => { const q = +T.quota || 0; if (!q) return ''; if (T.c
 function leaveRemain(e, Traw, ref) {
   const T = leaveTypeInfo(Traw); if (!T) return ''; ref = ref || todayISO();
   if (T.annual) { const b = leaveBalance(e, +ref.slice(0, 4)); return `sisa ${b.left} hari (jatah ${b.quota} hari s.d. ${fmtMonth(todayISO().slice(0, 7))}${b.pending ? `, ${b.pending} menunggu` : ''})`; }
-  if (T.per === 'bulan' && +T.quota) { const m = ref.slice(0, 7), used = Store.all('leaves', l => l.employeeId === e.id && l.type === T.name && leaveFinal(l) !== 'Ditolak' && (l.start || '').startsWith(m)).reduce((s, l) => s + leaveDays(e, l.start, l.end), 0);
+  if (T.per === 'bulan' && +T.quota) { const m = ref.slice(0, 7), used = Store.all('leaves', l => l.employeeId === e.id && l.type === T.name && leaveFinal(l) !== 'Ditolak' && (l.start || '').startsWith(m)).reduce((s, l) => s + leaveDaysOf(e, l), 0);
     return `${T.quota} hari per bulan · sisa ${Math.max(0, T.quota - used)} hari`; }
   if (T.per === 'kejadian' && +T.quota) return `${leaveQuotaTxt(T)} per kejadian${T.paid === false ? ', tidak dibayar' : ''}`;
   return T.paid === false ? 'tidak dibayar' : 'sesuai surat / ketentuan';
@@ -6830,7 +6833,7 @@ const leaveTypeNote = (cfg, name) => { const T = leaveTypeInfo(leaveType(cfg, na
 function leaveQuotaWarn(e, Traw, start, end, n) {
   const T = leaveTypeInfo(Traw); if (!T || T.annual || !(+T.quota)) return '';
   if (T.per === 'kejadian') { const k = T.cal ? Math.round((new Date(end) - new Date(start)) / 864e5) + 1 : n; return k > T.quota ? `<b>Melebihi ketentuan ${esc(T.name)} (${esc(leaveQuotaTxt(T))} per kejadian).</b>` : ''; }
-  if (T.per === 'bulan') { const m = start.slice(0, 7), used = Store.all('leaves', l => l.employeeId === e.id && l.type === T.name && leaveFinal(l) !== 'Ditolak' && (l.start || '').startsWith(m)).reduce((s, l) => s + leaveDays(e, l.start, l.end), 0);
+  if (T.per === 'bulan') { const m = start.slice(0, 7), used = Store.all('leaves', l => l.employeeId === e.id && l.type === T.name && leaveFinal(l) !== 'Ditolak' && (l.start || '').startsWith(m)).reduce((s, l) => s + leaveDaysOf(e, l), 0);
     return used + n > T.quota ? `<b>Melebihi ${T.quota} hari ${esc(T.name)} per bulan.</b>` : ''; }
   return n > T.quota ? `<b>Melebihi kuota ${esc(T.name)} (${T.quota} hari).</b>` : '';
 }
@@ -6844,14 +6847,14 @@ Views.leaves = () => {
   reqs.sort((a, b) => (b.start || '').localeCompare(a.start || ''));
   const waiting = Store.all('leaves', x => inScope(x) && em[x.employeeId] && leaveFinal(x) === 'Menunggu').length;
   const units = [...new Set(emps.map(e => e.unit).filter(Boolean))].sort(), today = todayISO();
-  const onLeave = Store.all('leaves', x => inScope(x) && em[x.employeeId] && leaveFinal(x) === 'Disetujui' && x.start <= today && x.end >= today);
+  const onLeave = Store.all('leaves', x => inScope(x) && em[x.employeeId] && leaveFinal(x) === 'Disetujui' && leaveCovers(x, today));
   let body;
   if (tab === 'req') body = `<div class="card"><div class="card-head"><div class="row">
       <select class="input" id="lFs" style="width:auto">${[['Menunggu', 'Menunggu persetujuan'], ['Disetujui', 'Disetujui'], ['Ditolak', 'Ditolak'], ['all', 'Semua']].map(([v, l]) => `<option value="${v}" ${fs === v ? 'selected' : ''}>${l}</option>`).join('')}</select>
       <select class="input" id="lUnit" style="width:auto"><option value="">Semua unit</option>${units.map(u => `<option ${u === p.unit ? 'selected' : ''}>${esc(u)}</option>`).join('')}</select></div><span class="small muted">${reqs.length} pengajuan</span></div>
     ${reqs.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Karyawan</th><th>Jenis</th><th>Tanggal</th><th class="num">Hari</th><th>Alasan</th><th>Persetujuan</th><th>Status</th><th></th></tr></thead><tbody>
       ${reqs.map(l => { const e = em[l.employeeId], st = leaveStep(l), steps = Array.isArray(l.steps) ? l.steps : [];
-        return `<tr><td><b>${esc(e.name)}</b>${sampleTag(l)}<div class="small muted">${esc(e.unit || '')}</div></td><td>${esc(l.type)}${leaveType(cfg, l.type)?.paid === false ? '<div class="small muted">tidak dibayar</div>' : ''}</td><td class="small">${leaveWhen(l)}</td><td class="num">${leaveDays(e, l.start, l.end)}</td>
+        return `<tr><td><b>${esc(e.name)}</b>${sampleTag(l)}<div class="small muted">${esc(e.unit || '')}</div></td><td>${esc(l.type)}${leaveType(cfg, l.type)?.paid === false ? '<div class="small muted">tidak dibayar</div>' : ''}</td><td class="small">${leaveWhen(l)}</td><td class="num">${leaveDaysOf(e, l)}</td>
           <td class="small">${esc(l.reason || '')}${l.docRef ? `<div class="muted">Dok: ${esc(l.docRef)}</div>` : ''}${hrDocLinks('leaves', l.id, l.files)}${l.substituteId ? `<div class="muted">Pengganti: ${esc(empName(l.substituteId))}</div>` : ''}</td>
           <td class="small">${steps.length ? steps.map(s => `<div><span class="lv-dot ${s.status === 'Disetujui' ? 'ok' : s.status === 'Ditolak' ? 'bad' : ''}"></span>${esc(s.name)}${s.by ? ` · <span class="muted">${esc(s.by)}</span>` : ''}${s.note ? `<div class="muted">“${esc(s.note)}”</div>` : ''}</div>`).join('') : '<span class="muted">langsung</span>'}</td>
           <td>${leaveStatusPill(l)}</td><td><div class="row" style="flex-wrap:nowrap">${st ? `<button class="btn sm primary" data-ap="${l.id}">Setujui${steps.length > 1 ? ' (' + esc(st.name) + ')' : ''}</button><button class="btn sm" data-rj="${l.id}">Tolak</button>` : ''}<button class="btn sm danger" data-del="${l.id}" aria-label="Hapus">✕</button></div></td></tr>`; }).join('')}
@@ -6859,7 +6862,7 @@ Views.leaves = () => {
   else body = `<div class="row"><label class="row small muted">Tahun <input class="input" type="number" id="lYear" value="${year}" min="2020" max="2100" style="width:100px"></label></div>
     <div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Karyawan</th><th>Mulai kerja</th><th class="num">Hak cuti tahunan</th><th class="num">Terpakai</th><th class="num">Menunggu</th><th class="num">Sisa</th>${cfg.leaveTypes.filter(t => !t.annual).map(t => `<th class="num">${esc(t.name)}</th>`).join('')}</tr></thead><tbody>
       ${emps.filter(e => e.active !== false).map(e => { const b = leaveBalance(e, year);
-        const cnt = t => Store.all('leaves', l => l.employeeId === e.id && l.type === t && leaveFinal(l) === 'Disetujui' && (l.start || '').startsWith(String(year))).reduce((s, l) => s + leaveDays(e, l.start, l.end), 0);
+        const cnt = t => Store.all('leaves', l => l.employeeId === e.id && l.type === t && leaveFinal(l) === 'Disetujui' && (l.start || '').startsWith(String(year))).reduce((s, l) => s + leaveDaysOf(e, l), 0);
         return `<tr><td><b>${esc(e.name)}</b><div class="small muted">${esc(e.unit || '')}</div></td><td class="small">${fmtDate(e.joinDate)}${b.eligible ? '' : `<div class="pill warn">berhak mulai ${fmtDate(b.eligDate)}</div>`}</td><td class="num">${b.quota}</td><td class="num">${b.used}</td><td class="num">${b.pending}</td><td class="num"><b>${b.left}</b></td>${cfg.leaveTypes.filter(t => !t.annual).map(t => `<td class="num">${cnt(t.name)}</td>`).join('')}</tr>`; }).join('')}
     </tbody></table></div></div>`;
   return `<div class="page-head"><div><h1>Cuti Karyawan</h1><p>Alur persetujuan: ${cfg.approvals.map(esc).join(' → ')}. Jenis cuti, kuota, dan alur diatur di Aturan Absensi & Gaji. Cuti yang disetujui otomatis tercatat di absensi.</p></div><button class="btn primary" id="addL" ${emps.length ? '' : 'disabled'}>+ Pengajuan cuti</button></div>
@@ -6873,12 +6876,12 @@ Views.leavesMount = c => {
   const lu = $('#lUnit', c); if (lu) lu.onchange = () => setP({ unit: lu.value });
   const ly = $('#lYear', c); if (ly) ly.onchange = () => setP({ year: ly.value });
   const decide = (id, ok) => { const l = Store.get('leaves', id), st = leaveStep(l), e = Store.get('employees', l.employeeId);
-    openModal({ title: `${ok ? 'Setujui' : 'Tolak'} cuti · ${e?.name || ''}`, body: `<p style="margin:0">${esc(l.type)}, ${leaveWhen(l)} (${leaveDays(e, l.start, l.end)} hari)${st ? `<br><span class="small muted">Tahap: ${esc(st.name)}</span>` : ''}</p><label class="f">Catatan${ok ? ' (opsional)' : ''}<input class="input" id="dNote" ${ok ? '' : 'required'}></label>`,
+    openModal({ title: `${ok ? 'Setujui' : 'Tolak'} cuti · ${e?.name || ''}`, body: `<p style="margin:0">${esc(l.type)}, ${leaveWhen(l)} (${leaveDaysOf(e, l)} hari)${st ? `<br><span class="small muted">Tahap: ${esc(st.name)}</span>` : ''}</p><label class="f">Catatan${ok ? ' (opsional)' : ''}<input class="input" id="dNote" ${ok ? '' : 'required'}></label>`,
       foot: `<button class="btn" data-close>Batal</button><button class="btn ${ok ? 'primary' : 'danger'}" id="dGo">${ok ? 'Setujui' : 'Tolak'}</button>`,
       onMount: r => $('#dGo', r).onclick = async () => { const note = $('#dNote', r).value.trim(); if (!ok && !note) { toast('Tulis alasan penolakan'); return; }
         const cur = Store.get('leaves', id); let steps = Array.isArray(cur.steps) && cur.steps.length ? cur.steps.map(s => ({ ...s })) : [{ name: 'HRD', status: 'Menunggu' }];
         const i = steps.findIndex(s => s.status === 'Menunggu'); if (i < 0) { closeModal(); return; }
-        if (ok && cur.type) { const T = leaveType(hrCfg(), cur.type); if (T?.annual && i === steps.length - 1) { const b = leaveBalance(e, +cur.start.slice(0, 4)), need = leaveDays(e, cur.start, cur.end); if (need > b.left && !(await confirmBox(`Sisa cuti tahunan ${esc(e.name)} hanya ${b.left} hari, pengajuan ${need} hari. Tetap setujui?`, 'Tetap setujui'))) return; } }
+        if (ok && cur.type) { const T = leaveType(hrCfg(), cur.type); if (T?.annual && i === steps.length - 1) { const b = leaveBalance(e, +cur.start.slice(0, 4)), need = leaveDaysOf(e, cur); if (need > b.left && !(await confirmBox(`Sisa cuti tahunan ${esc(e.name)} hanya ${b.left} hari, pengajuan ${need} hari. Tetap setujui?`, 'Tetap setujui'))) return; } }
         steps[i] = { ...steps[i], status: ok ? 'Disetujui' : 'Ditolak', by: S.user.username, at: nowISO(), note };
         const nx = { ...cur, steps }; nx.status = leaveFinal(nx); delete nx.id; await Store.put('leaves', id, nx);
         audit(`cuti ${ok ? 'disetujui' : 'ditolak'} (${steps[i].name})`, e?.name); closeModal(); App.renderContent(); toast(ok ? (nx.status === 'Disetujui' ? 'Cuti disetujui' : `Disetujui ${steps[i].name}, lanjut ke ${leaveStep(nx).name}`) : 'Cuti ditolak'); } }); };
@@ -6893,8 +6896,8 @@ function leaveForm() {
     <label class="f" style="grid-column:1/-1">Karyawan<select class="input" name="employeeId">${emps.map(e => `<option value="${e.id}">${esc(e.name)} · ${esc(e.unit || '')}</option>`).join('')}</select></label>
     <label class="f">Jenis cuti<select class="input" name="type">${leaveTypeOptions(cfg, emps[0], '')}</select></label>
     <label class="f">Pengganti selama cuti<select class="input" name="substituteId"><option value="">– tidak ada –</option>${emps.map(e => `<option value="${e.id}">${esc(e.name)}</option>`).join('')}</select></label>
-    <label class="f">Mulai<input class="input" type="date" name="start" required value="${todayISO()}"></label><label class="f">Jam mulai<select class="input" name="t1">${leaveTimeOpts('08:00')}</select></label>
-    <label class="f">Selesai<input class="input" type="date" name="end" required value="${todayISO()}"></label><label class="f">Jam selesai<select class="input" name="t2">${leaveTimeOpts('16:00')}</select></label>
+    ${leavePickerHtml('lD')}
+    <label class="f">Jam mulai (tiap tanggal)<select class="input" name="t1">${leaveTimeOpts('08:00')}</select></label><label class="f">Jam selesai (tiap tanggal)<select class="input" name="t2">${leaveTimeOpts('16:00')}</select></label>
     <label class="f" style="grid-column:1/-1">Alasan<input class="input" name="reason"></label>
     <label class="f">No. surat / dokumen pendukung<input class="input" name="docRef" placeholder="misalnya surat keterangan dokter"></label>
     <label class="f">Persetujuan<select class="input" name="direct"><option value="0">Ikuti alur: ${cfg.approvals.map(esc).join(' → ')}</option><option value="1">Sudah disetujui (input data lama)</option></select></label>
@@ -6904,31 +6907,111 @@ function leaveForm() {
     foot: '<button class="btn" data-close>Batal</button><button class="btn primary" form="lF">Simpan</button>',
     onMount: r => {
       const f = $('#lF', r);
-      const check = () => { const d = formData(f), e = Store.get('employees', d.employeeId), T = leaveType(cfg, d.type), msg = [];
-        if (!e) return { msg: '', ok: false }; if (d.end < d.start) return { msg: 'Tanggal selesai tidak boleh sebelum tanggal mulai.', ok: false };
-        const n = leaveDays(e, d.start, d.end); msg.push(`<b>${n}</b> hari kerja/jadwal.`);
-        if (T?.annual) { const b = leaveBalance(e, +d.start.slice(0, 4)); msg.push(`Sisa cuti tahunan: <b>${b.left}</b> hari (jatah ${b.quota} hari dari ${b.accrued} bulan bekerja${b.adj ? `, penyesuaian ${b.adj}` : ''})${b.pending ? `, ${b.pending} hari menunggu` : ''}.`); if (n > b.left) msg.push('<b>Melebihi sisa cuti.</b>'); }
-        else { const w = leaveQuotaWarn(e, T, d.start, d.end, n); if (w) msg.push(w); }
-        if (T && T.paid === false) msg.push('Cuti ini tidak dibayar: gaji dipotong sesuai jumlah hari.');
-        const clash = Store.all('leaves', l => l.employeeId === e.id && leaveFinal(l) !== 'Ditolak' && l.start <= d.end && l.end >= d.start);
-        if (clash.length) msg.push(`<b>Bentrok</b> dengan cuti ${esc(clash[0].type)} ${fmtDate(clash[0].start)} – ${fmtDate(clash[0].end)}.`);
-        if (d.substituteId && d.substituteId === d.employeeId) msg.push('<b>Pengganti tidak boleh orang yang sama.</b>');
-        return { msg: msg.join(' '), ok: !clash.length && n > 0 && d.substituteId !== d.employeeId, n };
-      };
+      const check = () => { const d = formData(f), e = Store.get('employees', d.employeeId);
+        return leaveCheckDates(e, cfg, d.type, f._dates || [], [d.substituteId && d.substituteId === d.employeeId ? '<b>Pengganti tidak boleh orang yang sama.</b>' : '']); };
       const prev = () => { $('#lPrev', r).innerHTML = check().msg; };
-      f.oninput = prev; f.onchange = prev; prev(); hrDocInputWire(r, 'lDoc');
+      f.oninput = prev; f.onchange = prev; hrDocInputWire(r, 'lDoc');
       leaveTimeWire(f, () => Store.get('employees', f.employeeId.value));
-      const typeSync = () => { const e = Store.get('employees', f.employeeId.value), cur = f.type.value; f.type.innerHTML = leaveTypeOptions(cfg, e, cur); $('#lvInfo', r).innerHTML = leaveTypeNote(cfg, f.type.value); prev(); };
-      f.employeeId.addEventListener('change', typeSync); f.type.addEventListener('change', () => { $('#lvInfo', r).innerHTML = leaveTypeNote(cfg, f.type.value); }); typeSync();
-      f.onsubmit = async ev => { ev.preventDefault(); const d = formData(f), k = check();
+      leavePickerWire(r, f, 'lD', { cfg, emp: () => Store.get('employees', f.employeeId.value), type: () => f.type.value, onChange: () => { prev(); f._timeFill && f._timeFill(); } });
+      const typeSync = () => { const e = Store.get('employees', f.employeeId.value), cur = f.type.value; f.type.innerHTML = leaveTypeOptions(cfg, e, cur); $('#lvInfo', r).innerHTML = leaveTypeNote(cfg, f.type.value); };
+      f.employeeId.addEventListener('change', () => { typeSync(); f._pickReset(); prev(); });
+      f.type.addEventListener('change', () => { $('#lvInfo', r).innerHTML = leaveTypeNote(cfg, f.type.value); f._pickRefresh(); prev(); }); typeSync(); f._pickRefresh(); prev();
+      f.onsubmit = async ev => { ev.preventDefault(); const d = formData(f), k = check(), ds = [...(f._dates || [])].sort(); d.start = ds[0]; d.end = ds[ds.length - 1];
+        if (!k.n) { toast('Pilih tanggal cuti lalu klik Tambah tanggal'); return; }
         { const te = leaveTimeErr(d); if (te) { toast(te); return; } }
-        if (d.end < d.start) { toast('Periksa tanggal'); return; } if (!k.n) { toast('Tidak ada hari kerja/jadwal pada rentang tanggal ini'); return; } if (!k.ok) { toast('Periksa peringatan pada formulir'); return; }
+        if (!k.ok) { toast('Periksa peringatan pada formulir'); return; }
         const steps = cfg.approvals.map(name => d.direct === '1' ? { name, status: 'Disetujui', by: S.user.username, at: nowISO(), note: 'input langsung' } : { name, status: 'Menunggu' });
         let files = []; try { files = await hrDocUploadAll(r, 'lDoc', Store.get('employees', d.employeeId)); } catch (x) { toast(x.message || String(x)); return; }
-        const body = { companyId: S.companyId, employeeId: d.employeeId, type: d.type, start: d.start, end: d.end, t1: d.t1, t2: d.t2, reason: d.reason, docRef: d.docRef, substituteId: d.substituteId, steps, files, createdAt: nowISO(), createdBy: S.user.username };
+        const body = { companyId: S.companyId, employeeId: d.employeeId, type: d.type, start: d.start, end: d.end, dates: ds, t1: d.t1, t2: d.t2, reason: d.reason, docRef: d.docRef, substituteId: d.substituteId, steps, files, createdAt: nowISO(), createdBy: S.user.username };
         body.status = leaveFinal(body); await Store.put('leaves', uid('l'), body);
         audit('pengajuan cuti', `${empName(d.employeeId)} · ${d.type}`); closeModal(); S.params = { ...S.params, tab: 'req', fs: body.status === 'Menunggu' ? 'Menunggu' : 'all' }; App.renderContent(); toast('Pengajuan cuti disimpan'); };
     } });
+}
+
+/* =========================================================
+   Cuti: pilih tanggal (boleh tidak berurutan) dan kunci sesuai jatah
+   l.dates = ['YYYY-MM-DD', …] (pengajuan baru); l.start/l.end = tanggal pertama/terakhir
+   ========================================================= */
+const leaveCovers = (l, iso) => Array.isArray(l.dates) && l.dates.length ? l.dates.includes(iso) : (l.start <= iso && l.end >= iso);
+function leaveDaysOf(e, l, from, to) {
+  if (Array.isArray(l.dates) && l.dates.length) return l.dates.filter(d => (!from || d >= from) && (!to || d <= to)).length;
+  const s = from && l.start < from ? from : l.start, en = to && l.end > to ? to : l.end; return leaveDays(e, s, en);
+}
+const leaveIsWork = (e, iso) => leaveDays(e, iso, iso) === 1;
+/* kelompokkan tanggal berurutan: [['2026-12-03','2026-12-03'],['2026-12-10','2026-12-12']] */
+function leaveRanges(dates) { const out = []; [...dates].sort().forEach(d => { const L = out[out.length - 1]; if (L && addDays(L[1], 1) === d) L[1] = d; else out.push([d, d]); }); return out; }
+const leaveRangeTxt = ([a, b]) => a === b ? fmtDate(a) : a.slice(0, 7) === b.slice(0, 7) ? `${+a.slice(8)}–${fmtDate(b)}` : `${fmtDate(a)} – ${fmtDate(b)}`;
+/* jumlah hari maksimal yang masih boleh dipilih untuk jenis cuti T, tanggal "iso", di luar tanggal "sel" */
+function leaveRoom(e, T, sel, iso) {
+  if (!T) return 0; const I = leaveTypeInfo(T);
+  if (T.annual) { const y = iso.slice(0, 4), b = leaveBalance(e, +y); return Math.max(0, b.left - b.pending - sel.filter(d => d.startsWith(y)).length); }
+  if (!(+I.quota)) return 366;
+  if (I.per === 'bulan') { const m = iso.slice(0, 7), used = Store.all('leaves', l => l.employeeId === e.id && l.type === T.name && leaveFinal(l) !== 'Ditolak').reduce((s, l) => s + leaveDaysOf(e, l, m + '-01', m + '-31'), 0);
+    return Math.max(0, I.quota - used - sel.filter(d => d.startsWith(m)).length); }
+  return Math.max(0, I.quota - sel.length);
+}
+const leaveLimitTxt = (e, T) => { const I = leaveTypeInfo(T); if (!I) return ''; if (T.annual) return 'sisa cuti tahunan'; if (!(+I.quota)) return 'tanpa batas'; return I.per === 'bulan' ? `${I.quota} hari per bulan` : `${leaveQuotaTxt(I)} per kejadian`; };
+
+function leavePickerHtml(id) {
+  return `<div class="f ldp" style="grid-column:1/-1"><span>Tanggal cuti <span class="small muted">(pilih satu tanggal atau rentang, lalu klik Tambah; boleh tidak berurutan)</span></span>
+    <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center"><input class="input" type="date" id="${id}_a" value="${todayISO()}" style="width:auto"><span class="small muted">s.d.</span><input class="input" type="date" id="${id}_b" value="${todayISO()}" style="width:auto">
+      <button type="button" class="btn" id="${id}_add">+ Tambah tanggal</button></div>
+    <div class="ldp-meter" id="${id}_m"></div><div class="ldp-chips" id="${id}_c"></div></div>`;
+}
+/* opts: { cfg, emp(): employee, type(): nama jenis, onChange() } ; tanggal terpilih ada di f._dates */
+function leavePickerWire(r, f, id, opts) {
+  f._dates = [];
+  const A = $('#' + id + '_a', r), B = $('#' + id + '_b', r), add = $('#' + id + '_add', r), M = $('#' + id + '_m', r), C = $('#' + id + '_c', r);
+  const T = () => leaveType(opts.cfg, opts.type()), I = () => leaveTypeInfo(T());
+  const ok = (e, iso) => (I()?.cal || leaveIsWork(e, iso)) && !f._dates.includes(iso) && !Store.all('leaves', l => l.employeeId === e.id && leaveFinal(l) !== 'Ditolak' && leaveCovers(l, iso)).length;
+  const maxEnd = () => { const e = opts.emp(), t = T(); if (!e || !t || !A.value) return ''; let room = leaveRoom(e, t, f._dates, A.value); if (room >= 366) return ''; if (room <= 0) return A.value;
+    let d = A.value, last = A.value; for (let i = 0; i < 400 && room > 0; i++) { if (ok(e, d)) { room--; last = d; } d = addDays(d, 1); } return last; };
+  const paint = () => {
+    const e = opts.emp(), t = T(), n = f._dates.length;
+    const room = e && t ? leaveRoom(e, t, f._dates, A.value || todayISO()) : 0, lim = room >= 366 ? null : n + room;
+    M.innerHTML = t ? `<span class="pill ${lim != null && room <= 0 ? 'warn' : 'info'}">${n} hari dipilih${lim != null ? ` dari jatah ${lim} hari` : ''}</span> <span class="small muted">${esc(t.name)}: ${esc(leaveLimitTxt(e, t))}${lim != null && room <= 0 && n ? ' · jatah sudah terpakai semua' : ''}</span>` : '';
+    C.innerHTML = leaveRanges(f._dates).map(([a, b]) => `<span class="hrdoc-chip">📅 ${esc(leaveRangeTxt([a, b]))}${a !== b ? ` <small>${f._dates.filter(d => d >= a && d <= b).length} hari</small>` : ''}<button type="button" data-rmr="${a}|${b}" aria-label="Hapus tanggal">✕</button></span>`).join('') || '<span class="small faint">Belum ada tanggal dipilih.</span>';
+    $$('[data-rmr]', C).forEach(x => x.onclick = () => { const [a, b] = x.dataset.rmr.split('|'); f._dates = f._dates.filter(d => d < a || d > b); paint(); opts.onChange && opts.onChange(); });
+    const mx = maxEnd(); B.max = mx || ''; B.min = A.value || ''; if (mx && B.value > mx) B.value = mx; if (B.value < A.value) B.value = A.value;
+    add.disabled = !t || (lim != null && room <= 0);
+  };
+  A.onchange = () => { if (!B.value || B.value < A.value) B.value = A.value; paint(); };
+  B.onchange = paint;
+  add.onclick = () => {
+    const e = opts.emp(), t = T(); if (!e || !t) return; if (!A.value) { toast('Pilih tanggal'); return; }
+    const end = B.value && B.value >= A.value ? B.value : A.value; let added = 0, skipped = 0, full = false, d = A.value;
+    for (let i = 0; i < 400 && d <= end; i++, d = addDays(d, 1)) {
+      if (!ok(e, d)) { skipped++; continue; }
+      if (leaveRoom(e, t, f._dates, d) <= 0) { full = true; break; }
+      f._dates.push(d); added++;
+    }
+    f._dates.sort();
+    if (full) toast(`Jatah ${t.name} hanya sampai di sini. Untuk hari tambahan, ajukan dengan jenis cuti lain (mis. Tahunan).`);
+    else if (!added) toast(skipped ? 'Tanggal tersebut libur, sudah dipilih, atau sudah ada cuti lain' : 'Tidak ada tanggal yang ditambahkan');
+    const nx = addDays(end, 1); A.value = nx; B.value = nx; paint(); opts.onChange && opts.onChange();
+  };
+  f._pickReset = () => { f._dates = []; paint(); };
+  f._pickRefresh = () => { const e = opts.emp(), t = T();
+    if (e && t && f._dates.length) { const keep = []; for (const d of f._dates) { if ((I()?.cal || leaveIsWork(e, d)) && leaveRoom(e, t, keep, d) > 0) keep.push(d); }
+      if (keep.length < f._dates.length) toast(`Tanggal dikurangi menjadi ${keep.length} hari sesuai jatah ${t.name}`); f._dates = keep; }
+    paint(); };
+  paint();
+}
+/* ringkasan & validasi pengajuan */
+function leaveCheckDates(e, cfg, type, dates, extra = []) {
+  const T = leaveType(cfg, type), msg = [], n = dates.length; if (!e || !T) return { ok: false, n: 0, msg: '' };
+  if (!n) return { ok: false, n: 0, msg: 'Pilih tanggal cuti lalu klik <b>Tambah tanggal</b>.' };
+  msg.push(`<b>${n}</b> hari: ${leaveRanges(dates).map(leaveRangeTxt).map(esc).join(', ')}.`);
+  let over = false;
+  if (T.annual) { const y = dates[0].slice(0, 4), b = leaveBalance(e, +y); msg.push(`Sisa cuti tahunan ${y}: <b>${b.left}</b> hari (jatah ${b.quota} hari dari ${b.accrued} bulan bekerja${b.adj ? `, penyesuaian ${b.adj}` : ''})${b.pending ? `, ${b.pending} hari masih menunggu` : ''}.`);
+    const per = {}; dates.forEach(d => { per[d.slice(0, 4)] = (per[d.slice(0, 4)] || 0) + 1; }); Object.entries(per).forEach(([yy, k]) => { const bb = leaveBalance(e, +yy); if (k > bb.left - bb.pending) over = true; }); }
+  else { const I = leaveTypeInfo(T); if (+I.quota) { if (I.per === 'bulan') { const per = {}; dates.forEach(d => { per[d.slice(0, 7)] = (per[d.slice(0, 7)] || 0) + 1; }); Object.entries(per).forEach(([m, k]) => { if (leaveRoom(e, T, [], m + '-01') < k) over = true; }); } else if (n > I.quota) over = true; } }
+  if (over) msg.push(`<b>Melebihi jatah ${esc(T.name)}.</b> Kurangi tanggal atau ajukan sisanya dengan jenis cuti lain.`);
+  if (T.paid === false) msg.push('Cuti ini tidak dibayar: gaji dipotong sesuai jumlah hari.');
+  const clash = dates.filter(d => Store.all('leaves', l => l.employeeId === e.id && leaveFinal(l) !== 'Ditolak' && leaveCovers(l, d)).length);
+  if (clash.length) msg.push(`<b>Bentrok</b> dengan cuti lain pada ${clash.map(fmtDate).join(', ')}.`);
+  extra.forEach(x => x && msg.push(x));
+  return { ok: !over && !clash.length && !extra.some(Boolean), n, msg: msg.join(' ') };
 }
 
 /* =========================================================
@@ -6960,7 +7043,7 @@ function payrollRow(e, month, st) {
   }
   /* cuti tidak dibayar */
   const unpaidTypes = new Set(cfg.leaveTypes.filter(t => t.paid === false).map(t => t.name).concat(['Tanpa Upah']));
-  const unpaidDays = Store.all('leaves', l => l.employeeId === e.id && unpaidTypes.has(l.type) && leaveFinal(l) === 'Disetujui').reduce((s, l) => s + leaveDays(e, l.start < from ? from : l.start, l.end > to ? to : l.end, month), 0);
+  const unpaidDays = Store.all('leaves', l => l.employeeId === e.id && unpaidTypes.has(l.type) && leaveFinal(l) === 'Disetujui').reduce((s, l) => s + leaveDaysOf(e, l, from, to), 0);
   const unpaid = unpaidDays * perDay;
   const earn = [['Gaji pokok', (+e.basic || 0) * factor], ['Tunjangan tetap', (+e.fixedAllow || 0) * factor], ...fixedComps.map(k => [k.name, amt(k) * factor]), ['Tunjangan tidak tetap', +e.varAllow || 0], ...varComps.map(k => [k.name, amt(k)])].filter(([, v], i) => v || i < 2);
   if (otPay) earn.push([`Lembur (${nf(otHours, 1)} jam)`, otPay]);
@@ -7433,7 +7516,7 @@ function hrPresentToday() {
   const t = hrToday(), m = t.slice(0, 7), dd = t.slice(8, 10);
   return empList(e => e.active !== false).filter(e => { const d = attDoc(e.id, m); return d && ((d.scans || {})[dd] || []).length; }).length;
 }
-const hrOnLeaveToday = () => { const t = hrToday(); return Store.all('leaves', l => inScope(l) && l.start <= t && l.end >= t && leaveFinal(l) === 'Disetujui'); };
+const hrOnLeaveToday = () => { const t = hrToday(); return Store.all('leaves', l => inScope(l) && leaveCovers(l, t) && leaveFinal(l) === 'Disetujui'); };
 const newsAll = () => Store.all('hr_news', inScope).filter(n => !n.until || n.until >= todayISO()).sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || (b.at || '').localeCompare(a.at || ''));
 
 Views.hrdash = () => {
@@ -7805,7 +7888,7 @@ Views.myleave = () => {
     <div class="card kpi"><span class="eyebrow">Terpakai</span><b>${b.used || 0}</b><span class="small">hari disetujui</span></div>
     <div class="card kpi"><span class="eyebrow">Menunggu</span><b>${b.pending || 0}</b><span class="small">hari</span></div>
     <div class="card kpi"><span class="eyebrow">Sisa</span><b>${b.type ? b.left : '–'}</b><span class="small">${b.type && b.next ? `hari · +1 hari pada ${fmtDate(b.next)}` : 'hari'}</span></div></div>
-  <div class="card">${L.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Jenis</th><th>Tanggal</th><th class="num">Hari</th><th>Alasan</th><th>Status</th><th></th></tr></thead><tbody>${L.map(l => `<tr><td><b>${esc(l.type)}</b></td><td class="small">${leaveWhen(l)}</td><td class="num">${leaveDays(e, l.start, l.end)}</td><td class="small">${esc(l.reason || '')}${hrDocLinks('leaves', l.id, l.files)}</td><td>${leaveStatusPill(l)}</td>
+  <div class="card">${L.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Jenis</th><th>Tanggal</th><th class="num">Hari</th><th>Alasan</th><th>Status</th><th></th></tr></thead><tbody>${L.map(l => `<tr><td><b>${esc(l.type)}</b></td><td class="small">${leaveWhen(l)}</td><td class="num">${leaveDaysOf(e, l)}</td><td class="small">${esc(l.reason || '')}${hrDocLinks('leaves', l.id, l.files)}</td><td>${leaveStatusPill(l)}</td>
     <td>${leaveFinal(l) === 'Menunggu' && (l.steps || []).every(s => s.status === 'Menunggu') ? `<button class="btn sm danger" data-lcan="${l.id}">Batalkan</button>` : ''}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">Belum ada pengajuan cuti.</div>'}</div>`;
 };
 Views.myleaveMount = c => {
@@ -7820,10 +7903,9 @@ function stLeaveForm(e) {
   openModal({ title: 'Ajukan cuti', body: `<form id="slF" class="form-grid">
     <label class="f" style="grid-column:1/-1">Jenis cuti<select class="input" name="type" required>${leaveTypeOptions(cfg, e, '')}</select></label>
     <div class="small muted" id="slInfo" style="grid-column:1/-1;margin-top:-4px">${leaveTypeNote(cfg, (leaveTypesFor(cfg, e)[0] || {}).name)}</div>
-    <label class="f">Mulai<input class="input" type="date" name="start" required value="${todayISO()}"></label>
-    <label class="f">Jam mulai<select class="input" name="t1">${leaveTimeOpts('08:00')}</select></label>
-    <label class="f">Sampai<input class="input" type="date" name="end" required value="${todayISO()}"></label>
-    <label class="f">Jam selesai<select class="input" name="t2">${leaveTimeOpts('16:00')}</select></label>
+    ${leavePickerHtml('slD')}
+    <label class="f">Jam mulai (tiap tanggal)<select class="input" name="t1">${leaveTimeOpts('08:00')}</select></label>
+    <label class="f">Jam selesai (tiap tanggal)<select class="input" name="t2">${leaveTimeOpts('16:00')}</select></label>
     <label class="f" style="grid-column:1/-1">Alasan<input class="input" name="reason" required placeholder="mis. acara keluarga"></label>
     <label class="f">Pengganti selama cuti (nama)<input class="input" name="substituteName" placeholder="opsional"></label>
     <label class="f">No. surat / dokumen pendukung<input class="input" name="docRef" placeholder="mis. surat dokter"></label>
@@ -7833,22 +7915,18 @@ function stLeaveForm(e) {
     foot: '<button class="btn" data-close>Batal</button><button class="btn primary" form="slF">Ajukan</button>',
     onMount: r => {
       const f = $('#slF', r);
-      const check = () => { const d = formData(f), T = leaveType(cfg, d.type), msg = []; if (!d.start || !d.end) return { ok: false, msg: '' }; if (d.end < d.start) return { ok: false, msg: 'Tanggal selesai tidak boleh sebelum tanggal mulai.' };
-        const n = leaveDays(e, d.start, d.end); msg.push(`<b>${n}</b> hari kerja/jadwal.`);
-        if (T?.annual) { const b = leaveBalance(e, +d.start.slice(0, 4)); msg.push(`Sisa cuti tahunan: <b>${b.left}</b> hari (jatah ${b.quota} hari dari ${b.accrued} bulan bekerja).`); if (!b.eligible) msg.push(`Belum berhak cuti tahunan sampai ${fmtDate(b.eligDate)}.`); if (n > b.left) msg.push('<b>Melebihi sisa cuti.</b>'); }
-        else { const w = leaveQuotaWarn(e, T, d.start, d.end, n); if (w) msg.push(w); }
-        if (T && T.paid === false) msg.push('Cuti ini tidak dibayar.');
-        const clash = Store.all('leaves', l => l.employeeId === e.id && leaveFinal(l) !== 'Ditolak' && l.start <= d.end && l.end >= d.start);
-        if (clash.length) msg.push(`<b>Bentrok</b> dengan pengajuan ${esc(clash[0].type)} ${fmtDate(clash[0].start)} – ${fmtDate(clash[0].end)}.`);
-        return { ok: !clash.length && n > 0, n, msg: msg.join(' ') }; };
-      const prev = () => { $('#slPrev', r).innerHTML = check().msg; }; f.oninput = prev; f.onchange = prev; prev(); hrDocInputWire(r, 'slDoc');
-      leaveTimeWire(f, () => e); f.type.addEventListener('change', () => { $('#slInfo', r).innerHTML = leaveTypeNote(cfg, f.type.value); });
-      f.onsubmit = async ev => { ev.preventDefault(); const d = formData(f), k = check();
+      const check = () => { const d = formData(f); return leaveCheckDates(e, cfg, d.type, f._dates || []); };
+      const prev = () => { $('#slPrev', r).innerHTML = check().msg; }; f.oninput = prev; f.onchange = prev; hrDocInputWire(r, 'slDoc');
+      leaveTimeWire(f, () => e);
+      leavePickerWire(r, f, 'slD', { cfg, emp: () => e, type: () => f.type.value, onChange: () => { prev(); f._timeFill && f._timeFill(); } });
+      f.type.addEventListener('change', () => { $('#slInfo', r).innerHTML = leaveTypeNote(cfg, f.type.value); f._pickRefresh(); prev(); }); prev();
+      f.onsubmit = async ev => { ev.preventDefault(); const d = formData(f), k = check(), ds = [...(f._dates || [])].sort(); d.start = ds[0]; d.end = ds[ds.length - 1];
+        if (!k.n) { toast('Pilih tanggal cuti lalu klik Tambah tanggal'); return; }
         { const te = leaveTimeErr(d); if (te) { toast(te); return; } }
-        if (!k.n) { toast('Tidak ada hari kerja/jadwal pada tanggal tersebut'); return; } if (!k.ok) { toast('Periksa peringatan pada formulir'); return; }
+        if (!k.ok) { toast('Periksa peringatan pada formulir'); return; }
         const sb = $('button[form=slF]', r); if (sb) { sb.disabled = true; sb.textContent = 'Mengirim…'; }
         let files = []; try { files = await hrDocUploadAll(r, 'slDoc', e); } catch (x) { toast(x.message || String(x)); if (sb) { sb.disabled = false; sb.textContent = 'Ajukan'; } return; }
-        const body = { companyId: e.companyId, employeeId: e.id, type: d.type, start: d.start, end: d.end, t1: d.t1, t2: d.t2, reason: d.reason, docRef: d.docRef, substituteName: d.substituteName, files, steps: cfg.approvals.map(name => ({ name, status: 'Menunggu' })), status: 'Menunggu', createdAt: nowISO(), createdBy: S.user.username, bySelf: true };
+        const body = { companyId: e.companyId, employeeId: e.id, type: d.type, start: d.start, end: d.end, dates: ds, t1: d.t1, t2: d.t2, reason: d.reason, docRef: d.docRef, substituteName: d.substituteName, files, steps: cfg.approvals.map(name => ({ name, status: 'Menunggu' })), status: 'Menunggu', createdAt: nowISO(), createdBy: S.user.username, bySelf: true };
         try { await Store.put('leaves', uid('l'), body); } catch (x) { toast('Gagal mengajukan: ' + (x.message || x)); return; }
         audit('ajukan cuti (staf)', `${e.name} · ${d.type}`); closeModal(); toast('Pengajuan cuti terkirim ke HRD'); App.renderContent(); };
     } });
@@ -8053,7 +8131,7 @@ Views.teamappr = () => {
   return `<div class="page-head"><div><h1>Persetujuan Tim</h1><p>Setujui atau tolak pengajuan cuti dan lembur anggota tim. Setelah Anda setujui, pengajuan diteruskan ke tahap berikutnya hingga HRD.</p></div></div>
   <div class="card"><div class="card-head"><div class="row"><select class="input" id="taFs" style="width:auto"><option value="mine" ${fs === 'mine' ? 'selected' : ''}>Menunggu persetujuan saya (${mine})</option><option value="wait" ${fs === 'wait' ? 'selected' : ''}>Semua yang masih menunggu</option><option value="all" ${fs === 'all' ? 'selected' : ''}>Semua (120 hari terakhir)</option></select><button class="btn sm" id="taRef">Muat ulang</button></div><span class="small muted">${rows.length} pengajuan</span></div>
   ${rows.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Karyawan</th><th>Pengajuan</th><th>Tanggal</th><th>Keterangan</th><th>Persetujuan</th><th>Status</th><th></th></tr></thead><tbody>${rows.map(r => { const d = r.data, e = team.get(d.employeeId) || { name: '–' }, ot = r.col === 'overtime';
-    const what = ot ? `<b>Lembur</b><div class="small muted">${nf(d.hours, 1)} jam · ${d.dayType === 'libur' ? 'hari libur' : 'hari kerja'}</div>` : `<b>Cuti ${esc(d.type || '')}</b><div class="small muted">${leaveDays(e.id ? e : { ...e, companyId: S.user.companyId }, d.start, d.end)} hari</div>`;
+    const what = ot ? `<b>Lembur</b><div class="small muted">${nf(d.hours, 1)} jam · ${d.dayType === 'libur' ? 'hari libur' : 'hari kerja'}</div>` : `<b>Cuti ${esc(d.type || '')}</b><div class="small muted">${leaveDaysOf(e.id ? e : { ...e, companyId: S.user.companyId }, d)} hari</div>`;
     const when = ot ? `${fmtDate(d.date)}<div class="small muted">${esc(d.t1 || '')}${d.t2 ? '–' + esc(d.t2) : ''}</div>` : leaveWhen(d);
     return `<tr><td><b>${esc(e.name)}</b><div class="small muted">${esc(e.position || e.unit || '')}${r.lvl > 1 ? ` · bawahan tingkat ${r.lvl}` : ''}</div></td><td>${what}</td><td class="small">${when}</td>
       <td class="small">${esc(ot ? d.note || '' : d.reason || '')}${d.docRef ? `<div class="muted">Dok: ${esc(d.docRef)}</div>` : ''}${hrDocLinks('team_req', r.col + ':' + r.id, d.files)}</td><td class="small">${stepsHtml(d.steps)}</td><td>${leaveStatusPill({ ...d, status: otFinal(d) })}</td>
