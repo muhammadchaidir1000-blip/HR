@@ -3037,17 +3037,23 @@ Views.dash = () => {
   const month = monthISO(); const skillN = Store.all('skill_results', inScope).length; const meetN = Store.all('meetings', x => inScope(x) && x.start >= todayISO()).length;
   const inprog = Store.all('disc_sessions', inScope).length + Store.all('skill_sessions', inScope).length;
   const recent = res.sort((a, b) => (b.finishedAt || '').localeCompare(a.finishedAt || '')).slice(0, 5);
+  const allRes = [...res.map(r => ({ r, t: 'DISC', go: 'candidate' })), ...Store.all('ist_results', inScope).map(r => ({ r, t: 'IST', go: 'istresult' })), ...Store.all('papi_results', inScope).map(r => ({ r, t: 'PAPI', go: 'papiresult' }))]
+    .sort((a, b) => (b.r.finishedAt || b.r.testDate || '').localeCompare(a.r.finishedAt || a.r.testDate || '')).slice(0, 6);
   return `<div class="page-head"><div><div class="eyebrow">${esc(comp?.name || 'Pilih perusahaan')}</div><h1>Beranda</h1><p>Ringkasan rekrutmen dan psikotes. Data kepegawaian ada di ruang kerja <b>HRIS Kepegawaian</b>.</p></div>
     <div class="row"><button class="btn" data-go="meetings">Jadwalkan wawancara</button><button class="btn primary" data-go="kerjakan">Kerjakan psikotes</button></div></div>
   <div class="grid g4">
-    <div class="card kpi k-blue"><span class="eyebrow">Hasil psikotes</span><b>${res.length}</b><span class="small muted">${inprog} tes sedang berlangsung</span></div>
+    <button class="card kpi k-blue hr-kpibtn" data-go="candidates"><span class="eyebrow">Hasil psikotes (DISC · IST · PAPI)</span><b>${res.length + Store.all('ist_results', inScope).length + Store.all('papi_results', inScope).length}</b><span class="small muted">${inprog} tes sedang berlangsung</span></button>
     <div class="card kpi k-teal"><span class="eyebrow">Hasil tes kemampuan unit</span><b>${skillN}</b><span class="small muted">semua periode</span></div>
     <div class="card kpi k-orange"><span class="eyebrow">Wawancara mendatang</span><b>${meetN}</b><span class="small muted">terjadwal</span></div>
     <button class="card kpi k-purple hr-kpibtn" data-go="hrdash"><span class="eyebrow">HRIS Kepegawaian</span><b style="font-size:20px">${emps.filter(e => e.active !== false).length} karyawan</b><span class="small muted">Buka ruang kerja HRIS →</span></button>
   </div>
   <div class="grid g2">
     <div class="card"><div class="card-head"><h3>Psikotes terbaru</h3><button class="btn sm" data-go="candidates">Lihat semua</button></div>
-      ${recent.length ? `<div class="tbl-wrap"><table class="tbl"><tbody>${recent.map(r => { const R = discRecommendation(r); return `<tr class="click" data-open="${r.id}"><td><b>${esc(r.name)}</b>${sampleTag(r)}<div class="small muted">${esc(r.unit)}</div></td><td><span class="pattern-big">${esc(R.sc.p[2].key)}</span></td><td class="num">${R.fit ?? '–'}${R.fit != null ? '%' : ''}</td><td><span class="pill ${R.level}">${esc(R.tier)}</span></td></tr>`; }).join('')}</tbody></table></div>` : '<div class="empty">Belum ada hasil.</div>'}</div>
+      ${allRes.length ? `<div class="tbl-wrap"><table class="tbl"><tbody>${allRes.map(({ r, t, go }) => { let info = '';
+        if (t === 'DISC') { const R = discRecommendation(r); info = `<td><span class="pattern-big">${esc(R.sc.p[2].key)}</span></td><td><span class="pill ${R.level}">${esc(R.tier)}</span></td>`; }
+        else if (t === 'IST') { let C = null; try { C = istCalc(r); } catch (e) {} info = `<td>${C && !C.pending && C.iq != null ? 'IQ <b>' + esc(String(C.iq)) + '</b>' : '<span class="muted">menunggu skor</span>'}</td><td></td>`; }
+        else { info = `<td class="small muted">${fmtDate((r.finishedAt || r.testDate || '').slice(0, 10))}</td><td></td>`; }
+        return `<tr class="click" data-go="${go}" data-p='${JSON.stringify({ id: r.id })}'><td><span class="pill info">${t}</span></td><td><b>${esc(r.name)}</b>${sampleTag(r)}<div class="small muted">${esc(r.unit || '')}</div></td>${info}</tr>`; }).join('')}</tbody></table></div>` : '<div class="empty">Belum ada hasil.</div>'}</div>
     <div class="card"><div class="card-head"><h3>Wawancara mendatang</h3><button class="btn sm" data-go="meetings">Kelola</button></div>
       ${upcoming.length ? `<div class="tbl-wrap"><table class="tbl"><tbody>${upcoming.map(m => `<tr><td><b>${esc(m.candidateName || '-')}</b>${sampleTag(m)}<div class="small muted">${esc(m.title)}</div></td><td class="small">${fmtDT(m.start)}</td><td><span class="pill ${m.platform === 'Zoom' ? 'info' : 'ok'}">${esc(m.platform)}</span></td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">Tidak ada jadwal.</div>'}</div>
   </div>
@@ -3157,6 +3163,7 @@ Views.candidates = () => {
   rows.sort((a, b) => (b.r.finishedAt || '').localeCompare(a.r.finishedAt || ''));
   const inprog = Store.all('disc_sessions', inScope);
   return `<div class="page-head"><div><h1>Hasil Psikotes DISC</h1><p>Hasil dihitung otomatis dengan tabel konversi dari file SCORING_DISC. Kesesuaian dibandingkan dengan profil ideal unit yang diatur di Pengaturan Perusahaan.</p></div></div>
+  ${psyTabs('candidates')}
   <div class="card"><div class="card-head"><div class="row"><input class="input" id="fq" placeholder="Cari nama…" value="${esc(f.q || '')}" style="width:200px"><select class="input" id="fu" style="width:auto">${unitOptions(S.companyId, f.unit).replace('– pilih unit –', 'Semua unit')}</select></div><span class="small muted">${rows.length} peserta</span></div>
   ${rows.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th class="num">No</th><th>Peserta</th><th>Unit / posisi</th><th>Tanggal</th><th>Kepribadian asli</th><th class="num">Kesesuaian</th><th>Tes unit</th><th>Rekomendasi</th><th>Keputusan HR</th></tr></thead><tbody>
     ${rows.map(({ r, R }, i) => `<tr class="click" data-open="${r.id}"><td class="num no-col">${i + 1}</td><td><b>${esc(r.name)}</b>${sampleTag(r)}</td><td>${esc(r.unit)}<div class="small muted">${esc(r.position)}</div></td><td class="small">${fmtDate(r.finishedAt)}</td>
@@ -3967,11 +3974,13 @@ const Ist = {
 };
 
 /* =====================  HALAMAN: DAFTAR / INPUT / ACUAN  ===================== */
+/* pindah antar jenis hasil psikotes */
+const psyTabs = cur => `<div class="tabs psy-tabs" role="tablist" aria-label="Jenis psikotes">${[['candidates', 'Psikotes DISC', 'disc_results'], ['ist', 'Psikotes IST', 'ist_results'], ['papi', 'PAPI Kostick', 'papi_results']].map(([r, l, col]) => `<button class="tab ${cur === r ? 'on' : ''}" role="tab" aria-selected="${cur === r}" data-go="${r}">${l} <span class="pill" style="margin-left:6px">${Store.all(col, inScope).length}</span></button>`).join('')}</div>`;
 const istTabs = cur => `<div class="tabs" role="tablist">${[['hasil', 'Daftar Hasil'], ['baru', 'Input Lembar Jawaban']].map(([k, l]) => `<button class="tab ${cur === k ? 'on' : ''}" role="tab" aria-selected="${cur === k}" data-tab="${k}">${l}</button>`).join('')}</div>`;
 Views.ist = () => {
   const tab = (S.params || {}).tab || 'hasil';
   return `<div class="page-head"><div><h1>Hasil Psikotes IST</h1><p>Hasil Intelligenz Struktur Test: skor standar menurut kelompok usia, IQ, analisis aspek, dan gaya pemecahan masalah. Untuk mengerjakan tes atau menambah peserta, buka menu Kerjakan Psikotes.</p></div></div>
-  ${istTabs(tab)}<div class="stack" style="margin-top:14px">${tab === 'baru' ? istNewTab() : istListTab()}</div>`;
+  ${psyTabs('ist')}${istTabs(tab)}<div class="stack" style="margin-top:14px">${tab === 'baru' ? istNewTab() : istListTab()}</div>`;
 };
 Views.istMount = c => {
   const tab = (S.params || {}).tab || 'hasil';
@@ -4591,6 +4600,7 @@ Views.cmppsy = () => {
   const map = {};
   Store.all('disc_results', inScope).forEach(r => { const k = r.accountId || 'n:' + r.name; (map[k] = map[k] || { name: r.name, unit: r.unit, position: r.position }).d = [...(map[k].d ? [map[k].d] : []), r].sort((a, b) => (b.finishedAt || '').localeCompare(a.finishedAt || ''))[0]; });
   Store.all('ist_results', inScope).forEach(r => { const k = r.accountId || 'n:' + r.name; const m = map[k] = map[k] || { name: r.name, unit: r.unit, position: r.position }; if (!m.i || (r.finishedAt || '') > (m.i.finishedAt || '')) m.i = r; });
+  Store.all('papi_results', inScope).forEach(r => { const k = r.accountId || 'n:' + r.name; const m = map[k] = map[k] || { name: r.name, unit: r.unit, position: r.position }; if (!m.p || (r.finishedAt || r.testDate || '') > (m.p.finishedAt || m.p.testDate || '')) m.p = r; });
   let rows = Object.values(map).map(m => ({ ...m, R: m.d ? discRecommendation(m.d) : null, C: m.i ? istCalc(m.i) : null }));
   const unitName = f.unit || '';
   if (unitName) rows = rows.filter(x => x.unit === unitName);
@@ -4600,7 +4610,8 @@ Views.cmppsy = () => {
   const aF = avg(fits.map(x => x.R.fit)), aI = avg(iqs.map(x => +x.C.iq));
   const col = v => v >= 70 ? 'var(--st-good,#0E8F74)' : v >= 55 ? 'var(--st-warn,#E0A100)' : 'var(--st-bad,#D64545)';
   const unitCfg = (settingsOf(S.companyId).units || []).find(u => u.name === unitName);
-  return `<div class="page-head"><div><h1>Daftar Hasil Psikotes</h1><p>Perbandingan hasil psikotes DISC dan IST antarpeserta. Pilih unit untuk membandingkan peserta yang melamar unit yang sama.</p></div></div>
+  return `<div class="page-head"><div><h1>Daftar Hasil Psikotes</h1><p>Perbandingan hasil psikotes DISC, IST, dan PAPI Kostick antarpeserta. Pilih unit untuk membandingkan peserta yang melamar unit yang sama.</p></div></div>
+  <div class="row small" style="gap:8px"><span class="muted">Daftar lengkap per jenis:</span>${psyTabs('')}</div>
   <div class="card card-pad row" style="gap:12px"><label class="f" style="min-width:240px">Unit<select class="input" id="cu">${unitOptions(S.companyId, unitName).replace('– pilih unit –', 'Semua unit')}</select></label>
     ${unitCfg ? `<div class="small muted" style="align-self:end">Profil DISC ideal unit ${esc(unitName)}: ${F.map(k => `${k} ${unitCfg.ideal[k] || 'bebas'}`).join(' · ')}</div>` : ''}</div>
   <div class="grid g4" style="margin-top:14px"><div class="card kpi k-blue"><span class="eyebrow">Peserta</span><b>${rows.length}</b><span class="small">${unitName ? 'unit ' + esc(unitName) : 'semua unit'}</span></div>
@@ -4610,16 +4621,19 @@ Views.cmppsy = () => {
   ${rows.length ? `<div class="grid g2" style="align-items:start;margin-top:14px">
     <div class="card card-pad stack"><div class="eyebrow">Kesesuaian DISC dengan unit (%)</div>${fits.length ? cmpBars(fits.map(x => ({ name: x.name, v: x.R.fit })), { max: 100, ref: { v: 70, l: 'batas direkomendasikan (70%)' }, fmt: v => v + '%', color: col }) : '<p class="muted" style="margin:0">Belum ada data.</p>'}</div>
     <div class="card card-pad stack"><div class="eyebrow">IQ (IST)</div>${iqs.length ? cmpBars([...iqs].sort((a, b) => b.C.iq - a.C.iq).map(x => ({ name: x.name, v: +x.C.iq })), { min: 70, max: 140, ref: { v: 100, l: 'rata-rata populasi (100)' }, fmt: v => nf(v, 1), color: v => v >= 110 ? 'var(--st-good,#0E8F74)' : v >= 90 ? 'var(--s1)' : 'var(--st-warn,#E0A100)' }) : '<p class="muted" style="margin:0">Belum ada hasil IST.</p>'}</div></div>
-  <div class="card" style="margin-top:14px"><div class="card-head"><h3>Tabel perbandingan</h3><span class="small muted">klik baris untuk detail</span></div><div class="tbl-wrap"><table class="tbl"><thead><tr><th class="num">No</th><th>Peserta</th><th>Unit / posisi</th><th>Kepribadian asli (DISC)</th><th class="num">Kesesuaian</th><th class="num">IQ</th><th class="num">Jumlah SW</th><th>Gaya berpikir</th><th>Rekomendasi</th></tr></thead><tbody>
-    ${rows.map((x, n) => `<tr class="${x.d ? 'click' : ''}" ${x.d ? `data-d="${x.d.id}"` : x.i ? `data-i="${x.i.id}"` : ''}><td class="num no-col">${n + 1}</td><td><b>${esc(x.name)}</b></td><td>${esc(x.unit || '–')}<div class="small muted">${esc(x.position || '')}</div></td>
+  <div class="card" style="margin-top:14px"><div class="card-head"><h3>Tabel perbandingan</h3><span class="small muted">klik baris untuk detail</span></div><div class="tbl-wrap"><table class="tbl"><thead><tr><th class="num">No</th><th>Peserta</th><th>Unit / posisi</th><th>Kepribadian asli (DISC)</th><th class="num">Kesesuaian</th><th class="num">IQ</th><th class="num">Jumlah SW</th><th>Gaya berpikir</th><th>PAPI Kostick</th><th>Rekomendasi</th></tr></thead><tbody>
+    ${rows.map((x, n) => `<tr class="${x.d || x.i || x.p ? 'click' : ''}" ${x.d ? `data-d="${x.d.id}"` : x.i ? `data-i="${x.i.id}"` : x.p ? `data-pr="${x.p.id}"` : ''}><td class="num no-col">${n + 1}</td><td><b>${esc(x.name)}</b></td><td>${esc(x.unit || '–')}<div class="small muted">${esc(x.position || '')}</div></td>
       <td>${x.R ? `<span class="pattern-big">${esc(x.R.sc.p[2].key)}</span><div class="small">${esc(x.R.sc.def[2].title)}</div>` : '<span class="faint">belum</span>'}</td><td class="num">${x.R && x.R.fit != null ? x.R.fit + '%' : '–'}</td>
       <td class="num">${x.C ? (x.C.pending ? '<span class="pill warn">GE</span>' : istFmtIq(x.C.iq)) : '–'}</td><td class="num">${x.C && !x.C.pending ? x.C.jSW : '–'}</td><td class="small">${x.C && !x.C.pending ? (x.C.gaya.fleksibel ? 'Fleksibel' : 'Mantap berpikir') : '–'}</td>
+      <td>${x.p ? `<button class="btn sm" data-pp="${x.p.id}">Lihat profil</button>` : '<span class="faint">–</span>'}</td>
       <td>${x.R ? `<span class="pill ${x.R.level}">${esc(x.R.tier)}</span>` : '<span class="faint">–</span>'}</td></tr>`).join('')}</tbody></table></div></div>` : '<div class="card empty" style="margin-top:14px">Belum ada hasil psikotes untuk filter ini.</div>'}`;
 };
 Views.cmppsyMount = c => {
   $('#cu', c).onchange = e => { S.params = { unit: e.target.value }; App.renderContent(); };
   $$('[data-d]', c).forEach(tr => tr.onclick = () => App.go('candidate', { id: tr.dataset.d }));
   $$('tr[data-i]', c).forEach(tr => tr.onclick = () => App.go('istresult', { id: tr.dataset.i }));
+  $$('tr[data-pr]', c).forEach(tr => tr.onclick = () => App.go('papiresult', { id: tr.dataset.pr }));
+  $$('[data-pp]', c).forEach(b => b.onclick = e => { e.stopPropagation(); App.go('papiresult', { id: b.dataset.pp }); });
 };
 
 /* ---------- ADMIN PERUSAHAAN: Daftar Hasil Kemampuan Unit ---------- */
@@ -5227,6 +5241,7 @@ Views.papi = () => {
   const prog = Store.all('papi_sessions', x => x.startedAt && inScope(x));
   return `<div class="page-head"><div><h1>Hasil Psikotes PAPI Kostick</h1><p>Profil kepribadian kerja 20 skala dalam 7 aspek: arah kerja, kepemimpinan, aktivitas, pergaulan, gaya kerja, sifat, dan ketaatan. Untuk mengerjakan tes, buka menu Kerjakan Psikotes.</p></div>
     <div class="row"><button class="btn" data-go="kerjakan" data-p='{"tab":"papi"}'>Kerjakan / input lembar jawaban</button></div></div>
+  ${psyTabs('papi')}
   <div class="card"><div class="card-head"><div class="row"><input class="input" id="fq" placeholder="Cari nama…" value="${esc(f.q || '')}" style="width:200px"><select class="input" id="fu" style="width:auto">${unitOptions(S.companyId, f.unit).replace('– pilih unit –', 'Semua unit')}</select></div><span class="small muted">${rows.length} peserta</span></div>
   ${rows.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th class="num">No</th><th>Peserta</th><th>Unit / posisi</th><th>Tanggal</th><th>Skala menonjol</th><th>Kelengkapan</th><th>Cara</th></tr></thead><tbody>
     ${rows.map(({ r, C }, i) => `<tr class="click" data-open="${r.id}"><td class="num no-col">${i + 1}</td><td><b>${esc(r.name)}</b>${sampleTag(r)}</td><td>${esc(r.unit || '–')}<div class="small muted">${esc(r.position || '')}</div></td><td class="small">${fmtDate(r.testDate)}</td>
