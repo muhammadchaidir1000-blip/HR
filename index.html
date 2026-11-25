@@ -1840,6 +1840,16 @@ function pwIssues(pw) {
   if (!/[0-9]/.test(pw)) e.push('angka');
   return e;
 }
+/* cek password bocor (HaveIBeenPwned, k-anonymity: hanya 5 karakter awal hash SHA-1 yang dikirim) */
+async function pwLeaked(pw) {
+  try {
+    const h = [...new Uint8Array(await crypto.subtle.digest('SHA-1', new TextEncoder().encode(pw)))].map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+    const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 5000);
+    let t; try { t = await (await fetch('https://api.pwnedpasswords.com/range/' + h.slice(0, 5), { headers: { 'Add-Padding': 'true' }, signal: ctl.signal })).text(); } finally { clearTimeout(to); }
+    const line = t.split('\n').find(l => l.slice(0, 35) === h.slice(5)); return line ? +line.split(':')[1] || 0 : 0;
+  } catch (e) { return 0; }
+}
+const pwLeakMsg = async pw => { const n = await pwLeaked(pw); return n ? `Password ini pernah bocor di internet (muncul ${n.toLocaleString('id-ID')} kali di data kebocoran) sehingga mudah ditebak peretas. Pilih password lain.` : ''; };
 async function audit(action, detail = '') {
   /* satu dokumen per pengguna per hari agar tiap orang menulis log miliknya sendiri */
   if (!S.user) return;
@@ -2397,7 +2407,9 @@ Views.setupSupa = () => {
       ev.preventDefault(); const d = formData(ev.target), er = $('#suErr', r); er.hidden = true;
       const bad = m => { er.textContent = m; er.hidden = false; };
       const iss = pwIssues(d.apw); if (iss.length) return bad('Password Super Admin belum memenuhi: ' + iss.join(', ') + '.');
+      { const lk = await pwLeakMsg(d.apw); if (lk) return bad('Super Admin: ' + lk); }
       const hpw = d.hpw || tmpPw(); const hi = pwIssues(hpw); if (hi.length) return bad('Password HRD belum memenuhi: ' + hi.join(', ') + '.');
+      if (d.hpw) { const lk = await pwLeakMsg(hpw); if (lk) return bad('HRD: ' + lk); }
       const doc = JSON.parse(JSON.stringify(co)); doc.name = d.cname; doc.address = d.caddr; delete doc.createdAt;
       const sb = $('#suGo', r); sb.disabled = true;
       try {
@@ -2452,6 +2464,7 @@ Views.registerAccount = async (kind = 'peserta') => {
         if (!Supa.on && Store.all('accounts', x => (x.username || '').toLowerCase() === username).length) return bad('Username sudah dipakai. Pilih username lain.');
         const iss = pwIssues(d.pw); if (iss.length) return bad('Password belum memenuhi: ' + iss.join(', ') + '.');
         if (d.pw !== d.pw2) return bad('Ulangan password tidak sama.');
+        { const lk = await pwLeakMsg(d.pw); if (lk) return bad(lk); }
         if (!adm && !d.unit) return bad('Pilih unit yang dilamar.');
         if (Supa.on) {
           const sb = $('#rgSend', r); sb.disabled = true;
@@ -2502,6 +2515,7 @@ Views.changePassword = () => {
       if (!Supa.on && (await sha256(a.salt + ':' + d.old)) !== a.passHash) { er.textContent = 'Password lama salah.'; er.hidden = false; return; }
       const iss = pwIssues(d.n1); if (iss.length) { er.textContent = 'Password baru belum memenuhi: ' + iss.join(', ') + '.'; er.hidden = false; return; }
       if (d.n1 !== d.n2) { er.textContent = 'Ulangan password tidak sama.'; er.hidden = false; return; }
+      { const lk = await pwLeakMsg(d.n1); if (lk) { er.textContent = lk; er.hidden = false; return; } }
       if (Supa.on) {
         try { await Supa.login(a.username, d.old); } catch (e) { er.textContent = (e.name === 'TypeError' || e.name === 'AbortError') ? supaErr(e) : 'Password lama salah.'; er.hidden = false; return; }
         try { await Supa.raw('/auth/v1/user', { method: 'PUT', body: { password: d.n1 } }); await Supa.rpc('clear_own_initpass'); } catch (e) { er.textContent = supaErr(e); er.hidden = false; return; }
@@ -3458,7 +3472,7 @@ function accountForm(a = {}) {
       $('#aF', r).onsubmit = async ev => { ev.preventDefault(); const f = ev.target; const d = formData(f); const er = $('#aErr', r); er.hidden = true;
         const username = (a.username || d.username).toLowerCase();
         if (!a.id && !Supa.on && Store.all('accounts', x => x.username.toLowerCase() === username).length) { er.textContent = 'Username sudah dipakai.'; er.hidden = false; return; }
-        if (d.pw) { const iss = pwIssues(d.pw); if (iss.length) { er.textContent = 'Password belum memenuhi: ' + iss.join(', ') + '.'; er.hidden = false; return; } }
+        if (d.pw) { const iss = pwIssues(d.pw); if (iss.length) { er.textContent = 'Password belum memenuhi: ' + iss.join(', ') + '.'; er.hidden = false; return; } const lk = await pwLeakMsg(d.pw); if (lk) { er.textContent = lk; er.hidden = false; return; } }
         const role = isSA ? d.role : US;
         const body = { ...(a.id ? Store.get('accounts', a.id) : { active: true, createdAt: todayISO() }), name: d.name, username, role, companyId: role === SA ? null : (isSA ? d.companyId : S.user.companyId), unit: d.unit || '', position: d.position || '', discAllowed: d.discAllowed === '1', istAllowed: d.istAllowed === '1', papiAllowed: d.papiAllowed === '1', tests: tests.filter(t => f['t_' + t.id]?.checked).map(t => t.id), sample: false, employeeId: (isSA ? d.role : US) === US ? (d.employeeId || '') : '' };
         let id = a.id;
@@ -7506,7 +7520,7 @@ function secRender(c) {
       <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Waktu</th><th>Hasil</th><th>Username</th>${S.user.role === SA ? '<th>Perusahaan</th>' : ''}<th>Alamat IP</th><th>Negara</th><th>Perangkat</th></tr></thead><tbody>
       ${list.slice(0, 400).map(r => `<tr><td>${fmtDT(r.at)}</td><td>${r.ok ? '<span class="pill ok">Berhasil</span>' : `<span class="pill bad">Gagal</span>`}</td><td>${esc(r.username)}</td>${S.user.role === SA ? `<td>${coName(r.company_id)}</td>` : ''}<td class="mono">${esc(r.ip || '–')}</td><td>${esc(secCtry(r.country))}</td><td>${esc(secUA(r.ua))}</td></tr>`).join('') || `<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">Tidak ada data pada periode ini.</td></tr>`}</tbody></table></div>
       ${list.length > 400 ? `<div class="card-pad small muted">Menampilkan 400 dari ${list.length}. Unduh CSV untuk semua.</div>` : ''}</div>
-    <p class="small muted" style="margin:12px 2px">Dicatat sejak 25 Nov 2026, disimpan 1 tahun. Yang tercatat adalah login lewat halaman aplikasi. Kata sandi yang pernah bocor di internet ditolak otomatis oleh server.</p>`;
+    <p class="small muted" style="margin:12px 2px">Dicatat sejak 25 Nov 2026, disimpan 1 tahun. Yang tercatat adalah login lewat halaman aplikasi. Password yang pernah bocor di internet ditolak saat membuat akun atau mengganti password di aplikasi.</p>`;
   $('#secShow', box).onchange = e => { SEC_F.show = e.target.value; secRender(c); };
   $('#secQ', box).oninput = e => { SEC_F.q = e.target.value; const pos = e.target.selectionStart; secRender(c); const i = $('#secQ', c); i.focus(); i.setSelectionRange(pos, pos); };
 }
