@@ -6966,11 +6966,11 @@ function leaveRoom(e, T, sel, iso) {
 const leaveLimitTxt = (e, T) => { const I = leaveTypeInfo(T); if (!I) return ''; if (T.annual) return 'sisa cuti tahunan'; if (!(+I.quota)) return 'tanpa batas'; return I.per === 'bulan' ? `${I.quota} hari per bulan` : `${leaveQuotaTxt(I)} per kejadian`; };
 
 function leavePickerHtml(id) {
-  return `<div class="f ldp" style="grid-column:1/-1"><span>Tanggal & jam cuti <span class="small muted">(pilih tanggal atau rentang, atur jam bila hanya beberapa jam, lalu klik Tambah; boleh tidak berurutan)</span></span>
+  return `<div class="f ldp" style="grid-column:1/-1"><span>Tanggal & jam cuti <span class="small muted">(pilih tanggal, ubah jam bila cuti hanya beberapa jam, lalu klik Tambah; boleh tidak berurutan)</span></span>
     <div class="ldp-row"><label class="f" style="margin:0">Dari tanggal<input class="input" type="date" id="${id}_a" value="${todayISO()}"></label><label class="f" style="margin:0">s.d. tanggal<input class="input" type="date" id="${id}_b" value="${todayISO()}"></label>
-      <label class="row small ldp-full"><input type="checkbox" id="${id}_full" checked> Sehari penuh (jam sesuai jadwal shift)</label>
-      <label class="f" style="margin:0">Jam mulai<select class="input" id="${id}_t1" disabled>${HALF_HOURS.map(h => `<option ${h === '08:00' ? 'selected' : ''}>${h}</option>`).join('')}</select></label>
-      <label class="f" style="margin:0">Jam selesai<select class="input" id="${id}_t2" disabled>${HALF_HOURS.map(h => `<option ${h === '16:00' ? 'selected' : ''}>${h}</option>`).join('')}</select></label>
+      <label class="f" style="margin:0">Jam mulai<select class="input" id="${id}_t1">${HALF_HOURS.map(h => `<option ${h === '08:00' ? 'selected' : ''}>${h}</option>`).join('')}</select></label>
+      <label class="f" style="margin:0">Jam selesai<select class="input" id="${id}_t2">${HALF_HOURS.map(h => `<option ${h === '16:00' ? 'selected' : ''}>${h}</option>`).join('')}</select></label>
+      <label class="row small ldp-full"><input type="checkbox" id="${id}_full" checked> Sehari penuh</label>
       <button type="button" class="btn" id="${id}_add" style="align-self:flex-end">+ Tambah</button></div>
     <div class="small muted" id="${id}_h"></div>
     <div class="ldp-meter" id="${id}_m"></div><div class="ldp-chips" id="${id}_c"></div></div>`;
@@ -6984,7 +6984,7 @@ function leavePickerWire(r, f, id, opts) {
   const okDay = (e, iso) => (I()?.cal || leaveIsWork(e, iso)) && !taken(e, iso);
   const slotFor = (e, iso) => { if (FULL.checked || I()?.cal) { const sh = leaveShiftOf(e, iso); return { d: iso, t1: sh ? leaveNear(sh.start) : '08:00', t2: sh ? leaveNear(sh.end) : '16:00', f: 1, full: true }; }
     return { d: iso, t1: T1.value, t2: T2.value, f: leaveFrac(e, iso, T1.value, T2.value, false), full: false }; };
-  const syncTimes = () => { const e = opts.emp(), full = FULL.checked || !!I()?.cal; T1.disabled = T2.disabled = full; FULL.disabled = !!I()?.cal;
+  const syncTimes = () => { const e = opts.emp(), full = FULL.checked || !!I()?.cal; T1.disabled = T2.disabled = !!I()?.cal; FULL.disabled = !!I()?.cal;
     if (e && A.value) { const sh = leaveShiftOf(e, A.value);
       if (full) { T1.value = sh ? leaveNear(sh.start) : '08:00'; T2.value = sh ? leaveNear(sh.end) : '16:00'; }
       const s = slotFor(e, A.value);
@@ -7001,7 +7001,7 @@ function leavePickerWire(r, f, id, opts) {
     add.disabled = !t || (lim != null && room <= 0.001); syncTimes();
   };
   A.onchange = () => { if (!B.value || B.value < A.value) B.value = A.value; paint(); };
-  B.onchange = paint; T1.onchange = T2.onchange = () => { syncTimes(); paint(); }; FULL.onchange = () => { syncTimes(); paint(); };
+  B.onchange = paint; T1.onchange = T2.onchange = () => { if (!I()?.cal) FULL.checked = false; syncTimes(); paint(); }; FULL.onchange = () => { syncTimes(); paint(); };
   add.onclick = () => {
     const e = opts.emp(), t = T(); if (!e || !t) return; if (!A.value) { toast('Pilih tanggal'); return; }
     if (!FULL.checked && !I()?.cal && T1.value === T2.value) { toast('Jam mulai dan jam selesai tidak boleh sama'); return; }
