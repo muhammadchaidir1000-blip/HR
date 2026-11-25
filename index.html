@@ -2273,7 +2273,7 @@ const App = {
         <header class="mbar"><button class="mbar-btn" id="mMenu" aria-label="Buka menu" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
           <div class="mbar-title"><span class="small">${esc(brandOf().name)}</span><b>${esc(cur.label)}</b></div><a class="mbar-lx" href="https://lyrionx.com" target="_blank" rel="noopener" aria-label="lyrionx.com"><img src="${LOGO_LX_MARK}" alt=""><span data-clock="short"></span></a></header>
         <div class="topbar ${S.user.role === SA ? '' : 'co-sm'}">${compSel}<div class="grow"></div>
-          <span class="small muted hide-sm">${Store.mode === 'db' ? 'Tersimpan di server' : 'Tersimpan di browser ini'}</span>${typeof bellHtml === 'function' ? bellHtml() : ''}
+          <span class="small muted hide-sm">${Store.mode === 'db' || Store.mode === 'supa' ? 'Tersimpan di server' : 'Tersimpan di browser ini'}</span>${typeof bellHtml === 'function' ? bellHtml() : ''}
           <div class="acct hide-sm"><button class="acct-btn" id="acctBtn" aria-haspopup="menu" aria-expanded="false"><span class="acct-av" aria-hidden="true">${esc((S.user.name || '?').trim().charAt(0).toUpperCase())}</span><span class="acct-tx"><b>${esc(S.user.name)}</b><small>${(typeof myEmp === 'function' && myEmp() ? 'Staf' : ROLE_LABEL[S.user.role])}</small></span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
             <div class="acct-menu" id="acctMenu" role="menu" hidden><button role="menuitem" id="btnPw2">Ganti password</button><button role="menuitem" id="btnOut2" class="danger">Keluar</button></div></div>
           <div class="lx-block hide-sm"><a class="lx-link" href="https://lyrionx.com" target="_blank" rel="noopener"><img src="${LOGO_LX_MARK}" alt="LyrionX.Co"><span>lyrionx.com</span></a><span class="lx-clock" data-clock></span></div></div>
@@ -6631,7 +6631,7 @@ function zipStore(files) {
 }
 function lanDownloadZip() {
   const origin = location.origin, F = { ...LAN_FILES };
-  if (/^https:\/\//.test(origin) && origin !== 'https://hr.hr-manajemen.workers.dev') F['jalankan.bat'] = F['jalankan.bat'].replace('lyrionx_absensi.py %*', `lyrionx_absensi.py --origin=${origin} %*`);
+  if (/^https?:\/\//.test(origin) && origin !== 'https://hr.hr-manajemen.workers.dev') F['jalankan.bat'] = F['jalankan.bat'].replace('lyrionx_absensi.py %*', `lyrionx_absensi.py --origin=${origin} %*`);
   const blob = zipStore(Object.entries(F).map(([n, d]) => ({ name: 'LyrionX-Absensi/' + n, data: d })));
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'LyrionX-Absensi.zip'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
   toast('Program penarik diunduh. Ekstrak, lalu jalankan jalankan.bat');
