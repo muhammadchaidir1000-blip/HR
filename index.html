@@ -1262,6 +1262,21 @@ body[data-role] .side{background:#FFFFFF}
 .act-t{min-width:92px;font-weight:700;font-variant-numeric:tabular-nums}
 .act-b{flex:1;min-width:0}
 @media (max-width:640px){.clock-btn{width:100%}.act-i{flex-wrap:wrap}}
+
+/* ---- foto & dokumen ---- */
+.av-img{border-radius:50%;object-fit:cover;display:inline-block;flex:0 0 auto;background:#E8ECEF}
+.av-ph{border-radius:50%;display:inline-grid;place-items:center;flex:0 0 auto;background:#DCEFE6;color:#1B6A4C;font-weight:800}
+.av-xl{box-shadow:0 0 0 4px #fff,0 4px 16px rgba(16,24,40,.15)}
+.av-btn{position:relative;padding:0;border:0;background:none;cursor:pointer;border-radius:50%;flex:0 0 auto}
+.av-btn:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.av-cam{position:absolute;right:-2px;bottom:-2px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.2);display:grid;place-items:center;font-size:12px}
+img.acct-av{width:34px;height:34px;padding:0}
+.edoc-list{display:flex;flex-direction:column}
+.edoc{padding:12px 16px;border-top:1px solid var(--line-2)}.edoc:first-child{border-top:0}.edoc.old{opacity:.6}
+.edoc-h{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.edoc-h span:not(.pill){color:var(--muted)}
+.edoc-f{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px}
+.chip-btn{appearance:none;border:1px dashed #C58A00;background:#fff;border-radius:99px;padding:2px 10px;margin:2px;font:inherit;font-size:13px;cursor:pointer;color:#8A5A00}
+.chip-btn:hover{background:#FFF6E0}
 </style>
 </head>
 <body>
@@ -1733,7 +1748,7 @@ const IST_SAMPLE_DATA=[{"id":"ir_excel","d":{"name":"Mochammad Rizki Firmansyah"
    ========================================================= */
 const F = ['D','I','S','C'];
 const FNAME = {D:'Dominance',I:'Influence',S:'Steadiness',C:'Compliance'};
-const COLS = ['companies','accounts','disc_results','disc_sessions','ist_results','ist_sessions','papi_results','papi_sessions','skill_tests','skill_results','skill_sessions','meetings','employees','overtime','leaves','payroll_runs','hr_config','att_month','hr_claims','hr_reviews','hr_news','pay_slips','audit','initpass','hr_requests','hr_tasks','hr_activity'];
+const COLS = ['companies','accounts','disc_results','disc_sessions','ist_results','ist_sessions','papi_results','papi_sessions','skill_tests','skill_results','skill_sessions','meetings','employees','overtime','leaves','payroll_runs','hr_config','att_month','hr_claims','hr_reviews','hr_news','pay_slips','audit','initpass','hr_requests','hr_tasks','hr_activity','emp_docs'];
 const $ = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => [...r.querySelectorAll(s)];
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -2137,6 +2152,7 @@ const ICON = {
   building: '<rect x="4" y="3" width="16" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/>',
   book: '<path d="M4 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4zM20 4h-5a3 3 0 0 0-3 3"/>',
   log: '<path d="M4 6h16M4 12h16M4 18h10"/>',
+  doc: '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/>',
   check: '<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.5 12.5l2.5 2.5 5-5.5"/>',
   chart: '<rect x="4" y="11" width="4" height="9" rx="1"/><rect x="10" y="4" width="4" height="16" rx="1"/><rect x="16" y="8" width="4" height="12" rx="1"/>'
 };
@@ -2147,6 +2163,7 @@ const NAV = [
   { id: 'myleave', label: 'Cuti Saya', icon: 'cal', roles: [US], staff: true, group: 'Kepegawaian Saya' },
   { id: 'myot', label: 'Lembur Saya', icon: 'clock', roles: [US], staff: true, group: 'Kepegawaian Saya' },
   { id: 'myreq', label: 'Pengajuan Lain', icon: 'list', roles: [US], staff: true, group: 'Kepegawaian Saya' },
+  { id: 'mydocs', label: 'Dokumen Saya', icon: 'doc', roles: [US], staff: true, group: 'Kepegawaian Saya' },
   { id: 'mytask', label: 'Tugas Saya', icon: 'check', roles: [US], staff: true, group: 'Kepegawaian Saya' },
   { id: 'myact', label: 'Aktivitas Harian', icon: 'log', roles: [US], staff: true, group: 'Kepegawaian Saya' },
   { id: 'mypay', label: 'Slip Gaji', icon: 'money', roles: [US], staff: true, group: 'Kepegawaian Saya' },
@@ -2166,6 +2183,7 @@ const NAV = [
   { id: 'reports', label: 'Laporan', icon: 'chart', roles: [SA, CO], group: 'Laporan' },
   { id: 'hrdash', label: 'Beranda HRIS', icon: 'home', roles: [SA, CO], ws: 'hr' },
   { id: 'employees', label: 'Data Karyawan', icon: 'users', roles: [SA, CO], group: 'Karyawan', ws: 'hr' },
+  { id: 'hrdocs', label: 'Dokumen Karyawan', icon: 'doc', roles: [SA, CO], group: 'Karyawan', ws: 'hr' },
   { id: 'orgchart', label: 'Struktur Organisasi', icon: 'org', roles: [SA, CO], group: 'Karyawan', ws: 'hr' },
   { id: 'directory', label: 'Direktori Karyawan', icon: 'idcard', roles: [SA, CO], group: 'Karyawan', ws: 'hr' },
   { id: 'attendance', label: 'Absensi & Jadwal', icon: 'clock', roles: [SA, CO], group: 'Waktu & Kehadiran', ws: 'hr' },
@@ -2360,7 +2378,7 @@ const App = {
           <div class="mbar-title"><span class="small">${esc(brandOf().name)}</span><b>${esc(cur.label)}</b></div><a class="mbar-lx" href="https://lyrionx.com" target="_blank" rel="noopener" aria-label="lyrionx.com"><img src="${LOGO_LX_MARK}" alt=""><span data-clock="short"></span></a></header>
         <div class="topbar ${S.user.role === SA ? '' : 'co-sm'}">${compSel}<div class="grow"></div>
           <span class="small muted hide-sm">${Store.mode === 'db' || Store.mode === 'supa' ? 'Tersimpan di server' : 'Tersimpan di browser ini'}</span>${typeof bellHtml === 'function' ? bellHtml() : ''}
-          <div class="acct hide-sm"><button class="acct-btn" id="acctBtn" aria-haspopup="menu" aria-expanded="false"><span class="acct-av" aria-hidden="true">${esc((S.user.name || '?').trim().charAt(0).toUpperCase())}</span><span class="acct-tx"><b>${esc(S.user.name)}</b><small>${esc(acctLabel())}</small></span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+          <div class="acct hide-sm"><button class="acct-btn" id="acctBtn" aria-haspopup="menu" aria-expanded="false">${acctPhoto(S.user.id) ? `<img class="acct-av av-img" src="${esc(acctPhoto(S.user.id))}" alt="">` : `<span class="acct-av" aria-hidden="true">${esc((S.user.name || '?').trim().charAt(0).toUpperCase())}</span>`}<span class="acct-tx"><b>${esc(S.user.name)}</b><small>${esc(acctLabel())}</small></span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
             <div class="acct-menu" id="acctMenu" role="menu" hidden><button role="menuitem" id="btnPw2">Ganti password</button><button role="menuitem" id="btnOut2" class="danger">Keluar</button></div></div>
           <div class="lx-block hide-sm"><a class="lx-link" href="https://lyrionx.com" target="_blank" rel="noopener"><img src="${LOGO_LX_MARK}" alt="LyrionX.Co"><span>lyrionx.com</span></a><span class="lx-clock" data-clock></span></div></div>
         <main class="content" id="content"></main>
@@ -5676,8 +5694,11 @@ function hrAlerts(e) {
   const out = [], chk = (iso, label, warnDays) => { const n = hrDaysUntil(iso); if (n == null) return; if (n < 0) out.push({ lvl: 'bad', t: `${label} lewat ${-n} hari` }); else if (n <= warnDays) out.push({ lvl: 'warn', t: `${label} ${n === 0 ? 'hari ini' : n + ' hari lagi'}` }); };
   if (e.active === false) return out;
   if (hrIsContract(e.status, e.companyId)) chk(e.contractEnd, 'Kontrak berakhir', 30);
-  chk(e.strUntil, 'STR berakhir', 90); chk(e.sipUntil, 'SIP berakhir', 90);
+  /* STR/SIP baru yang sudah diunggah (walau belum diverifikasi) menggantikan peringatan dari data lama */
+  const newer = (k, cur) => typeof edocsOf === 'function' && edocsOf(e).some(d => d.kind === k && (d.until ? d.until > (cur || '') : k === 'STR'));
+  if (!newer('STR', e.strUntil)) chk(e.strUntil, 'STR berakhir', 90); if (!newer('SIP', e.sipUntil)) chk(e.sipUntil, 'SIP berakhir', 90);
   (e.licenses || []).forEach(l => l.until && chk(l.until, (l.name || 'Sertifikat') + ' berakhir', 60));
+  if (typeof edocAlerts === 'function') edocAlerts(e).forEach(a => { if (!out.some(o => o.t.split(' ')[0] === a.t.split(' ')[0] && /^(STR|SIP)$/.test(a.t.split(' ')[0]))) out.push(a); });
   return out;
 }
 /* editor tabel sederhana: baris input yang bisa ditambah/dihapus */
@@ -5982,7 +6003,7 @@ Views.employees = () => {
   ${sel.size ? `<div class="bulk-bar" role="region" aria-label="Aksi karyawan terpilih"><b>${sel.size} karyawan dipilih</b>${selN < sel.size ? `<span class="small muted">(${sel.size - selN} di luar filter)</span>` : ''}
     <div class="row" style="gap:8px;margin-left:auto">${selOn ? '<button class="btn sm" id="bOff">Nonaktifkan</button>' : ''}${selOff ? '<button class="btn sm" id="bOn">Aktifkan kembali</button>' : ''}${S.user.role === SA ? '<button class="btn sm danger" id="bDel">Hapus permanen</button>' : ''}<button class="btn sm ghost" id="bClr">Batal pilih</button></div></div>` : ''}
   ${rows.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th class="chk"><input type="checkbox" id="eAll" aria-label="Pilih semua yang tampil" ${allOn ? 'checked' : ''}></th><th>NIK</th><th>Nama</th><th>Unit / jabatan</th><th>Status</th><th>Masa kerja</th><th>PIN mesin</th><th>Jenis kerja</th><th>Perhatian</th></tr></thead><tbody>
-    ${rows.map(e => `<tr class="click ${sel.has(e.id) ? 'sel' : ''}" data-open="${e.id}" tabindex="0"><td class="chk"><input type="checkbox" data-sel="${e.id}" aria-label="Pilih ${esc(e.name)}" ${sel.has(e.id) ? 'checked' : ''}></td><td class="mono small">${esc(e.nik || '–')}</td><td><b>${esc(e.name)}</b>${sampleTag(e)}${e.active === false ? ' <span class="pill">nonaktif</span>' : ''}<div class="small muted">${esc(e.profession || '')}</div></td>
+    ${rows.map(e => `<tr class="click ${sel.has(e.id) ? 'sel' : ''}" data-open="${e.id}" tabindex="0"><td class="chk"><input type="checkbox" data-sel="${e.id}" aria-label="Pilih ${esc(e.name)}" ${sel.has(e.id) ? 'checked' : ''}></td><td class="mono small">${esc(e.nik || '–')}</td><td><div class="row" style="gap:10px;flex-wrap:nowrap">${avatarHtml(e.name, empPhoto(e), 32)}<div><b>${esc(e.name)}</b>${sampleTag(e)}${e.active === false ? ' <span class="pill">nonaktif</span>' : ''}<div class="small muted">${esc(e.profession || '')}</div></div></div></td>
       <td>${esc(e.unit || '–')}<div class="small muted">${esc(e.position || '')}</div></td><td class="small">${esc(e.status || '–')}</td><td class="small">${hrServiceText(e.joinDate)}</td>
       <td class="mono">${e.pin ? esc(e.pin) : '<span class="pill warn">belum</span>'}</td><td class="small">${e.workType === 'shift' ? 'Shift' : 'Non-shift'}</td>
       <td>${hrAlerts(e).map(a => `<span class="pill ${a.lvl}">${esc(a.t)}</span>`).join(' ') || '<span class="small faint">–</span>'}</td></tr>`).join('')}
@@ -6124,7 +6145,7 @@ Views.employee = () => {
   if (['keluarga', 'kualifikasi', 'riwayat', 'dokumen'].includes(tab)) body = empTabBody(e, tab);
   if (tab === 'gaji' && gw) body = `<div class="card card-pad" style="border-color:var(--warn,#E0730B)"><b>Perhatian:</b> ${esc(gw)}</div>` + body;
   const tabs = [['profil', 'Profil'], ['keluarga', 'Keluarga & darurat'], ['kualifikasi', 'Kualifikasi'], ['riwayat', 'Riwayat'], ['dokumen', 'Dokumen'], ['absen', 'Absensi'], ['cuti', 'Cuti'], ['gaji', 'Gaji']];
-  return `<div class="page-head"><div><button class="btn ghost sm" data-go="employees">← Data Karyawan</button><h1 style="margin-top:6px">${esc(e.name)}${sampleTag(e)}</h1>
+  return `<div class="page-head"><div><button class="btn ghost sm" data-go="employees">← Data Karyawan</button><div class="row" style="gap:14px;margin-top:6px;flex-wrap:nowrap"><button class="av-btn" id="ePhoto" title="Ganti foto" aria-label="Ganti foto ${esc(e.name)}">${avatarHtml(e.name, empPhoto(e), 64)}<span class="av-cam" aria-hidden="true">📷</span></button><h1 style="margin:0">${esc(e.name)}${sampleTag(e)}</h1></div>
       <p>${esc(e.position || '')}${e.unit ? ' · ' + esc(e.unit) : ''} · ${esc(e.status || '')}${e.active === false ? ' · <b>Nonaktif</b>' : ''}</p>
       <div class="row">${hrAlerts(e).map(a => `<span class="pill ${a.lvl}">${esc(a.t)}</span>`).join('')}</div></div>
     <div class="row"><button class="btn primary" id="eEdit">Ubah data</button>${e.active === false ? '<button class="btn" id="eOn">Aktifkan kembali</button>' : '<button class="btn" id="eOff">Nonaktifkan</button>'}${S.user.role === SA ? '<button class="btn danger" id="eDel">Hapus</button>' : ''}</div></div>
@@ -6132,6 +6153,8 @@ Views.employee = () => {
 };
 Views.employeeMount = c => {
   const e = Store.get('employees', (S.params || {}).id); if (!e) return;
+  $('#ePhoto', c).onclick = () => photoModal({ name: e.name, accountId: e.accountId && Store.get('accounts', e.accountId) ? e.accountId : '', employeeId: e.id });
+  edocListWire(c, e); { const ea = $('#edAdd', c); if (ea) ea.onclick = () => edocForm(e); }
   $$('[data-etab]', c).forEach(b => b.onclick = () => { S.params = { id: e.id, tab: b.dataset.etab }; App.renderContent(); });
   const m1 = $('#egm', c); if (m1) m1.onchange = () => { S.params = { ...S.params, month: m1.value }; App.renderContent(); };
   const m2 = $('#eam', c); if (m2) m2.onchange = () => { S.params = { ...S.params, month: m2.value }; App.renderContent(); };
@@ -6301,7 +6324,8 @@ function empTabBody(e, tab) {
   if (tab === 'keluarga') return `<div class="stack">${empListTable(e, 'emergency')}${empListTable(e, 'dependents')}</div>`;
   if (tab === 'kualifikasi') return `<div class="stack">${empListTable(e, 'edu')}${empListTable(e, 'work')}${empListTable(e, 'licenses', (c, r, v) => c.k === 'until' && r.until ? (hrDaysUntil(r.until) < 0 ? `<span class="pill bad">${v}</span>` : hrDaysUntil(r.until) <= 60 ? `<span class="pill warn">${v}</span>` : v) : v)}<div class="grid g2" style="align-items:start">${empListTable(e, 'skills')}${empListTable(e, 'langs')}</div></div>`;
   if (tab === 'riwayat') return `<div class="stack"><p class="small muted" style="margin:0">Perubahan jabatan, unit, status, level, dan gaji pokok lewat tombol <b>Ubah data</b> tercatat otomatis. Anda juga bisa menambah riwayat lama secara manual.</p>${empListTable(e, 'history')}</div>`;
-  if (tab === 'dokumen') return `<div class="stack"><p class="small muted" style="margin:0">Simpan berkas di Google Drive/OneDrive RS, lalu tempel tautannya di sini agar mudah dicari. Atur berbagi tautan hanya untuk tim HRD.</p>${empListTable(e, 'docs')}</div>`;
+  if (tab === 'dokumen') return `<div class="stack"><div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px"><p class="small muted" style="margin:0">Dokumen yang diunggah karyawan sendiri atau oleh HRD. Unggahan HRD langsung terverifikasi; unggahan karyawan perlu diverifikasi.</p><button class="btn primary" id="edAdd">+ Unggah dokumen</button></div>
+    ${edocListHtml(e, true)}${(e.docs || []).length ? `<details><summary class="small muted">Tautan dokumen lama (${e.docs.length})</summary>${empListTable(e, 'docs')}</details>` : `<details><summary class="small muted">Tautan dokumen eksternal (Google Drive/OneDrive)</summary>${empListTable(e, 'docs')}</details>`}</div>`;
   return '';
 }
 
@@ -6434,7 +6458,228 @@ function initPwBanner() {
   return `<div class="note warn row" style="justify-content:space-between;gap:10px;flex-wrap:wrap"><span>🔐 Anda masih memakai <b>password awal</b> yang mudah ditebak. Ganti sekarang agar data gaji dan kepegawaian Anda aman.</span><button class="btn sm primary" data-chpw>Ganti password</button></div>`;
 }
 function initPwWire(c) { $$('[data-chpw]', c).forEach(b => b.onclick = () => Views.changePassword()); }
-Views.myprofileMount = c => initPwWire(c);
+Views.myprofileMount = c => { initPwWire(c); myPhotoWire(c); };
+
+/* =========================================================
+   Foto profil & dokumen karyawan
+   - Foto: staf mengganti fotonya sendiri (disimpan kecil di akun); admin bisa mengganti untuk karyawan.
+   - Dokumen (emp_docs): KTP, KK, ijazah, STR, SIP, sertifikat pelatihan/seminar, asuransi, dll.
+     Staf mengunggah sendiri → HRD memverifikasi. Dokumen terverifikasi tidak bisa diubah staf (RLS 009).
+   - Pengingat masa berlaku: Beranda Saya, lonceng staf & HRD, halaman Dokumen Karyawan, laporan legalitas.
+   ========================================================= */
+const EDOC_KINDS = [
+  { k: 'KTP', cat: 'Identitas', no: 'NIK' }, { k: 'Kartu Keluarga', cat: 'Identitas', no: 'No KK' }, { k: 'NPWP', cat: 'Identitas', no: 'No NPWP' }, { k: 'Buku rekening', cat: 'Identitas', no: 'No rekening', issuer: 'Bank' },
+  { k: 'STR', cat: 'Legalitas profesi', no: 'No STR', issuer: 'Penerbit', exp: 'opt', warn: 90, hint: 'Kosongkan "berlaku sampai" bila STR seumur hidup' },
+  { k: 'SIP', cat: 'Legalitas profesi', no: 'No SIP', issuer: 'Penerbit (Dinkes)', exp: 'req', warn: 90 },
+  { k: 'Surat keterangan sehat', cat: 'Legalitas profesi', no: 'No surat', issuer: 'Fasilitas kesehatan', exp: 'opt', warn: 30 },
+  { k: 'Ijazah', cat: 'Pendidikan', no: 'No ijazah', title: 'Jenjang & jurusan', issuer: 'Institusi' }, { k: 'Transkrip nilai', cat: 'Pendidikan', title: 'Jenjang & jurusan', issuer: 'Institusi' },
+  { k: 'Sertifikat pelatihan', cat: 'Pelatihan & seminar', title: 'Nama pelatihan', no: 'No sertifikat', issuer: 'Penyelenggara', exp: 'opt', warn: 60, skp: true, hint: 'mis. BTCLS, PPI, K3RS, BHD' },
+  { k: 'Sertifikat seminar/workshop', cat: 'Pelatihan & seminar', title: 'Nama seminar/workshop', no: 'No sertifikat', issuer: 'Penyelenggara', skp: true },
+  { k: 'BPJS Kesehatan', cat: 'Asuransi & jaminan', no: 'No kartu' }, { k: 'BPJS Ketenagakerjaan', cat: 'Asuransi & jaminan', no: 'No kartu' },
+  { k: 'Asuransi kesehatan', cat: 'Asuransi & jaminan', title: 'Nama asuransi / produk', no: 'No polis / kartu', issuer: 'Perusahaan asuransi', exp: 'req', warn: 30 },
+  { k: 'Kontrak kerja', cat: 'Kepegawaian', no: 'No kontrak', exp: 'opt', warn: 30 }, { k: 'SK pengangkatan', cat: 'Kepegawaian', no: 'No SK' },
+  { k: 'Lainnya', cat: 'Lainnya', title: 'Nama dokumen', no: 'Nomor', issuer: 'Penerbit', exp: 'opt', warn: 30 },
+];
+const EDOC_CATS = [...new Set(EDOC_KINDS.map(x => x.cat))];
+const edocKind = k => EDOC_KINDS.find(x => x.k === k) || EDOC_KINDS[EDOC_KINDS.length - 1];
+const EDOC_HEALTH = /dokter|perawat|bidan|apoteker|farmasi|analis|radiograf|fisioterap|gizi|nutrisi|sanitar|perekam|elektromedis|terapis|ners|kesehatan|keperawatan|kebidanan|laborat/i;
+const edocRequired = e => ['KTP', 'Kartu Keluarga', 'Ijazah', 'BPJS Kesehatan', ...(e.strNo || e.sipNo || EDOC_HEALTH.test([e.profession, e.position, e.unit].join(' ')) ? ['STR', 'SIP'] : [])];
+const edocsOf = e => Store.all('emp_docs', d => d.employeeId === e.id).sort((a, b) => (b.issued || b.createdAt || '').localeCompare(a.issued || a.createdAt || ''));
+/* dokumen terbaru per jenis+judul: yang lama dianggap sudah diganti */
+function edocLatest(list) {
+  const seen = new Map(); list.forEach(d => { const key = d.kind + '|' + (d.title || '').trim().toLowerCase(); const c = seen.get(key); if (!c || (d.until || '') > (c.until || '') || ((d.until || '') === (c.until || '') && (d.createdAt || '') > (c.createdAt || ''))) seen.set(key, d); });
+  return new Set([...seen.values()].map(d => d.id));
+}
+function edocState(d, latest) {
+  const K = edocKind(d.kind), n = hrDaysUntil(d.until);
+  if (latest && !latest.has(d.id)) return { lvl: '', t: 'sudah diganti' };
+  if (n != null && n < 0) return { lvl: 'bad', t: `kedaluwarsa ${-n} hari` };
+  if (n != null && n <= (K.warn || 30)) return { lvl: 'warn', t: n === 0 ? 'berakhir hari ini' : `berakhir ${n} hari lagi` };
+  if (!d.verified) return { lvl: 'info', t: 'menunggu verifikasi HRD' };
+  return { lvl: 'ok', t: 'terverifikasi' };
+}
+const edocLabel = d => d.kind + (d.title ? ' · ' + d.title : '');
+/* peringatan masa berlaku dari dokumen unggahan (dipakai hrAlerts) */
+function edocAlerts(e) {
+  const L = edocsOf(e), latest = edocLatest(L), out = [];
+  L.filter(d => latest.has(d.id) && d.until).forEach(d => { const n = hrDaysUntil(d.until), w = edocKind(d.kind).warn || 30;
+    if (n < 0) out.push({ lvl: 'bad', t: `${edocLabel(d)} kedaluwarsa ${-n} hari`, doc: d.id }); else if (n <= w) out.push({ lvl: 'warn', t: `${edocLabel(d)} ${n === 0 ? 'berakhir hari ini' : 'berakhir ' + n + ' hari lagi'}`, doc: d.id }); });
+  return out;
+}
+
+/* ---------- foto profil ---------- */
+const acctPhoto = id => (id && Store.get('accounts', id)?.photo) || '';
+const empPhoto = e => (e && (acctPhoto(e.accountId) || e.photo)) || '';
+const avatarHtml = (name, photo, size = 40, cls = '') => photo ? `<img class="av-img ${cls}" src="${esc(photo)}" alt="Foto ${esc(name || '')}" width="${size}" height="${size}" style="width:${size}px;height:${size}px">`
+  : `<span class="av-ph ${cls}" aria-hidden="true" style="width:${size}px;height:${size}px;font-size:${Math.round(size * .42)}px">${esc((name || '?').trim().charAt(0).toUpperCase())}</span>`;
+function imgSquare(file, px = 192) {
+  return new Promise((ok, no) => { const im = new Image(); im.onload = () => { const s = Math.min(im.width, im.height), cv = document.createElement('canvas'); cv.width = cv.height = px;
+    const g = cv.getContext('2d'); g.imageSmoothingQuality = 'high'; g.drawImage(im, (im.width - s) / 2, (im.height - s) / 2, s, s, 0, 0, px, px); URL.revokeObjectURL(im.src); ok(cv.toDataURL('image/jpeg', 0.8)); };
+    im.onerror = () => no(new Error('Foto tidak bisa dibaca. Gunakan JPG atau PNG.')); im.src = URL.createObjectURL(file); });
+}
+/* who: { name, accountId, employeeId } */
+function photoModal(who) {
+  const cur = (who.accountId && acctPhoto(who.accountId)) || (who.employeeId && Store.get('employees', who.employeeId)?.photo) || '';
+  let next = null;
+  openModal({ title: 'Foto profil', body: `<div class="stack" style="align-items:center;text-align:center">
+      <div id="phPrev">${avatarHtml(who.name, cur, 132, 'av-xl')}</div>
+      <div class="row" style="gap:8px;justify-content:center;flex-wrap:wrap"><label class="btn primary" style="cursor:pointer">📷 Pilih / ambil foto<input type="file" id="phFile" accept="image/*" hidden></label>${cur ? '<button class="btn" id="phDel">Hapus foto</button>' : ''}</div>
+      <p class="small muted" style="margin:0">Gunakan foto wajah yang jelas dengan latar polos. Foto otomatis dipotong persegi dan diperkecil.</p></div>`,
+    foot: '<button class="btn" data-close>Batal</button><button class="btn primary" id="phSave" disabled>Simpan foto</button>',
+    onMount: r => {
+      $('#phFile', r).onchange = async ev => { const f = ev.target.files[0]; if (!f) return; if (!/^image\//.test(f.type) && !/\.(jpe?g|png|webp|heic)$/i.test(f.name)) { toast('Pilih file foto (JPG/PNG)'); return; }
+        try { next = await imgSquare(f); $('#phPrev', r).innerHTML = avatarHtml(who.name, next, 132, 'av-xl'); $('#phSave', r).disabled = false; } catch (x) { toast(x.message); } };
+      const del = $('#phDel', r); if (del) del.onclick = () => { next = ''; $('#phPrev', r).innerHTML = avatarHtml(who.name, '', 132, 'av-xl'); $('#phSave', r).disabled = false; };
+      $('#phSave', r).onclick = async () => { busy(true, 'Menyimpan foto…');
+        try {
+          if (who.accountId && Store.get('accounts', who.accountId)) { const a = { ...Store.get('accounts', who.accountId) }; delete a.id; if (next) a.photo = next; else delete a.photo; await Store.put('accounts', who.accountId, a); }
+          else if (who.employeeId) { const e = { ...Store.get('employees', who.employeeId) }; delete e.id; if (next) e.photo = next; else delete e.photo; await Store.put('employees', who.employeeId, e); }
+          if (who.accountId === S.user.id) S.user = { ...S.user, photo: next || undefined };
+          busy(false); closeModal(); audit(next ? 'ganti foto profil' : 'hapus foto profil', who.name); toast(next ? 'Foto profil diperbarui' : 'Foto dihapus'); App.render();
+        } catch (x) { busy(false); toast('Gagal menyimpan foto: ' + supaErr(x)); } };
+    } });
+}
+const myPhotoBtn = () => { const e = myEmp(); return `<button class="av-btn" data-myphoto title="Ganti foto profil" aria-label="Ganti foto profil">${avatarHtml(S.user.name, acctPhoto(S.user.id), 64)}<span class="av-cam" aria-hidden="true">📷</span></button>`; };
+const myPhotoWire = c => $$('[data-myphoto]', c).forEach(b => b.onclick = () => photoModal({ name: S.user.name, accountId: S.user.id, employeeId: myEmp()?.id }));
+
+/* ---------- formulir dokumen ---------- */
+function edocForm(e, opts = {}) {
+  const prev = opts.prev, renew = !!opts.renew, admin = S.user.role !== US;
+  const kind0 = prev?.kind || opts.kind || 'KTP';
+  const kindOpts = v => EDOC_CATS.map(c => `<optgroup label="${esc(c)}">${EDOC_KINDS.filter(x => x.cat === c).map(x => `<option ${x.k === v ? 'selected' : ''}>${esc(x.k)}</option>`).join('')}</optgroup>`).join('');
+  const P = renew ? { kind: prev.kind, title: prev.title, issuer: prev.issuer } : prev || {};
+  openModal({ title: renew ? 'Perbarui dokumen' : prev ? 'Ubah dokumen' : 'Unggah dokumen', body: `<form id="edF" class="form-grid">
+    <label class="f">Jenis dokumen<select class="input" name="kind" ${renew ? 'disabled' : ''}>${kindOpts(kind0)}</select></label>
+    <label class="f" data-fx="title">Judul<input class="input" name="title" maxlength="120" value="${esc(P.title || '')}"></label>
+    <label class="f" data-fx="no">Nomor<input class="input" name="no" maxlength="60" value="${esc(P.no || '')}"></label>
+    <label class="f" data-fx="issuer">Penerbit<input class="input" name="issuer" maxlength="100" value="${esc(P.issuer || '')}"></label>
+    <label class="f">Tanggal terbit<input class="input" type="date" name="issued" max="${todayISO()}" value="${esc(P.issued || '')}"></label>
+    <label class="f" data-fx="until">Berlaku sampai<input class="input" type="date" name="until" value="${esc(P.until || '')}"></label>
+    <label class="f" data-fx="skp">SKP / jam pelajaran<input class="input" type="number" name="skp" min="0" max="999" step="0.5" value="${esc(P.skp ?? '')}"></label>
+    <p class="small muted" id="edHint" style="grid-column:1/-1;margin:0"></p>
+    ${prev && !renew ? hrDocLinks('emp_docs', prev.id, prev.files) : ''}
+    ${hrDocInputHtml('edFile', prev && !renew ? 'Tambah / ganti file (opsional)' : 'File dokumen *')}
+    <label class="f" style="grid-column:1/-1">Catatan<input class="input" name="note" maxlength="200" value="${esc(P.note || '')}" placeholder="opsional"></label>
+    ${renew ? `<div class="note small" style="grid-column:1/-1;margin:0">Dokumen lama tetap tersimpan sebagai riwayat. Pengingat masa berlaku mengikuti dokumen terbaru.</div>` : ''}</form>`,
+    foot: `<button class="btn" data-close>Batal</button><button class="btn primary" form="edF">${prev && !renew ? 'Simpan' : 'Unggah'}</button>`,
+    onMount: r => {
+      const f = $('#edF', r); hrDocInputWire(r, 'edFile');
+      const sync = () => { const K = edocKind(f.kind.value);
+        $('[data-fx=title]', r).hidden = !K.title; if (K.title) $('[data-fx=title]', r).firstChild.textContent = K.title + (K.title ? ' *' : '');
+        $('[data-fx=no]', r).hidden = !K.no; if (K.no) $('[data-fx=no]', r).firstChild.textContent = K.no;
+        $('[data-fx=issuer]', r).hidden = !K.issuer; if (K.issuer) $('[data-fx=issuer]', r).firstChild.textContent = K.issuer;
+        $('[data-fx=until]', r).hidden = !K.exp; $('[data-fx=until]', r).firstChild.textContent = 'Berlaku sampai' + (K.exp === 'req' ? ' *' : '');
+        $('[data-fx=skp]', r).hidden = !K.skp;
+        $('#edHint', r).textContent = [K.hint, K.exp ? `Pengingat muncul ${K.warn || 30} hari sebelum berakhir.` : ''].filter(Boolean).join(' · '); };
+      f.kind.onchange = sync; sync();
+      f.onsubmit = async ev => { ev.preventDefault(); const d = formData(f), K = edocKind(renew ? prev.kind : d.kind), inp = $('#edFile', r);
+        if (K.title && !(d.title || '').trim()) { toast(`${K.title} wajib diisi`); f.title.focus(); return; }
+        if (K.exp === 'req' && !d.until) { toast('Isi tanggal berlaku sampai'); f.until.focus(); return; }
+        if (d.until && d.issued && d.until < d.issued) { toast('Tanggal berlaku sebelum tanggal terbit'); return; }
+        if ((!prev || renew) && !(inp._files || []).length) { toast('Pilih file dokumen (foto atau PDF)'); return; }
+        const sb = $('button[form=edF]', r); sb.disabled = true; busy(true, 'Mengunggah…');
+        try {
+          const up = await hrDocUploadAll(r, 'edFile', e);
+          const body = { companyId: e.companyId, employeeId: e.id, kind: K.k, title: K.title ? d.title.trim() : '', no: K.no ? (d.no || '').trim() : '', issuer: K.issuer ? (d.issuer || '').trim() : '',
+            issued: d.issued || '', until: K.exp ? d.until || '' : '', skp: K.skp && d.skp !== '' ? +d.skp : null, note: (d.note || '').trim(),
+            files: prev && !renew ? [...(prev.files || []), ...up] : up, createdAt: prev && !renew ? prev.createdAt : nowISO(), updatedAt: nowISO(), by: S.user.username, bySelf: !admin };
+          if (admin) body.verified = { by: S.user.username, at: nowISO() };
+          await Store.put('emp_docs', prev && !renew ? prev.id : uid('d'), body);
+          if (admin) await edocSyncEmp(e, body);
+          busy(false); closeModal(); audit(renew ? 'perbarui dokumen' : prev ? 'ubah dokumen' : 'unggah dokumen', `${e.name} · ${edocLabel(body)}`);
+          toast(admin ? 'Dokumen tersimpan dan terverifikasi' : 'Dokumen terkirim, menunggu verifikasi HRD'); App.renderContent();
+        } catch (x) { busy(false); sb.disabled = false; toast('Gagal menyimpan: ' + supaErr(x)); }
+      };
+    } });
+}
+/* STR/SIP terverifikasi → perbarui data karyawan (nomor & masa berlaku) */
+async function edocSyncEmp(e, d) {
+  const map = { STR: ['strNo', 'strUntil'], SIP: ['sipNo', 'sipUntil'] }[d.kind]; if (!map) return;
+  const cur = Store.get('employees', e.id); if (!cur) return;
+  if ((cur[map[1]] || '') > (d.until || '') && d.until) return;
+  const o = { ...cur, [map[0]]: d.no || cur[map[0]] || '', [map[1]]: d.until || '' }; delete o.id; await Store.put('employees', e.id, o);
+}
+async function edocVerify(id) {
+  const d = Store.get('emp_docs', id); if (!d) return; const e = Store.get('employees', d.employeeId);
+  const o = { ...d, verified: { by: S.user.username, at: nowISO() } }; delete o.id;
+  try { await Store.put('emp_docs', id, o); if (e) await edocSyncEmp(e, o); audit('verifikasi dokumen', `${e?.name || ''} · ${edocLabel(d)}`); toast('Dokumen terverifikasi'); } catch (x) { toast(supaErr(x)); }
+  App.renderContent();
+}
+async function edocDelete(id) {
+  const d = Store.get('emp_docs', id); if (!d) return;
+  if (!(await confirmBox(`Hapus dokumen <b>${esc(edocLabel(d))}</b>?`, 'Hapus', true))) return;
+  try { await Store.remove('emp_docs', id); audit('hapus dokumen', edocLabel(d)); toast('Dokumen dihapus'); } catch (x) { toast('Gagal menghapus: ' + supaErr(x)); }
+  App.renderContent();
+}
+async function edocReject(id) {
+  const d = Store.get('emp_docs', id); if (!d) return;
+  const note = await noteBox('Minta unggah ulang', 'Tulis yang perlu diperbaiki, mis. foto buram, halaman belakang belum ada', 'Kirim ke karyawan', 'primary'); if (note == null) return;
+  const o = { ...d, rejected: { by: S.user.username, at: nowISO(), note } }; delete o.id; delete o.verified;
+  try { await Store.put('emp_docs', id, o); audit('minta unggah ulang dokumen', edocLabel(d)); toast('Catatan dikirim ke karyawan'); } catch (x) { toast(supaErr(x)); }
+  App.renderContent();
+}
+
+/* ---------- daftar dokumen (dipakai halaman staf & detail karyawan) ---------- */
+function edocListHtml(e, admin) {
+  const L = edocsOf(e), latest = edocLatest(L), have = new Set(L.map(d => d.kind)), req = edocRequired(e), miss = req.filter(k => !have.has(k));
+  const card = d => { const st = edocState(d, latest), K = edocKind(d.kind), old = !latest.has(d.id);
+    return `<div class="edoc${old ? ' old' : ''}"><div class="edoc-h"><b>${esc(d.kind)}</b>${d.title ? `<span>${esc(d.title)}</span>` : ''}<span class="pill ${st.lvl}">${esc(st.t)}</span>${d.verified && st.lvl !== 'ok' && !old ? '<span class="pill ok">terverifikasi</span>' : ''}</div>
+      <div class="small muted">${[d.no && `${esc(K.no || 'No')} ${esc(d.no)}`, d.issuer && esc(d.issuer), d.issued && 'terbit ' + fmtDate(d.issued), d.until ? 'berlaku s.d. <b>' + fmtDate(d.until) + '</b>' : K.exp ? 'tanpa batas waktu' : '', d.skp != null && d.skp !== '' && `${nf(d.skp, 1)} SKP/JPL`].filter(Boolean).join(' · ')}</div>
+      ${d.rejected && !d.verified ? `<div class="note warn small" style="margin:6px 0 0">Dari HRD: “${esc(d.rejected.note)}”</div>` : ''}
+      <div class="edoc-f">${hrDocLinks('emp_docs', d.id, d.files)}<div class="row" style="gap:6px;margin-left:auto;flex-wrap:wrap">
+        ${admin && !d.verified && !old ? `<button class="btn sm primary" data-edv="${d.id}">Verifikasi</button><button class="btn sm" data-edrj="${d.id}">Minta unggah ulang</button>` : ''}
+        ${K.exp && !old && (hrDaysUntil(d.until) ?? 999) <= (K.warn || 30) ? `<button class="btn sm primary" data-edr="${d.id}">Perbarui</button>` : ''}
+        ${admin || !d.verified ? `<button class="btn sm" data-ede="${d.id}">Ubah</button><button class="btn sm danger" data-edx="${d.id}" aria-label="Hapus dokumen">✕</button>` : ''}</div></div></div>`; };
+  return `${miss.length ? `<div class="note warn">Dokumen wajib yang belum diunggah: ${miss.map(k => `<button class="chip-btn" data-ednew="${esc(k)}">+ ${esc(k)}</button>`).join(' ')}</div>` : `<div class="note ok small">Dokumen wajib lengkap (${req.map(esc).join(', ')}).</div>`}
+    ${EDOC_CATS.map(c => { const rows = L.filter(d => edocKind(d.kind).cat === c); return rows.length ? `<div class="card"><div class="card-head"><h3 style="margin:0">${esc(c)}</h3><span class="small muted">${rows.length} dokumen</span></div><div class="edoc-list">${rows.map(card).join('')}</div></div>` : ''; }).join('')}
+    ${L.length ? '' : '<div class="empty card">Belum ada dokumen yang diunggah.</div>'}`;
+}
+function edocListWire(c, e) {
+  $$('[data-ednew]', c).forEach(b => b.onclick = () => edocForm(e, { kind: b.dataset.ednew }));
+  $$('[data-ede]', c).forEach(b => b.onclick = () => edocForm(e, { prev: Store.get('emp_docs', b.dataset.ede) }));
+  $$('[data-edr]', c).forEach(b => b.onclick = () => edocForm(e, { prev: Store.get('emp_docs', b.dataset.edr), renew: true }));
+  $$('[data-edx]', c).forEach(b => b.onclick = () => edocDelete(b.dataset.edx));
+  $$('[data-edv]', c).forEach(b => b.onclick = () => edocVerify(b.dataset.edv));
+  $$('[data-edrj]', c).forEach(b => b.onclick = () => edocReject(b.dataset.edrj));
+}
+
+/* ---------- staf: Dokumen Saya ---------- */
+Views.mydocs = () => {
+  const e = myEmp(); if (!e) return stNoEmp();
+  const al = hrAlerts(e);
+  return `<div class="page-head"><div><h1>Dokumen Saya</h1><p>Unggah KTP, KK, ijazah, STR, SIP, sertifikat pelatihan dan seminar, kartu asuransi, dan dokumen lain. HRD memeriksa setiap dokumen. Pengingat muncul sebelum masa berlaku habis agar Anda sempat memperpanjang.</p></div><button class="btn primary" id="mdNew">+ Unggah dokumen</button></div>
+  ${al.length ? `<div class="note ${al.some(x => x.lvl === 'bad') ? 'bad' : 'warn'}"><b>Segera perpanjang:</b> ${al.map(x => esc(x.t)).join(' · ')}. Setelah dokumen baru terbit, tekan <b>Perbarui</b> lalu unggah filenya.</div>` : ''}
+  ${edocListHtml(e, false)}`;
+};
+Views.mydocsMount = c => { const e = myEmp(); if (!e) return; $('#mdNew', c).onclick = () => edocForm(e); edocListWire(c, e); };
+
+/* ---------- HRD: Dokumen Karyawan ---------- */
+Views.hrdocs = () => {
+  const p = S.params || {}, f = p.f || 'pending', k = p.kind || '', emps = empList(e => e.active !== false), em = Object.fromEntries(emps.map(e => [e.id, e]));
+  const all = Store.all('emp_docs', d => em[d.employeeId]), latest = edocLatest(all);
+  const rows0 = all.filter(d => latest.has(d.id)).map(d => ({ d, e: em[d.employeeId], n: hrDaysUntil(d.until), w: edocKind(d.kind).warn || 30 }));
+  const pend = rows0.filter(x => !x.d.verified), soon = rows0.filter(x => x.d.until && x.n >= 0 && x.n <= x.w), past = rows0.filter(x => x.d.until && x.n < 0);
+  const miss = emps.filter(e => { const have = new Set(all.filter(d => d.employeeId === e.id).map(d => d.kind)); return edocRequired(e).some(x => !have.has(x)); });
+  let rows = f === 'pending' ? pend : f === 'soon' ? soon : f === 'past' ? past : rows0; if (k) rows = rows.filter(x => x.d.kind === k);
+  rows.sort((a, b) => f === 'pending' ? (b.d.createdAt || '').localeCompare(a.d.createdAt || '') : (a.n ?? 9e9) - (b.n ?? 9e9));
+  return `<div class="page-head"><div><h1>Dokumen Karyawan</h1><p>Periksa dokumen yang diunggah karyawan dan pantau masa berlaku STR, SIP, sertifikat, asuransi, dan kontrak.</p></div></div>
+  <div class="grid g4"><button class="card kpi hr-kpibtn" data-hdf="pending"><span class="eyebrow">Menunggu verifikasi</span><b>${pend.length}</b></button><button class="card kpi hr-kpibtn" data-hdf="soon"><span class="eyebrow">Akan berakhir</span><b>${soon.length}</b></button>
+    <button class="card kpi hr-kpibtn" data-hdf="past"><span class="eyebrow">Kedaluwarsa</span><b>${past.length}</b></button><button class="card kpi hr-kpibtn" data-hdf="miss"><span class="eyebrow">Dokumen wajib belum lengkap</span><b>${miss.length}</b><span class="small">karyawan</span></button></div>
+  <div class="card"><div class="card-head"><div class="row"><select class="input" id="hdF" style="width:auto">${[['pending', 'Menunggu verifikasi'], ['soon', 'Akan berakhir'], ['past', 'Kedaluwarsa'], ['miss', 'Dokumen wajib belum lengkap'], ['all', 'Semua dokumen terbaru']].map(([v, l]) => `<option value="${v}" ${v === f ? 'selected' : ''}>${l}</option>`).join('')}</select>
+    ${f === 'miss' ? '' : `<select class="input" id="hdK" style="width:auto"><option value="">Semua jenis</option>${EDOC_KINDS.map(x => `<option ${x.k === k ? 'selected' : ''}>${esc(x.k)}</option>`).join('')}</select>`}</div><span class="small muted">${f === 'miss' ? miss.length + ' karyawan' : rows.length + ' dokumen'}</span></div>
+  ${f === 'miss' ? (miss.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Karyawan</th><th>Unit</th><th>Belum diunggah</th></tr></thead><tbody>${miss.map(e => { const have = new Set(all.filter(d => d.employeeId === e.id).map(d => d.kind)); return `<tr class="click" data-emp="${e.id}"><td><b>${esc(e.name)}</b></td><td class="small">${esc(e.unit || '')}</td><td class="small">${edocRequired(e).filter(x => !have.has(x)).map(esc).join(', ')}</td></tr>`; }).join('')}</tbody></table></div>` : '<div class="empty">Semua karyawan sudah melengkapi dokumen wajib.</div>')
+    : rows.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Karyawan</th><th>Dokumen</th><th>Nomor</th><th>Berlaku s.d.</th><th>Status</th><th>File</th><th></th></tr></thead><tbody>${rows.map(({ d, e }) => { const st = edocState(d, latest);
+      return `<tr><td><a href="#" data-emp="${e.id}"><b>${esc(e.name)}</b></a><div class="small muted">${esc(e.unit || '')}</div></td><td>${esc(d.kind)}${d.title ? `<div class="small muted">${esc(d.title)}</div>` : ''}</td><td class="small mono">${esc(d.no || '–')}</td><td class="small">${d.until ? fmtDate(d.until) : '–'}</td>
+        <td><span class="pill ${st.lvl}">${esc(st.t)}</span></td><td>${hrDocLinks('emp_docs', d.id, d.files)}</td><td><div class="row" style="flex-wrap:nowrap">${!d.verified ? `<button class="btn sm primary" data-edv="${d.id}">Verifikasi</button><button class="btn sm" data-edrj="${d.id}">Minta ulang</button>` : ''}</div></td></tr>`; }).join('')}</tbody></table></div>`
+    : `<div class="empty">${f === 'pending' ? 'Tidak ada dokumen yang menunggu verifikasi.' : 'Tidak ada data.'}</div>`}</div>`;
+};
+Views.hrdocsMount = c => {
+  const setP = q => { S.params = { ...S.params, ...q }; App.renderContent(); };
+  $('#hdF', c).onchange = ev => setP({ f: ev.target.value }); const hk = $('#hdK', c); if (hk) hk.onchange = ev => setP({ kind: ev.target.value });
+  $$('[data-hdf]', c).forEach(b => b.onclick = () => setP({ f: b.dataset.hdf }));
+  $$('[data-emp]', c).forEach(a => a.onclick = ev => { ev.preventDefault(); App.go('employee', { id: a.dataset.emp, tab: 'dokumen' }); });
+  $$('[data-edv]', c).forEach(b => b.onclick = () => edocVerify(b.dataset.edv)); $$('[data-edrj]', c).forEach(b => b.onclick = () => edocReject(b.dataset.edrj));
+};
 
 /* =========================================================
    KEPEGAWAIAN · Absensi & jadwal shift
@@ -7834,7 +8079,8 @@ Views.hrreports = () => {
   if (tab === 'legal') {
     const days = +(p.days || 90), items = [];
     E.forEach(e => { const add = (what, d) => { const k = hrDaysUntil(d); if (k != null && k <= days) items.push({ e, what, d, k }); };
-      if (hrIsContract(e.status)) add('Kontrak / ' + e.status, e.contractEnd); add('STR', e.strUntil); add('SIP', e.sipUntil); (e.licenses || []).forEach(l => add(l.name || 'Sertifikat', l.until)); (e.docs || []).forEach(l => add('Dokumen ' + (l.name || l.kind), l.until)); });
+      if (hrIsContract(e.status)) add('Kontrak / ' + e.status, e.contractEnd); add('STR', e.strUntil); add('SIP', e.sipUntil); (e.licenses || []).forEach(l => add(l.name || 'Sertifikat', l.until)); (e.docs || []).forEach(l => add('Dokumen ' + (l.name || l.kind), l.until));
+      if (typeof edocsOf === 'function') { const L = edocsOf(e), lt = edocLatest(L); L.filter(d => lt.has(d.id) && d.until && !/^(STR|SIP)$/.test(d.kind)).forEach(d => add(edocLabel(d), d.until)); } });
     items.sort((a, b) => a.k - b.k);
     body = `<div class="card card-pad row"><label class="row small" style="gap:6px">Tampilkan yang berakhir dalam<select class="input" id="lgD" style="width:auto">${[30, 60, 90, 180, 365].map(d => `<option value="${d}" ${d === days ? 'selected' : ''}>${d} hari</option>`).join('')}</select></label><span class="small muted">termasuk yang sudah lewat</span></div>
     <div class="card">${items.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Karyawan</th><th>Unit</th><th>Dokumen</th><th>Berakhir</th><th>Sisa</th></tr></thead><tbody>${items.map(x => `<tr class="click" data-emp="${x.e.id}"><td><b>${esc(x.e.name)}</b></td><td class="small">${esc(x.e.unit || '')}</td><td class="small">${esc(x.what)}</td><td class="small">${fmtDate(x.d)}</td><td><span class="pill ${x.k < 0 ? 'bad' : x.k <= 30 ? 'warn' : 'info'}">${x.k < 0 ? 'lewat ' + -x.k + ' hari' : x.k + ' hari'}</span></td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">Tidak ada yang berakhir dalam rentang ini.</div>'}</div>`;
@@ -8018,7 +8264,7 @@ function accImportResult(done, fail) {
    & klaim yang masih menunggu.
    ========================================================= */
 const myEmp = () => S.user && S.user.role === US ? Store.all('employees', e => e.accountId === S.user.id && e.companyId === S.user.companyId)[0] || null : null;
-const STAFF_ROUTES = ['me', 'myprofile', 'myschedule', 'myleave', 'myot', 'mypay', 'myclaim', 'mynews', 'teamsched', 'teamappr', 'myreq', 'mytask', 'myact', 'teamday', 'teamtask'];
+const STAFF_ROUTES = ['me', 'myprofile', 'myschedule', 'myleave', 'myot', 'mypay', 'myclaim', 'mynews', 'teamsched', 'teamappr', 'myreq', 'mytask', 'myact', 'teamday', 'teamtask', 'mydocs'];
 function navStaffOk(n) {
   if (!S.user || S.user.role !== US) return true;
   if (n.lead) { if (!myEmp()) return false; if (S.team === undefined) { S.team = null; setTimeout(teamRefresh, 0); } return Array.isArray(S.team) && S.team.length > 0; }
@@ -8044,9 +8290,9 @@ Views.me = () => {
   const slip = stSlips(e)[0], news = stNews(e).slice(0, 3), al = hrAlerts(e);
   const lv = Store.all('leaves', l => l.employeeId === e.id).sort((a, b2) => (b2.createdAt || '').localeCompare(a.createdAt || '')).slice(0, 3);
   const week = stDays(e, t, 7);
-  return `<div class="page-head"><div><div class="eyebrow">${esc(Store.get('companies', e.companyId)?.name || '')}</div><h1>Halo, ${esc(e.name.split(' ')[0])}</h1><p>${esc(e.position || '')}${e.unit ? ' · ' + esc(e.unit) : ''} · ${fmtDate(t)}</p></div>
+  return `<div class="page-head"><div class="row" style="gap:14px;flex-wrap:nowrap">${myPhotoBtn()}<div><div class="eyebrow">${esc(Store.get('companies', e.companyId)?.name || '')}</div><h1>Halo, ${esc(e.name.split(' ')[0])}</h1><p>${esc(e.position || '')}${e.unit ? ' · ' + esc(e.unit) : ''} · ${fmtDate(t)}</p></div></div>
     <div class="row"><button class="btn" data-go="myot">Ajukan lembur</button><button class="btn" data-go="myreq">Pengajuan lain</button><button class="btn primary" data-go="myleave" data-p='{"new":1}'>Ajukan cuti</button></div></div>
-  ${al.length ? `<div class="note warn">${al.map(x => esc(x.t)).join(' · ')}. Segera perbarui ke HRD.</div>` : ''}
+  ${al.length ? `<div class="note warn row" style="justify-content:space-between;gap:10px;flex-wrap:wrap"><span>⏳ ${al.map(x => esc(x.t)).join(' · ')}. Segera perpanjang lalu unggah dokumen barunya.</span><button class="btn sm primary" data-go="mydocs">Buka Dokumen Saya</button></div>` : ''}
   ${initPwBanner()}${clockCardHtml(e)}${stTodo(e)}
   <div class="grid g4">
     <button class="card kpi hr-kpibtn" data-go="myprofile"><span class="eyebrow">Status kepegawaian</span><b style="font-size:20px">${esc(e.status || '–')}</b><span class="small">${e.contractEnd && hrIsContract(e.status, e.companyId) ? 'berakhir ' + fmtDate(e.contractEnd) : 'masa kerja ' + esc(hrServiceText(e.joinDate) || '–')}</span></button>
@@ -8078,7 +8324,7 @@ Views.myprofile = () => {
   const e = myEmp(); if (!e) return stNoEmp();
   const sup = e.supervisorName || (e.supervisorId && Store.get('employees', e.supervisorId)?.name) || '';
   const ro = html => html.replace(/<button class="btn sm" data-elist="[^"]+">Ubah<\/button>/g, '');
-  return `<div class="page-head"><div><h1>Profil & Status Saya</h1><p>Data kepegawaian Anda yang tercatat di HRD. Bila ada yang berubah atau keliru, ajukan perubahan; data diperbarui setelah disetujui HRD.</p></div><div class="row"><button class="btn" data-chpw>🔐 Ganti password</button><button class="btn primary" data-go="myreq" data-p='{"new":"profile"}'>Ajukan perubahan data</button></div></div>${initPwBanner()}
+  return `<div class="page-head"><div class="row" style="gap:16px;flex-wrap:nowrap">${myPhotoBtn()}<div><h1>Profil & Status Saya</h1><p>Data kepegawaian Anda yang tercatat di HRD. Bila ada yang berubah atau keliru, ajukan perubahan; data diperbarui setelah disetujui HRD.</p></div></div><div class="row"><button class="btn" data-go="mydocs">📁 Dokumen Saya</button><button class="btn" data-chpw>🔐 Ganti password</button><button class="btn primary" data-go="myreq" data-p='{"new":"profile"}'>Ajukan perubahan data</button></div></div>${initPwBanner()}
   <div class="grid g2" style="align-items:start">
     <div class="card card-pad stack" style="gap:0"><h3 style="margin:0 0 8px">Pekerjaan</h3>
       ${stKv('NIK karyawan', esc(e.nik))}${stKv('Jabatan', esc(e.position))}${stKv('Unit', esc(e.unit))}${stKv('Level', esc(e.level))}${stKv('Status kepegawaian', esc(e.status))}
@@ -8865,7 +9111,7 @@ Views.teamdayMount = c => {
   const go = d => { S.params = { date: d > todayISO() ? todayISO() : d }; S._teamDay = null; App.renderContent(); };
   $('#tdD', c).onchange = ev => go(ev.target.value); $$('[data-tdd]', c).forEach(b => b.onclick = () => go(b.dataset.tdd));
 };
-Views.meMount = c => { const e = myEmp(); if (e) clockWire(c, e); initPwWire(c); };
+Views.meMount = c => { const e = myEmp(); if (e) clockWire(c, e); initPwWire(c); myPhotoWire(c); };
 
 /* ---------- Lonceng notifikasi (HRD & pimpinan): pengajuan cuti/lembur yang menunggu + pengumuman baru ---------- */
 const bellIsHr = () => S.user && (S.user.role === CO || (S.user.role === SA && S.inCompany));
@@ -8887,6 +9133,12 @@ function bellItems() {
   }
   if (bellIsHr()) Store.all('hr_requests', r => inScope(r) && leaveFinal(r) === 'Menunggu').forEach(r => { const i = reqStepIdx(r), e = Store.get('employees', r.employeeId); if (!e) return;
     out.push({ kind: 'req', at: r.createdAt, who: e.name, what: `${REQ_KINDS[r.kind]?.label || 'Pengajuan'} · ${reqWhenOf(r)}`, step: i >= 0 ? r.steps[i].name : '', go: ['hrreq', { fs: 'Menunggu' }], mine: true }); });
+  if (bellIsHr()) { const em = new Set(empList(e => e.active !== false).map(e => e.id)), D = Store.all('emp_docs', d => em.has(d.employeeId)), lt = edocLatest(D);
+    const pend = D.filter(d => lt.has(d.id) && !d.verified), exp = empList(e => e.active !== false).flatMap(e => hrAlerts(e).map(a => ({ e, a })));
+    if (pend.length) out.push({ kind: 'doc', verb: 'perlu', at: pend.map(d => d.createdAt || '').sort().pop(), who: `${pend.length} dokumen`, what: 'diverifikasi', go: ['hrdocs', { f: 'pending' }], mine: true });
+    if (exp.length) out.push({ kind: 'exp', verb: 'akan/telah', at: nowISO(), who: `${exp.length} dokumen/izin`, what: `berakhir: ${exp.slice(0, 3).map(x => x.e.name.split(' ')[0] + ' (' + x.a.t.split(' ')[0] + ')').join(', ')}${exp.length > 3 ? ', …' : ''}`, go: ['hrdocs', { f: 'soon' }], mine: true }); }
+  if (bellIsStaff()) { const me0 = myEmp(); hrAlerts(me0).forEach(a => out.push({ kind: 'exp', verb: '', at: nowISO(), who: 'Pengingat:', what: a.t + ', segera perpanjang', go: ['mydocs', {}] }));
+    Store.all('emp_docs', d => d.employeeId === me0.id && d.rejected && !d.verified).forEach(d => out.push({ kind: 'rev', verb: 'meminta unggah ulang', at: d.rejected.at, who: 'HRD', what: `${edocLabel(d)}: ${d.rejected.note}`, go: ['mydocs', {}] })); }
   if (bellIsStaff()) { const me = myEmp(), go = { leaves: 'myleave', overtime: 'myot', hr_requests: 'myreq' };
     ['leaves', 'overtime', 'hr_requests'].forEach(c => Store.all(c, x => x.employeeId === me.id && ['Revisi', 'Disetujui', 'Ditolak'].includes(leaveFinal(x))).forEach(x => { const f = leaveFinal(x), st = (x.steps || []).filter(s => s.at).sort((a, b) => (b.at || '').localeCompare(a.at || ''))[0]; const at = st?.at || x.createdAt; if (f !== 'Revisi' && (at || '') <= bellSeen()) return;
       out.push({ kind: f === 'Revisi' ? 'rev' : f === 'Disetujui' ? 'ok' : 'no', verb: f === 'Revisi' ? 'mengembalikan' : f === 'Disetujui' ? 'menyetujui' : 'menolak', at, who: st?.by || 'Atasan', what: `${c === 'leaves' ? 'Cuti ' + x.type : c === 'overtime' ? 'Lembur ' + fmtDate(x.date) : REQ_KINDS[x.kind]?.label || 'Pengajuan'} · ${f === 'Revisi' ? 'perlu diperbaiki' : f.toLowerCase()}`, go: [go[c], {}], news: f !== 'Revisi' }); }));
@@ -8914,9 +9166,9 @@ function bellPaint() {
 }
 function bellList() {
   const pop = $('#bellPop'); if (!pop) return; const items = bellItems();
-  const ic = { cuti: '🗓️', lembur: '⏱️', info: '📢', req: '📝', rev: '↩️', ok: '✅', no: '⛔', task: '📌' };
+  const ic = { cuti: '🗓️', lembur: '⏱️', info: '📢', req: '📝', rev: '↩️', ok: '✅', no: '⛔', task: '📌', doc: '📁', exp: '⏳' };
   pop.innerHTML = `<div class="bell-h"><b>Notifikasi</b>${items.some(i => i.news) ? '<button class="btn ghost sm" id="bellRead">Tandai pengumuman dibaca</button>' : ''}</div>
-    ${items.length ? `<div class="bell-l">${items.slice(0, 30).map((x, i) => `<button class="bell-i" data-bi="${i}"><span class="bell-ic" aria-hidden="true">${ic[x.kind]}</span><span class="bell-t"><b>${esc(x.who)}</b> ${x.verb || (x.news ? 'membuat pengumuman' : 'mengajukan')} <span>${esc(x.what)}</span>${x.step ? `<small>menunggu ${esc(x.step)}</small>` : ''}<small>${x.at ? fmtDT(x.at) : ''}</small></span></button>`).join('')}</div>${items.length > 30 ? `<div class="small muted" style="padding:8px 14px">dan ${items.length - 30} lainnya</div>` : ''}`
+    ${items.length ? `<div class="bell-l">${items.slice(0, 30).map((x, i) => `<button class="bell-i" data-bi="${i}"><span class="bell-ic" aria-hidden="true">${ic[x.kind]}</span><span class="bell-t"><b>${esc(x.who)}</b> ${x.verb != null ? x.verb : (x.news ? 'membuat pengumuman' : 'mengajukan')} <span>${esc(x.what)}</span>${x.step ? `<small>menunggu ${esc(x.step)}</small>` : ''}<small>${x.at ? fmtDT(x.at) : ''}</small></span></button>`).join('')}</div>${items.length > 30 ? `<div class="small muted" style="padding:8px 14px">dan ${items.length - 30} lainnya</div>` : ''}`
       : '<div class="bell-empty">Tidak ada pengajuan yang menunggu dan tidak ada pengumuman baru.</div>'}`;
   $$('[data-bi]', pop).forEach(b => b.onclick = () => { const x = items[+b.dataset.bi]; bellClose(); if (x.news) bellMarkRead(); App.go(x.go[0], x.go[1]); });
   const rd = $('#bellRead', pop); if (rd) rd.onclick = e => { e.stopPropagation(); bellMarkRead(); bellPaint(); };
