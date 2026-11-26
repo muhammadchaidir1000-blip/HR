@@ -1185,6 +1185,7 @@ body[data-role] .side{background:#FFFFFF}
 .ldp-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 /* lonceng notifikasi */
 .bell{position:relative}
+.mbar .bell{margin-left:auto}.mbar .bell+.mbar-lx{margin-left:8px}.mbar .bell-btn{width:36px;height:36px}.mbar .bell-pop{position:fixed;right:10px;top:58px}
 .bell-btn{appearance:none;position:relative;display:grid;place-items:center;width:40px;height:40px;border-radius:999px;border:1px solid var(--line-2);background:#fff;color:var(--muted);cursor:pointer}
 .bell-btn:hover{color:var(--text);border-color:#C9CFD9}.bell-btn.has{color:var(--brand-text,#1B6A4C)}
 .bell-btn.has svg{animation:bellwig 1.6s ease-in-out 1}
@@ -2379,7 +2380,7 @@ const App = {
       am.addEventListener('keydown', e => { if (e.key === 'Escape') { closeM(); ab.focus(); } });
       ab.addEventListener('keydown', e => { if (e.key === 'Escape') closeM(); });
     }
-    startClock(); if (typeof bellWire === 'function') bellWire();
+    startClock(); { const bl = $('.topbar .bell'), mb = $('.mbar-lx'); if (bl && mb && S.user.role !== SA && matchMedia('(max-width:640px)').matches) mb.parentNode.insertBefore(bl, mb); } if (typeof bellWire === 'function') bellWire();
     const cs = $('#compSel'); if (cs) cs.onchange = () => { S.companyId = cs.value; this.saveSession(); audit('ganti perusahaan aktif', cs.value); this.renderContent(); };
     this.renderContent();
   },
