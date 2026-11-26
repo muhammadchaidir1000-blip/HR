@@ -2568,9 +2568,9 @@ Views.setupSupa = () => {
 /* lupa password: permintaan diteruskan ke Super Admin untuk diverifikasi */
 Views.forgotPassword = (prefill = '') => {
   openModal({ title: 'Lupa password', body: `<form id="fpF" class="stack">
-    <p class="small muted" style="margin:0">Permintaan akan dikirim ke <b>Super Admin</b>. Setelah identitas Anda diverifikasi, Super Admin memberikan password sementara melalui saluran yang aman.</p>
+    <p class="small muted" style="margin:0">Permintaan dikirim ke <b>admin/HRD</b>. Hubungi admin untuk konfirmasi identitas; setelah diverifikasi, admin mengembalikan password Anda ke password awal atau memberi password sementara.</p>
     <label class="f">Username<input class="input" name="username" required value="${esc(prefill)}" autocomplete="username"></label>
-    <label class="f">Catatan untuk Super Admin (opsional)<input class="input" name="note" maxlength="140" placeholder="mis. nama lengkap, unit, nomor HP untuk verifikasi"></label>
+    <label class="f">Catatan untuk admin (opsional)<input class="input" name="note" maxlength="140" placeholder="mis. nama lengkap, unit, nomor HP untuk verifikasi"></label>
     <div id="fpMsg" class="note" hidden></div></form>`,
     foot: '<button class="btn" data-close>Tutup</button><button class="btn primary" form="fpF" id="fpSend">Kirim permintaan</button>',
     onMount: r => $('#fpF', r).onsubmit = async ev => {
@@ -2579,7 +2579,7 @@ Views.forgotPassword = (prefill = '') => {
       const a = Supa.on ? null : Store.all('accounts', x => (x.username || '').toLowerCase() === u)[0];
       if (a && a.role !== SA && a.active && !a.pending) { await Store.put('accounts', a.id, { ...a, resetRequest: { at: nowISO(), note: (d.note || '').slice(0, 140) } }); audit('permintaan reset password', u); }
       const m = $('#fpMsg', r); m.className = 'note ok'; m.hidden = false;
-      m.textContent = 'Jika username terdaftar, permintaan sudah dikirim ke Super Admin. Hubungi Super Admin agar verifikasinya dipercepat.';
+      m.textContent = 'Jika username terdaftar, permintaan sudah dikirim ke admin/HRD. Hubungi admin untuk konfirmasi agar password Anda bisa direset.';
       $('#fpSend', r).disabled = true;
     } });
 };
@@ -2665,10 +2665,10 @@ Views.changePassword = () => {
       if (Supa.on) {
         try { await Supa.login(a.username, d.old); } catch (e) { er.textContent = (e.name === 'TypeError' || e.name === 'AbortError') ? supaErr(e) : 'Password lama salah.'; er.hidden = false; return; }
         try { await Supa.raw('/auth/v1/user', { method: 'PUT', body: { password: d.n1 } }); await Supa.rpc('clear_own_initpass'); } catch (e) { er.textContent = supaErr(e); er.hidden = false; return; }
-        delete Store.cache.initpass[a.id]; audit('ganti password'); closeModal(); toast('Password diperbarui'); return;
+        delete Store.cache.initpass[a.id]; if (a.initPattern) { try { const { initPattern, ...ra } = a; delete ra.id; await Store.put('accounts', a.id, ra); } catch (x) {} } audit('ganti password'); closeModal(); toast('Password diperbarui'); App.renderContent(); return;
       }
-      const salt = randSalt(), { initPass, ...a2 } = a; await Store.put('accounts', a.id, { ...a2, salt, passHash: await sha256(salt + ':' + d.n1) });
-      S.user = Store.get('accounts', a.id); audit('ganti password'); closeModal(); toast('Password diperbarui');
+      const salt = randSalt(), { initPass, initPattern, ...a2 } = a; await Store.put('accounts', a.id, { ...a2, salt, passHash: await sha256(salt + ':' + d.n1) });
+      S.user = Store.get('accounts', a.id); audit('ganti password'); closeModal(); toast('Password diperbarui'); App.renderContent();
     }; } });
 };
 
@@ -3648,19 +3648,20 @@ Views.accountsMount = c => {
 
 /* permintaan pendaftaran & reset password (diverifikasi Super Admin) */
 const pendingRegs = () => Store.all('accounts', x => x.pending && (S.user.role === SA || (S.user.role === CO && x.role === US && x.companyId === S.user.companyId)));
-const resetReqs = () => S.user.role === SA ? Store.all('accounts', x => x.resetRequest && x.active) : [];
+const resetReqs = () => S.user.role === SA ? Store.all('accounts', x => x.resetRequest && x.active) : S.user.role === CO ? Store.all('accounts', x => x.resetRequest && x.active && x.role === US && x.companyId === S.user.companyId) : [];
 const tmpPw = () => { const U = 'ABCDEFGHJKLMNPQRSTUVWXYZ', L = 'abcdefghijkmnpqrstuvwxyz', N = '23456789', all = U + L + N; const pk = s => s[crypto.getRandomValues(new Uint32Array(1))[0] % s.length]; let p = [pk(U), pk(L), pk(N)]; while (p.length < 10) p.push(pk(all)); return p.sort(() => crypto.getRandomValues(new Uint8Array(1))[0] - 128).join(''); };
 function reqPanel() {
   const regs = pendingRegs(), rst = resetReqs(); if (!regs.length && !rst.length) return '';
   const when = x => x ? esc(fmtDateLong(String(x).slice(0, 10))) : '';
   return `<div class="card req-card"><div class="card-head"><h3>Permintaan menunggu tindakan</h3><span class="pill acc">${regs.length + rst.length}</span></div><div class="tbl-wrap"><table class="tbl"><tbody>
     ${regs.map(a => `<tr><td><span class="pill info">Pendaftaran</span></td><td><b>${esc(a.name)}</b><div class="small muted mono">${esc(a.username)}</div></td><td><span class="pill">${ROLE_LABEL[a.role]}</span><div class="small muted">${esc(a.unit || '')} ${esc(a.position || '')}</div></td><td class="small muted">${when(a.requestedAt)}</td><td><div class="row" style="flex-wrap:nowrap"><button class="btn sm primary" data-appr="${a.id}">Setujui</button><button class="btn sm danger" data-rej="${a.id}">Tolak</button></div></td></tr>`).join('')}
-    ${rst.map(a => `<tr><td><span class="pill bad">Lupa password</span></td><td><b>${esc(a.name)}</b><div class="small muted mono">${esc(a.username)}</div></td><td><span class="pill">${ROLE_LABEL[a.role]}</span><div class="small muted">${esc(a.resetRequest.note || '')}</div></td><td class="small muted">${when(a.resetRequest.at)}</td><td><div class="row" style="flex-wrap:nowrap"><button class="btn sm primary" data-rst="${a.id}">Verifikasi &amp; buat password</button><button class="btn sm" data-rstx="${a.id}">Abaikan</button></div></td></tr>`).join('')}
+    ${rst.map(a => `<tr><td><span class="pill bad">Lupa password</span></td><td><b>${esc(a.name)}</b><div class="small muted mono">${esc(a.username)}</div></td><td><span class="pill">${ROLE_LABEL[a.role]}</span><div class="small muted">${esc(a.resetRequest.note || '')}</div></td><td class="small muted">${when(a.resetRequest.at)}</td><td><div class="row" style="flex-wrap:nowrap">${a.role === US ? `<button class="btn sm primary" data-rsti="${a.id}">Reset ke password awal</button>` : ''}<button class="btn sm ${a.role === US ? '' : 'primary'}" data-rst="${a.id}">Password sementara</button><button class="btn sm" data-rstx="${a.id}">Abaikan</button></div></td></tr>`).join('')}
   </tbody></table></div><p class="small muted" style="margin:8px 14px 12px">Pastikan identitas pemohon sudah diverifikasi sebelum menyetujui atau memberikan password sementara.</p></div>`;
 }
 function reqMount(c) {
   $$('[data-appr]', c).forEach(b => b.onclick = async () => { const a = Store.get('accounts', b.dataset.appr); await Store.put('accounts', a.id, { ...a, pending: false, active: true }); audit('setujui pendaftaran', a.username); toast('Akun disetujui'); App.renderContent(); });
   $$('[data-rej]', c).forEach(b => b.onclick = async () => { const a = Store.get('accounts', b.dataset.rej); if (!(await confirmBox(`Tolak dan hapus pendaftaran ${esc(a.username)}?`, 'Tolak', true))) return; await Store.remove('accounts', a.id); audit('tolak pendaftaran', a.username); App.renderContent(); });
+  $$('[data-rsti]', c).forEach(b => b.onclick = () => resetToInitial(Store.get('accounts', b.dataset.rsti)));
   $$('[data-rstx]', c).forEach(b => b.onclick = async () => { const a = Store.get('accounts', b.dataset.rstx); const { resetRequest, ...rest } = a; await Store.put('accounts', a.id, rest); audit('abaikan reset password', a.username); App.renderContent(); });
   $$('[data-rst]', c).forEach(b => b.onclick = async () => {
     const a = Store.get('accounts', b.dataset.rst); if (!(await confirmBox(`Buat password sementara untuk ${esc(a.username)}? Password lama tidak berlaku lagi.`, 'Buat password'))) return;
@@ -5965,7 +5966,7 @@ Views.employees = () => {
   const selN = [...sel].filter(id => vis.has(id)).length, allOn = rows.length && rows.every(e => sel.has(e.id));
   const selOff = [...sel].some(id => Store.get('employees', id)?.active === false), selOn = [...sel].some(id => Store.get('employees', id)?.active !== false);
   return `<div class="page-head"><div><h1>Data Karyawan</h1><p>Data induk karyawan untuk absensi, cuti, dan penggajian.</p></div>
-    <div class="row"><button class="btn" id="eExp">Unduh Excel (CSV)</button><button class="btn" id="eImp">Impor dari Excel</button><button class="btn primary" id="addE">+ Karyawan</button></div></div>
+    <div class="row"><button class="btn" id="eExp">Unduh Excel (CSV)</button><button class="btn" id="eImp">Impor dari Excel</button><button class="btn" id="eAccGen" title="Buat akun login untuk karyawan yang belum punya akun">🔑 Buat akun staf</button><button class="btn primary" id="addE">+ Karyawan</button></div></div>
   <div class="grid g4">
     <div class="card kpi k-blue"><span class="eyebrow">Karyawan aktif</span><b style="font-size:24px">${act.length}</b></div>
     <div class="card kpi k-purple"><span class="eyebrow">Kontrak / percobaan</span><b style="font-size:24px">${contract}</b></div>
@@ -5979,7 +5980,7 @@ Views.employees = () => {
     <select class="input" id="eshow" style="width:auto"><option value="">Aktif</option><option value="off" ${f.show === 'off' ? 'selected' : ''}>Nonaktif</option><option value="all" ${f.show === 'all' ? 'selected' : ''}>Semua</option></select>
     ${f.alert ? '<button class="btn sm" id="eAlertOff">Hapus filter perhatian ✕</button>' : ''}</div><span class="small muted">${rows.length} karyawan</span></div>
   ${sel.size ? `<div class="bulk-bar" role="region" aria-label="Aksi karyawan terpilih"><b>${sel.size} karyawan dipilih</b>${selN < sel.size ? `<span class="small muted">(${sel.size - selN} di luar filter)</span>` : ''}
-    <div class="row" style="gap:8px;margin-left:auto">${selOn ? '<button class="btn sm" id="bOff">Nonaktifkan</button>' : ''}${selOff ? '<button class="btn sm" id="bOn">Aktifkan kembali</button>' : ''}<button class="btn sm danger" id="bDel">Hapus permanen</button><button class="btn sm ghost" id="bClr">Batal pilih</button></div></div>` : ''}
+    <div class="row" style="gap:8px;margin-left:auto">${selOn ? '<button class="btn sm" id="bOff">Nonaktifkan</button>' : ''}${selOff ? '<button class="btn sm" id="bOn">Aktifkan kembali</button>' : ''}${S.user.role === SA ? '<button class="btn sm danger" id="bDel">Hapus permanen</button>' : ''}<button class="btn sm ghost" id="bClr">Batal pilih</button></div></div>` : ''}
   ${rows.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th class="chk"><input type="checkbox" id="eAll" aria-label="Pilih semua yang tampil" ${allOn ? 'checked' : ''}></th><th>NIK</th><th>Nama</th><th>Unit / jabatan</th><th>Status</th><th>Masa kerja</th><th>PIN mesin</th><th>Jenis kerja</th><th>Perhatian</th></tr></thead><tbody>
     ${rows.map(e => `<tr class="click ${sel.has(e.id) ? 'sel' : ''}" data-open="${e.id}" tabindex="0"><td class="chk"><input type="checkbox" data-sel="${e.id}" aria-label="Pilih ${esc(e.name)}" ${sel.has(e.id) ? 'checked' : ''}></td><td class="mono small">${esc(e.nik || '–')}</td><td><b>${esc(e.name)}</b>${sampleTag(e)}${e.active === false ? ' <span class="pill">nonaktif</span>' : ''}<div class="small muted">${esc(e.profession || '')}</div></td>
       <td>${esc(e.unit || '–')}<div class="small muted">${esc(e.position || '')}</div></td><td class="small">${esc(e.status || '–')}</td><td class="small">${hrServiceText(e.joinDate)}</td>
@@ -5997,6 +5998,7 @@ Views.employeesMount = c => {
   const ao = $('#eAlertOff', c); if (ao) ao.onclick = () => setP({ alert: 0 });
   $('#eExp', c).onclick = () => empExport();
   $('#eImp', c).onclick = () => empImportDialog();
+  $('#eAccGen', c).onclick = () => staffAccGen();
   empBulkWire(c);
 };
 /* ---------- pilih banyak: nonaktifkan / aktifkan / hapus ---------- */
@@ -6010,10 +6012,10 @@ function empBulkWire(c) {
   const run = async (label, list, fn) => { busy(true, label); let n = 0, fail = 0; for (const id of list) { try { await fn(id); n++; } catch (x) { fail++; } } busy(false); sel.clear(); App.renderContent(); return { n, fail }; };
   const off = $('#bOff', c); if (off) off.onclick = () => { const list = ids().filter(id => Store.get('employees', id).active !== false);
     openModal({ title: `Nonaktifkan ${list.length} karyawan`, body: `<form id="bOffF" class="form-grid"><label class="f">Tanggal keluar<input class="input" type="date" name="endDate" required value="${todayISO()}"></label>
-      <label class="f">Alasan<select class="input" name="endReason">${hrMaster('endReasons').map(x => `<option>${esc(x.name)}</option>`).join('')}</select></label></form>
+      <label class="f">Alasan<select class="input" name="endReason">${hrMaster('endReasons').map(x => `<option>${esc(x.name)}</option>`).join('')}</select></label>${adminPwField()}</form>
       <p class="small muted" style="margin:0">Data karyawan, absensi, cuti, dan riwayat gaji tetap tersimpan. Bisa diaktifkan kembali kapan saja.</p>`,
       foot: '<button class="btn" data-close>Batal</button><button class="btn primary" form="bOffF">Nonaktifkan</button>',
-      onMount: r => $('#bOffF', r).onsubmit = async ev => { ev.preventDefault(); const d = formData(ev.target); closeModal();
+      onMount: r => $('#bOffF', r).onsubmit = async ev => { ev.preventDefault(); const d = formData(ev.target); if (!(await checkAdminPw(ev.target))) return; closeModal();
         const res = await run('Menonaktifkan…', list, id => Store.put('employees', id, { ...Store.get('employees', id), active: false, endDate: d.endDate, endReason: d.endReason }));
         audit('nonaktifkan karyawan (massal)', `${res.n} karyawan · ${d.endReason}`); toast(`${res.n} karyawan dinonaktifkan${res.fail ? `, ${res.fail} gagal` : ''}`); } }); };
   const on = $('#bOn', c); if (on) on.onclick = async () => { const list = ids().filter(id => Store.get('employees', id).active === false);
@@ -6125,7 +6127,7 @@ Views.employee = () => {
   return `<div class="page-head"><div><button class="btn ghost sm" data-go="employees">← Data Karyawan</button><h1 style="margin-top:6px">${esc(e.name)}${sampleTag(e)}</h1>
       <p>${esc(e.position || '')}${e.unit ? ' · ' + esc(e.unit) : ''} · ${esc(e.status || '')}${e.active === false ? ' · <b>Nonaktif</b>' : ''}</p>
       <div class="row">${hrAlerts(e).map(a => `<span class="pill ${a.lvl}">${esc(a.t)}</span>`).join('')}</div></div>
-    <div class="row"><button class="btn primary" id="eEdit">Ubah data</button>${e.active === false ? '<button class="btn" id="eOn">Aktifkan kembali</button>' : '<button class="btn" id="eOff">Nonaktifkan</button>'}<button class="btn danger" id="eDel">Hapus</button></div></div>
+    <div class="row"><button class="btn primary" id="eEdit">Ubah data</button>${e.active === false ? '<button class="btn" id="eOn">Aktifkan kembali</button>' : '<button class="btn" id="eOff">Nonaktifkan</button>'}${S.user.role === SA ? '<button class="btn danger" id="eDel">Hapus</button>' : ''}</div></div>
   <div class="tabs" role="tablist">${tabs.map(([k, l]) => `<button class="tab ${tab === k ? 'on' : ''}" role="tab" aria-selected="${tab === k}" data-etab="${k}">${l}</button>`).join('')}</div>${body}`;
 };
 Views.employeeMount = c => {
@@ -6146,11 +6148,11 @@ Views.employeeMount = c => {
   $$('[data-emp]', c).forEach(a => a.onclick = ev => { ev.preventDefault(); App.go('employee', { id: a.dataset.emp }); });
   $('#eEdit', c).onclick = () => employeeForm(e);
   const off = $('#eOff', c); if (off) off.onclick = () => openModal({ title: 'Nonaktifkan karyawan', body: `<form id="offF" class="form-grid"><label class="f">Tanggal keluar<input class="input" type="date" name="endDate" required value="${todayISO()}"></label>
-      <label class="f">Alasan<select class="input" name="endReason">${hrMaster('endReasons').map(x => `<option>${esc(x.name)}</option>`).join('')}</select></label></form>
+      <label class="f">Alasan<select class="input" name="endReason">${hrMaster('endReasons').map(x => `<option>${esc(x.name)}</option>`).join('')}</select></label>${adminPwField()}</form>
       <p class="small muted" style="margin:0">Data karyawan, absensi, dan riwayat gaji tetap tersimpan.</p>`, foot: '<button class="btn" data-close>Batal</button><button class="btn primary" form="offF">Nonaktifkan</button>',
-    onMount: r => $('#offF', r).onsubmit = async ev => { ev.preventDefault(); const d = formData(ev.target); await Store.put('employees', e.id, { ...Store.get('employees', e.id), active: false, endDate: d.endDate, endReason: d.endReason }); audit('nonaktifkan karyawan', e.name); closeModal(); App.renderContent(); } });
+    onMount: r => $('#offF', r).onsubmit = async ev => { ev.preventDefault(); const d = formData(ev.target); if (!(await checkAdminPw(ev.target))) return; await Store.put('employees', e.id, { ...Store.get('employees', e.id), active: false, endDate: d.endDate, endReason: d.endReason }); audit('nonaktifkan karyawan', e.name); closeModal(); App.renderContent(); } });
   const on = $('#eOn', c); if (on) on.onclick = async () => { await Store.put('employees', e.id, { ...Store.get('employees', e.id), active: true, endDate: '', endReason: '' }); audit('aktifkan karyawan', e.name); App.renderContent(); };
-  $('#eDel', c).onclick = async () => {
+  const edel = $('#eDel', c); if (edel) edel.onclick = async () => {
     if (!(await confirmBox(`Hapus <b>${esc(e.name)}</b> secara permanen? Untuk karyawan yang keluar, sebaiknya pakai <b>Nonaktifkan</b> agar riwayatnya tetap ada.`, 'Hapus permanen', true))) return;
     await Store.remove('employees', e.id); audit('hapus karyawan', e.name); App.go('employees');
   };
@@ -6302,6 +6304,137 @@ function empTabBody(e, tab) {
   if (tab === 'dokumen') return `<div class="stack"><p class="small muted" style="margin:0">Simpan berkas di Google Drive/OneDrive RS, lalu tempel tautannya di sini agar mudah dicari. Atur berbagi tautan hanya untuk tim HRD.</p>${empListTable(e, 'docs')}</div>`;
   return '';
 }
+
+/* =========================================================
+   Akun staf massal, konfirmasi password admin, reset ke password awal
+   - Admin tidak bisa menghapus karyawan (hanya Super Admin, untuk pembersihan data contoh).
+   - Menonaktifkan karyawan wajib memasukkan password admin yang sedang masuk.
+   - Satu tombol "Buat akun staf": username = nama panggilan (1 kata), password awal = username + @2026.
+   - Lupa password → admin memverifikasi lalu mengembalikan ke password awal / password sementara.
+   Server: Edge Function hr-admin (bulk_staff_accounts, reset_initial), migrasi 008.
+   ========================================================= */
+const INIT_SUFFIX = () => '@' + new Date().getFullYear();
+const ACC_MSG = { has_account: 'sudah punya akun', inactive: 'karyawan nonaktif', not_found: 'karyawan tidak ditemukan', suffix_invalid: 'akhiran password tidak valid', password_rejected: 'password ditolak oleh pengaturan keamanan server' };
+const accErr = c => ACC_MSG[c] || SUPA_MSG[c] || c;
+
+/* ---------- konfirmasi password admin ---------- */
+async function verifyMyPw(pw) {
+  if (!pw) return false;
+  if (Supa.on) {
+    try { const j = await Supa.raw('/auth/v1/token?grant_type=password', { method: 'POST', body: { email: Supa.emailOf(S.user.username), password: pw }, auth: false }); Supa.saveSess(Supa.fromAuth(j)); return true; }
+    catch (e) { if (e && (e.name === 'TypeError' || e.name === 'AbortError')) throw e; return false; }
+  }
+  const a = Store.get('accounts', S.user.id); return !!a && (await sha256(a.salt + ':' + pw)) === a.passHash;
+}
+const adminPwField = () => `<label class="f" style="grid-column:1/-1">Password Anda (${esc(S.user.username)}) <span style="color:var(--bad)">*</span><input class="input" type="password" name="adminPw" required autocomplete="current-password" placeholder="masukkan password akun admin yang sedang dipakai"><span class="small muted">Untuk memastikan yang menonaktifkan benar-benar admin, bukan orang lain yang memakai komputer ini.</span></label>`;
+async function checkAdminPw(form) {
+  const pw = form.adminPw.value; let ok = false;
+  try { ok = await verifyMyPw(pw); } catch (e) { toast('Tidak bisa memeriksa password: ' + supaErr(e)); return false; }
+  if (!ok) { toast('Password admin salah'); form.adminPw.value = ''; form.adminPw.focus(); audit('gagal konfirmasi password admin', 'nonaktifkan karyawan'); return false; }
+  return true;
+}
+
+/* ---------- nama panggilan → username ---------- */
+const NAME_TITLES = new Set(['dr', 'drg', 'dra', 'drs', 'apt', 'ns', 'ners', 'h', 'hj', 'ir', 'prof', 'bd', 'bdn', 'ny', 'nn', 'tn', 'sdr', 'sdri', 'kh', 'ustadz', 'st', 'mr', 'mrs', 'ms']);
+function nickOf(name) {
+  const base = String(name || '').split(',')[0].normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const words = base.split(/[\s]+/).map(w => w.replace(/\./g, ' ').trim()).flatMap(w => w.split(' ')).map(w => w.toLowerCase().replace(/[^a-z]/g, '')).filter(Boolean);
+  const real = words.filter(w => !NAME_TITLES.has(w));
+  let n = real[0] || words[0] || 'staf';
+  if (n.length < 3 && real[1]) n = n + real[1];
+  while (n.length < 3) n += 'x';
+  return n.slice(0, 24);
+}
+function nickPlan(list, cid) {
+  const used = new Set(Store.all('accounts').map(a => (a.username || '').toLowerCase()));
+  return list.map(e => { const b = nickOf(e.name); let u = b, k = 2; while (used.has(u)) u = b + k++; used.add(u); return { e, username: u }; });
+}
+
+/* ---------- tombol "Buat akun staf" di Data Karyawan ---------- */
+function staffAccGen() {
+  const cid = S.companyId || S.user.companyId;
+  const todo = empList(e => e.active !== false && !e.accountId).sort((a, b) => (a.unit || '').localeCompare(b.unit || '') || a.name.localeCompare(b.name));
+  if (!todo.length) { toast('Semua karyawan aktif sudah punya akun'); return; }
+  let plan = nickPlan(todo, cid);
+  const sfx = INIT_SUFFIX();
+  openModal({ title: `Buat akun staf · ${todo.length} karyawan`, wide: true, body: `<div class="stack">
+    <div class="note">Akun dibuat untuk semua karyawan aktif yang <b>belum punya akun</b>.<br>Username = <b>nama panggilan</b> (satu kata, huruf kecil). Password awal = <b>username + ${esc(sfx)}</b>, contoh <span class="mono">${esc(plan[0].username)}</span> / <span class="mono">${esc(plan[0].username + sfx)}</span>.<br>Nama yang sama otomatis diberi angka (mis. dewi, dewi2). Username bisa diubah di tabel sebelum dibuat.</div>
+    <div class="note warn small" style="margin:0">Password awal mudah ditebak karena mengikuti pola. Minta karyawan segera menggantinya lewat menu <b>Ganti password</b>; sampai diganti, Beranda Saya mereka menampilkan pengingat.</div>
+    <div class="row" style="gap:8px"><input class="input" id="agQ" placeholder="Cari nama / unit…" style="max-width:260px"><label class="row small"><input type="checkbox" id="agAll" checked> Pilih semua</label><span class="small muted" id="agN"></span></div>
+    <div class="tbl-wrap" style="max-height:46vh;overflow:auto"><table class="tbl"><thead><tr><th></th><th>Karyawan</th><th>Unit</th><th>Username</th><th>Password awal</th></tr></thead><tbody>
+    ${plan.map((p, i) => `<tr data-nm="${esc((p.e.name + ' ' + (p.e.unit || '')).toLowerCase())}"><td class="chk"><input type="checkbox" data-ag="${i}" checked aria-label="Pilih ${esc(p.e.name)}"></td><td><b>${esc(p.e.name)}</b><div class="small muted">${esc(p.e.nik || '')}</div></td><td class="small">${esc(p.e.unit || '')}</td>
+      <td><input class="input mono" data-agu="${i}" value="${esc(p.username)}" maxlength="30" pattern="[a-z][a-z0-9]{2,29}" style="width:150px"></td><td class="mono small" data-agp="${i}">${esc(p.username + sfx)}</td></tr>`).join('')}</tbody></table></div>
+    <div id="agRes"></div></div>`,
+    foot: '<button class="btn" data-close>Tutup</button><button class="btn primary" id="agGo">Buat akun</button>',
+    onMount: r => {
+      const cnt = () => { const n = $$('[data-ag]', r).filter(x => x.checked).length; $('#agN', r).textContent = `${n} dipilih`; $('#agGo', r).disabled = !n; $('#agGo', r).textContent = `Buat ${n} akun`; };
+      $$('[data-ag]', r).forEach(x => x.onchange = cnt); cnt();
+      $('#agAll', r).onchange = ev => { $$('tr[data-nm]', r).forEach(tr => { if (!tr.hidden) $('[data-ag]', tr).checked = ev.target.checked; }); cnt(); };
+      $('#agQ', r).oninput = ev => { const v = ev.target.value.toLowerCase(); $$('tr[data-nm]', r).forEach(tr => { tr.hidden = !tr.dataset.nm.includes(v); }); };
+      $$('[data-agu]', r).forEach(inp => inp.oninput = () => { inp.value = inp.value.toLowerCase().replace(/[^a-z0-9]/g, ''); $(`[data-agp="${inp.dataset.agu}"]`, r).textContent = inp.value + sfx; });
+      $('#agGo', r).onclick = async () => {
+        const pick = $$('[data-ag]', r).filter(x => x.checked).map(x => ({ e: plan[+x.dataset.ag].e, username: $(`[data-agu="${x.dataset.ag}"]`, r).value.trim() }));
+        const bad = pick.find(p => !/^[a-z][a-z0-9]{2,29}$/.test(p.username)); if (bad) { toast(`Username "${bad.username}" tidak valid: 3–30 huruf kecil/angka, diawali huruf`); return; }
+        const dup = pick.map(p => p.username).find((u, i, a) => a.indexOf(u) !== i); if (dup) { toast(`Username "${dup}" dipakai dua kali`); return; }
+        const res = []; busy(true, `Membuat akun 0/${pick.length}…`);
+        try {
+          for (let i = 0; i < pick.length; i += 10) {
+            const chunk = pick.slice(i, i + 10); busy(true, `Membuat akun ${i}/${pick.length}…`);
+            if (Supa.on) { const j = await Supa.fn('bulk_staff_accounts', { companyId: cid, suffix: sfx, items: chunk.map(p => ({ employeeId: p.e.id, username: p.username })) }); res.push(...(j.results || [])); }
+            else for (const p of chunk) res.push(await accGenLocal(p.e, p.username, sfx));
+          }
+        } catch (x) { busy(false); toast('Gagal: ' + supaErr(x)); }
+        busy(false); if (Supa.on) await Store.pull(true, true);
+        const ok = res.filter(x => x.ok), fail = res.filter(x => !x.ok), em = Object.fromEntries(pick.map(p => [p.e.id, p.e]));
+        audit('buat akun staf massal', `${ok.length} akun${fail.length ? `, ${fail.length} gagal` : ''}`);
+        S._accGen = ok.map(x => ({ name: em[x.employeeId]?.name || '', unit: em[x.employeeId]?.unit || '', nik: em[x.employeeId]?.nik || '', username: x.username, password: x.username + sfx }));
+        $('#agRes', r).innerHTML = `<div class="note ${fail.length ? 'warn' : 'ok'}"><b>${ok.length} akun dibuat.</b>${fail.length ? ` ${fail.length} gagal: ${fail.map(x => `${esc(em[x.employeeId]?.name || x.employeeId)} (${esc(accErr(x.error))})`).join(', ')}.` : ''}
+          ${ok.length ? `<div class="row" style="gap:8px;margin-top:8px"><button class="btn sm primary" id="agCsv">Unduh daftar akun (CSV)</button><button class="btn sm" id="agPrint">Cetak kartu akun</button></div>` : ''}</div>`;
+        $('#agGo', r).disabled = true; $$('[data-ag]', r).forEach(x => { if (res.some(y => y.ok && y.employeeId === plan[+x.dataset.ag].e.id)) { x.checked = false; x.disabled = true; } });
+        const csv = $('#agCsv', r); if (csv) csv.onclick = accGenCsv; const pr = $('#agPrint', r); if (pr) pr.onclick = accGenPrint;
+        App.renderContent();
+      };
+    } });
+}
+async function accGenLocal(e, username, sfx) {
+  if (Store.all('accounts', a => (a.username || '').toLowerCase() === username).length) return { employeeId: e.id, username, ok: false, error: 'username_taken' };
+  const pw = username + sfx, id = uid('u'), salt = randSalt();
+  await Store.put('accounts', id, { name: e.name, username, role: US, companyId: e.companyId, unit: e.unit || '', position: e.position || '', employeeId: e.id, discAllowed: false, tests: [], active: true, createdAt: todayISO(), initPattern: true, salt, passHash: await sha256(salt + ':' + pw), initPass: pw });
+  await Store.put('employees', e.id, { ...Store.get('employees', e.id), accountId: id });
+  return { employeeId: e.id, username, id, ok: true };
+}
+function accGenCsv() {
+  const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`, rows = [['Nama', 'NIK', 'Unit', 'Username', 'Password awal'], ...(S._accGen || []).map(x => [x.name, x.nik, x.unit, x.username, x.password])];
+  const blob = new Blob(['﻿' + rows.map(r => r.map(q).join(';')).join('\r\n')], { type: 'text/csv;charset=utf-8' }), a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = `akun-staf-${todayISO()}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+function accGenPrint() {
+  const site = location.host || 'alamat aplikasi', w = window.open('', '_blank'); if (!w) { toast('Izinkan pop-up untuk mencetak'); return; }
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Kartu akun staf</title><style>body{font-family:system-ui,sans-serif;margin:12mm}.g{display:grid;grid-template-columns:1fr 1fr;gap:6mm}.k{border:1px dashed #999;border-radius:3mm;padding:5mm;break-inside:avoid;font-size:11pt}.k b{font-size:12pt}.m{font-family:monospace;font-size:13pt}.s{color:#555;font-size:9pt}</style></head><body><div class="g">${(S._accGen || []).map(x => `<div class="k"><b>${esc(x.name)}</b><div class="s">${esc(x.unit)}</div><p>Alamat: ${esc(site)}<br>Username: <span class="m">${esc(x.username)}</span><br>Password awal: <span class="m">${esc(x.password)}</span></p><div class="s">Segera ganti password setelah masuk: menu nama Anda → Ganti password. Jangan berikan password kepada siapa pun. Lupa password? Hubungi admin/HRD.</div></div>`).join('')}</div><script>print()<\/script></body></html>`);
+  w.document.close();
+}
+
+/* ---------- reset password oleh admin (setelah pemohon diverifikasi) ---------- */
+async function resetToInitial(a) {
+  const sfx = INIT_SUFFIX();
+  if (!(await confirmBox(`Kembalikan password <b>${esc(a.username)}</b> ke password awal <span class="mono">${esc(a.username + sfx)}</span>? Pastikan identitas pemohon sudah dicek. Password lama tidak berlaku lagi.`, 'Reset password'))) return false;
+  busy(true, 'Mereset password…');
+  try {
+    if (Supa.on) { await Supa.fn('reset_initial', { accountId: a.id, suffix: sfx }); await Store.pull(true, true); }
+    else { const salt = randSalt(), pw = a.username + sfx, { resetRequest, ...rest } = Store.get('accounts', a.id); await Store.put('accounts', a.id, { ...rest, salt, passHash: await sha256(salt + ':' + pw), initPass: pw, initPattern: true, resetAt: nowISO() }); }
+  } catch (e) { busy(false); toast('Gagal mereset: ' + supaErr(e)); return false; }
+  busy(false); audit('reset password ke password awal', a.username);
+  openModal({ title: 'Password direset', body: `<p style="margin:0">Sampaikan langsung kepada ${esc(a.name)} (bukan lewat grup):</p><div class="card card-pad mono" style="white-space:pre-wrap">Username : ${esc(a.username)}\nPassword : ${esc(a.username + sfx)}</div><p class="small muted" style="margin:0">Minta karyawan segera mengganti password setelah masuk.</p>`, foot: '<button class="btn primary" data-close>Selesai</button>' });
+  App.renderContent(); return true;
+}
+
+/* ---------- pengingat untuk staf yang masih memakai password awal ---------- */
+function initPwBanner() {
+  const a = Store.get('accounts', S.user.id); if (!a || !a.initPattern) return '';
+  return `<div class="note warn row" style="justify-content:space-between;gap:10px;flex-wrap:wrap"><span>🔐 Anda masih memakai <b>password awal</b> yang mudah ditebak. Ganti sekarang agar data gaji dan kepegawaian Anda aman.</span><button class="btn sm primary" data-chpw>Ganti password</button></div>`;
+}
+function initPwWire(c) { $$('[data-chpw]', c).forEach(b => b.onclick = () => Views.changePassword()); }
+Views.myprofileMount = c => initPwWire(c);
 
 /* =========================================================
    KEPEGAWAIAN · Absensi & jadwal shift
@@ -7914,7 +8047,7 @@ Views.me = () => {
   return `<div class="page-head"><div><div class="eyebrow">${esc(Store.get('companies', e.companyId)?.name || '')}</div><h1>Halo, ${esc(e.name.split(' ')[0])}</h1><p>${esc(e.position || '')}${e.unit ? ' · ' + esc(e.unit) : ''} · ${fmtDate(t)}</p></div>
     <div class="row"><button class="btn" data-go="myot">Ajukan lembur</button><button class="btn" data-go="myreq">Pengajuan lain</button><button class="btn primary" data-go="myleave" data-p='{"new":1}'>Ajukan cuti</button></div></div>
   ${al.length ? `<div class="note warn">${al.map(x => esc(x.t)).join(' · ')}. Segera perbarui ke HRD.</div>` : ''}
-  ${clockCardHtml(e)}${stTodo(e)}
+  ${initPwBanner()}${clockCardHtml(e)}${stTodo(e)}
   <div class="grid g4">
     <button class="card kpi hr-kpibtn" data-go="myprofile"><span class="eyebrow">Status kepegawaian</span><b style="font-size:20px">${esc(e.status || '–')}</b><span class="small">${e.contractEnd && hrIsContract(e.status, e.companyId) ? 'berakhir ' + fmtDate(e.contractEnd) : 'masa kerja ' + esc(hrServiceText(e.joinDate) || '–')}</span></button>
     <button class="card kpi hr-kpibtn" data-go="myleave"><span class="eyebrow">Sisa cuti tahunan ${y}</span><b>${b.type ? fmtDays(b.left) + ' hari' : '–'}</b><span class="small">${b.type ? (b.eligible ? `dari ${b.quota} hari${b.pending ? ` · ${b.pending} menunggu` : ''}` : 'berhak mulai ' + fmtDate(b.eligDate)) : 'belum diatur HRD'}</span></button>
@@ -7945,7 +8078,7 @@ Views.myprofile = () => {
   const e = myEmp(); if (!e) return stNoEmp();
   const sup = e.supervisorName || (e.supervisorId && Store.get('employees', e.supervisorId)?.name) || '';
   const ro = html => html.replace(/<button class="btn sm" data-elist="[^"]+">Ubah<\/button>/g, '');
-  return `<div class="page-head"><div><h1>Profil & Status Saya</h1><p>Data kepegawaian Anda yang tercatat di HRD. Bila ada yang berubah atau keliru, ajukan perubahan; data diperbarui setelah disetujui HRD.</p></div><button class="btn primary" data-go="myreq" data-p='{"new":"profile"}'>Ajukan perubahan data</button></div>
+  return `<div class="page-head"><div><h1>Profil & Status Saya</h1><p>Data kepegawaian Anda yang tercatat di HRD. Bila ada yang berubah atau keliru, ajukan perubahan; data diperbarui setelah disetujui HRD.</p></div><div class="row"><button class="btn" data-chpw>🔐 Ganti password</button><button class="btn primary" data-go="myreq" data-p='{"new":"profile"}'>Ajukan perubahan data</button></div></div>${initPwBanner()}
   <div class="grid g2" style="align-items:start">
     <div class="card card-pad stack" style="gap:0"><h3 style="margin:0 0 8px">Pekerjaan</h3>
       ${stKv('NIK karyawan', esc(e.nik))}${stKv('Jabatan', esc(e.position))}${stKv('Unit', esc(e.unit))}${stKv('Level', esc(e.level))}${stKv('Status kepegawaian', esc(e.status))}
@@ -8732,7 +8865,7 @@ Views.teamdayMount = c => {
   const go = d => { S.params = { date: d > todayISO() ? todayISO() : d }; S._teamDay = null; App.renderContent(); };
   $('#tdD', c).onchange = ev => go(ev.target.value); $$('[data-tdd]', c).forEach(b => b.onclick = () => go(b.dataset.tdd));
 };
-Views.meMount = c => { const e = myEmp(); if (e) clockWire(c, e); };
+Views.meMount = c => { const e = myEmp(); if (e) clockWire(c, e); initPwWire(c); };
 
 /* ---------- Lonceng notifikasi (HRD & pimpinan): pengajuan cuti/lembur yang menunggu + pengumuman baru ---------- */
 const bellIsHr = () => S.user && (S.user.role === CO || (S.user.role === SA && S.inCompany));
