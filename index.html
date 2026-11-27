@@ -1308,6 +1308,13 @@ img.acct-av{width:34px;height:34px;padding:0}
 .rc-pal-l{min-width:92px;font-size:12px;font-weight:700;color:var(--muted)}
 .rcp-gl{font-size:12px;font-weight:700;color:var(--muted);margin:6px 0 -4px;text-transform:uppercase;letter-spacing:.04em}
 .tbl.rc-tbl tbody tr td.rc{background:color-mix(in srgb,var(--c,transparent) 55%,#fff);color:color-mix(in srgb,var(--c,#1E2533) 62%,#000)}
+/* laporan kehadiran */
+.ar-wrap{max-height:560px;overflow:auto}
+.ar-tbl th{position:sticky;top:0;background:#FFF59D;color:#1E2533;white-space:nowrap;font-size:12px;z-index:1}
+.ar-tbl td{white-space:nowrap;font-size:12.5px}
+.ar-tbl td.ar-st{font-weight:800}.ar-tbl td.ar-ABS{color:#B42318}.ar-tbl td.ar-OFF,.ar-tbl td.ar-EXL{color:#64748B}.ar-tbl td.ar-PRS{color:#067647}.ar-tbl td.ar-ANL,.ar-tbl td.ar-MTL,.ar-tbl td.ar-MRL,.ar-tbl td.ar-LVE{color:#854D0E}
+.ar-legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-top:10px;font-size:13px}.ar-legend h4{margin:0 0 6px}.ar-legend div>div{margin:2px 0}
+button.pill{appearance:none;font:inherit;cursor:pointer}
 </style>
 </head>
 <body>
@@ -2225,7 +2232,8 @@ const NAV = [
   { id: 'claims', label: 'Klaim & Reimburse', icon: 'receipt', roles: [SA, CO], group: 'Kompensasi', ws: 'hr' },
   { id: 'perf', label: 'Penilaian Kinerja', icon: 'star', roles: [SA, CO], group: 'Kinerja & Info', ws: 'hr' },
   { id: 'news', label: 'Pengumuman', icon: 'mega', roles: [SA, CO], group: 'Kinerja & Info', ws: 'hr' },
-  { id: 'hrreports', label: 'Laporan HR', icon: 'chart', roles: [SA, CO], group: 'Kinerja & Info', ws: 'hr' },
+  { id: 'attreport', label: 'Laporan Kehadiran', icon: 'chart', roles: [SA, CO], group: 'Laporan', ws: 'hr' },
+  { id: 'hrreports', label: 'Laporan HR', icon: 'chart', roles: [SA, CO], group: 'Laporan', ws: 'hr' },
   { id: 'hrmaster', label: 'Master Data HR', icon: 'list', roles: [SA, CO], group: 'Pengaturan HRIS', ws: 'hr' },
   { id: 'hrsettings', label: 'Aturan Absensi & Gaji', icon: 'gear', roles: [SA, CO], group: 'Pengaturan HRIS', ws: 'hr' },
   { id: 'accounts', label: 'Akun Pengguna', icon: 'key', roles: [SA, CO], group: 'Pengaturan', ws: 'both' },
@@ -2249,7 +2257,7 @@ const SETTINGS_IDS = ['accounts', 'skilltests', 'settings'];
 const PICK_IDS = [...SETTINGS_IDS, 'skillmaster'];
 const SA_OUTSIDE = ['companies', 'company', 'master', 'audit', 'security', 'menuaccess', 'reports', 'skillmaster', 'test-edit', 'test-results', ...SETTINGS_IDS];
 /* menu yang bisa dibuka/ditutup per perusahaan (Super Admin > Akses Menu per RS); belum diatur = semua terbuka */
-const MENU_TOGGLE = ['exec', 'participants', 'meetings', 'cmppsy', 'cmpskill', 'reports', 'hrdash', 'employees', 'orgchart', 'directory', 'attendance', 'leaves', 'overtime', 'payroll', 'claims', 'perf', 'news', 'hrreports', 'hrmaster', 'hrsettings', ...SETTINGS_IDS];
+const MENU_TOGGLE = ['exec', 'participants', 'meetings', 'cmppsy', 'cmpskill', 'reports', 'hrdash', 'employees', 'orgchart', 'directory', 'attendance', 'leaves', 'overtime', 'payroll', 'claims', 'perf', 'news', 'attreport', 'hrreports', 'hrmaster', 'hrsettings', ...SETTINGS_IDS];
 const ROUTE_MENU = { employee: 'employees', candidate: 'participants', candidates: 'participants', ist: 'participants', istresult: 'participants', papi: 'participants', papiresult: 'participants', kerjakan: 'participants', 'test-edit': 'skilltests', 'test-results': 'skilltests' };
 const menuOn = (id, cid) => { const co = Store.get('companies', cid || (S.user && S.user.role === SA ? S.companyId : S.user && S.user.companyId)); if (!co || !Array.isArray(co.menus)) return true; const seen = Array.isArray(co.menusSeen) ? co.menusSeen : MENU_TOGGLE_V1; return seen.includes(id) ? co.menus.includes(id) : true; };
 const HIDDEN_ROUTES = { 'employee': [SA, CO], 'company': [SA], 'candidate': [SA, CO], 'disc-take': [US], 'skill-take': [US], 'test-edit': [SA, CO], 'test-results': [SA, CO], 'istresult': [SA, CO], 'papi': [SA, CO], 'papiresult': [SA, CO], 'myresult': [US], 'candidates': [SA, CO], 'ist': [SA, CO], 'kerjakan': [SA, CO] };
@@ -5757,7 +5765,7 @@ Views.hrsettings = () => {
   const tabs = [['shift', 'Shift & jam kerja'], ['abs', 'Aturan absensi'], ['libur', 'Hari libur'], ['cuti', 'Jenis cuti'], ['gaji', 'Komponen gaji'], ['mesin', 'Mesin absensi'], ['online', 'Absen online']];
   let body = '';
   if (tab === 'shift') body = `<div class="card card-pad stack"><div class="row" style="justify-content:space-between"><h3 style="margin:0">Daftar shift</h3><button type="button" class="btn sm" id="hTpl">Pakai template simbol RS (P · MD · S · M)…</button></div>${cfg.sym ? `<p class="small" style="margin:0">Simbol jadwal: <b>${esc(hrSym(cfg, 'L'))}</b> libur · <b>${esc(hrSym(cfg, CUTI_CODE))}</b> cuti${hrSpecialCodes(cfg).map(k => ` · <b>${k}</b> ${esc(HR_SPECIAL[k].name.toLowerCase())}`).join('')}</p>` : ''}<p class="small muted" style="margin:0">Kode singkat dipakai di jadwal (misalnya P, S, M). Bila jam pulang lebih kecil dari jam masuk, shift dianggap melewati tengah malam. Kode <b>L</b> dipakai untuk libur dan tidak perlu didaftarkan.</p>
-      ${hrRowsTable('tShift', [{ k: 'code', label: 'Kode', w: '70px', attrs: 'maxlength="3" required' }, { k: 'name', label: 'Nama shift' }, { k: 'start', label: 'Masuk', type: 'time' }, { k: 'end', label: 'Pulang', type: 'time' }, { k: 'color', label: 'Warna', type: 'color', w: '56px' }], cfg.shifts)}
+      ${hrRowsTable('tShift', [{ k: 'code', label: 'Kode', w: '70px', attrs: 'maxlength="3" required' }, { k: 'name', label: 'Nama shift' }, { k: 'start', label: 'Masuk', type: 'time' }, { k: 'end', label: 'Pulang', type: 'time' }, { k: 'brS', label: 'Istirahat mulai', type: 'time' }, { k: 'brE', label: 'Istirahat selesai', type: 'time' }, { k: 'color', label: 'Warna', type: 'color', w: '56px' }], cfg.shifts)}
       <label class="f" style="max-width:320px">Shift bawaan karyawan non-shift<select class="input" id="hDef">${cfg.shifts.map(s => `<option ${s.code === cfg.defaultShift ? 'selected' : ''} value="${esc(s.code)}">${esc(s.code)} · ${esc(s.name)}</option>`).join('')}</select></label>
       <p class="small muted" style="margin:0">Karyawan non-shift otomatis memakai shift bawaan pada hari kerja (${settingsOf(S.companyId).workDays} hari/minggu, diatur di Pengaturan Perusahaan) dan libur pada akhir pekan serta hari libur nasional.</p></div>`;
   if (tab === 'abs') body = `<div class="card card-pad stack"><h3>Aturan absensi</h3><div class="form-grid">
@@ -7661,7 +7669,8 @@ function hrShiftGroups(cfg) {
   const rest = cfg.shifts.filter(s => !hrFamily(s.code)); if (rest.length) g.push({ k: '', label: 'Lainnya', list: rest });
   return g.length > 1 ? g : [{ k: '', label: '', list: cfg.shifts }];
 }
-/* template simbol shift harian rumah sakit */
+/* template simbol shift harian rumah sakit (istirahat mengikuti laporan kehadiran RS) */
+const HR_TPL_BREAK = {"P1": ["12:00", "13:00"], "P2": ["12:00", "13:00"], "P3": ["12:00", "13:00"], "P4": ["12:00", "13:00"], "P5": ["12:00", "13:00"], "P6": ["13:00", "14:00"], "P7": ["13:00", "13:30"], "MD1": ["14:00", "14:30"], "MD4": ["14:00", "14:30"], "MD5": ["15:00", "15:30"], "S1": ["18:00", "19:00"], "S2": ["17:00", "17:30"], "S3": ["18:00", "19:00"], "S4": ["16:00", "16:30"], "S5": ["18:00", "18:30"], "M": ["01:30", "02:00"]};
 const HR_SHIFT_TEMPLATE = [
   ['P1', '07:00', '14:00', '#15803D'], ['P2', '07:00', '15:30', '#047857'], ['P3', '07:30', '16:00', '#0F766E'], ['P4', '08:00', '15:00', '#4D7C0F'],
   ['P5', '08:00', '16:30', '#166534'], ['P6', '08:30', '17:00', '#0E7490'], ['P7', '09:00', '16:00', '#3F6212'],
@@ -7669,7 +7678,7 @@ const HR_SHIFT_TEMPLATE = [
   ['MD5', '10:00', '18:30', '#075985'], ['MD6', '10:30', '19:00', '#2563EB'], ['MD7', '09:00', '17:30', '#6D28D9'],
   ['S1', '12:30', '21:00', '#C2410C'], ['S2', '13:00', '20:00', '#B45309'], ['S3', '14:00', '21:00', '#9A3412'], ['S4', '12:00', '19:00', '#A16207'], ['S5', '15:00', '22:00', '#7C2D12'],
   ['M', '21:00', '07:00', '#581C87']
-].map(([code, start, end, color]) => ({ code, name: { P: 'Pagi', MD: 'Middle', S: 'Siang', M: 'Malam' }[hrFamily(code)] + (code.replace(/^\D+/, '') ? ' ' + code.replace(/^\D+/, '') : ''), start, end, color }));
+].map(([code, start, end, color]) => ({ ...(HR_TPL_BREAK[code] ? { brS: HR_TPL_BREAK[code][0], brE: HR_TPL_BREAK[code][1] } : {}), code, name: { P: 'Pagi', MD: 'Middle', S: 'Siang', M: 'Malam' }[hrFamily(code)] + (code.replace(/^\D+/, '') ? ' ' + code.replace(/^\D+/, '') : ''), start, end, color }));
 const HR_SYM_TEMPLATE = { L: 'X', C: 'V' };
 /* kode yang masih dipakai di jadwal tersimpan perusahaan ini */
 function hrCodesInUse(cid) {
@@ -7739,6 +7748,168 @@ function cutoffModal(month) {
         closeModal(); toast(v ? `Cut off diatur tanggal ${v}` : 'Periode memakai bulan kalender'); App.renderContent(); }; } });
 }
 document.addEventListener('click', ev => { const b = ev.target.closest && ev.target.closest('[data-cutoff]'); if (!b) return; ev.preventDefault(); cutoffModal(b.dataset.cutoff); });
+
+/* =========================================================
+   LAPORAN · Laporan Kehadiran (format Attendance Report)
+   Satu baris per karyawan per tanggal, kolom A–AF mengikuti template:
+   jadwal, scan aktual, menit mulai/selesai, jam produktif, geolokasi,
+   tipe hari, kode status, status lain, keterlambatan, istirahat.
+   ========================================================= */
+const AR_MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const arDate = iso => `${iso.slice(8)} ${AR_MON[+iso.slice(5, 7) - 1]} ${iso.slice(0, 4)}`;
+const arHM = m => `${Math.floor(Math.abs(m) / 60)}:${pad(Math.abs(m) % 60)}`;
+const arMin = m => m == null ? '' : `${m} (${Math.floor(Math.abs(m) / 60)}:${Math.abs(m) % 60})`;
+const arWrap = m => { while (m > 720) m -= 1440; while (m < -720) m += 1440; return m; };
+const shiftBreak = s => s && s.brS && s.brE && tmin(s.brS) != null && tmin(s.brE) != null ? { s: s.brS, e: s.brE, m: (tmin(s.brE) - tmin(s.brS) + 1440) % 1440 } : null;
+const shiftProdMin = s => { if (!s) return 0; const t = Math.round(shiftHours(s) * 60), b = shiftBreak(s); return Math.max(0, t - (b ? b.m : 0)); };
+const AR_HEAD = ['No.', 'No. Karyawan', 'Karyawan', 'Cost Center', 'Nama Lokasi Kerja', 'Tanggal', 'Nama Shift', 'Shift Mulai', 'Shift Selesai', 'Masuk Aktual', 'Keluar Aktual', 'Menit Mulai', 'Menit Selesai', 'Menit Kerja Aktual', 'Menit Shift Jadwal', 'Jam Produktif', 'Geolokasi Mulai', 'Location In', 'Geolokasi Selesai', 'Location Out', 'Tipe Hari', 'Status', 'Status lain', 'Pesan', 'Keterlambatan Masuk Aktual', 'Pulang Lebih Awal Aktual', 'Mulai Istirahat 1', 'Selesai Istirahat 1', 'Aktual Mulai Istirahat 1', 'Aktual Selesai Istirahat 1', 'Menit Mulai Istirahat 1', 'Menit Selesai Istirahat 1'];
+const AR_STATUS = {
+  PRS: 'Hadir', ABS: 'Tidak hadir (alpa)', OFF: 'Libur', EXL: 'Libur extra / tanggal merah', ANL: 'Cuti tahunan', SWC: 'Sakit', PRM: 'Izin',
+  MTL: 'Cuti melahirkan', MRL: 'Cuti nikah', LVE: 'Cuti lainnya', BTR: 'Dinas luar'
+};
+const AR_FLAGS = {
+  EAI: 'Datang lebih awal', LTI: 'Terlambat masuk (melewati toleransi)', LTI_1_15: 'Terlambat 1–15 menit', LTI_15_30: 'Terlambat 16–30 menit', LTI_30_45: 'Terlambat 31–45 menit', LTI_45_60: 'Terlambat 46–60 menit', LTI_60: 'Terlambat lebih dari 60 menit',
+  EAO: 'Pulang lebih awal', NSI: 'Tidak scan masuk', NSO: 'Tidak scan pulang', SHMALAM: 'Dinas malam', UNPR: 'Jam produktif kurang dari jadwal'
+};
+/* semua hari absensi seorang karyawan dalam rentang tanggal */
+function attRange(e, from, to) {
+  const out = []; let m = from.slice(0, 7);
+  while (m <= to.slice(0, 7)) { out.push(...attMonth(e, m).filter(d => d.iso >= from && d.iso <= to)); m = nextMonth(m); }
+  return out;
+}
+function arStatusCode(d) {
+  const st = d.status, c = d.code, t = `${d.note || ''} ${(d.leave && d.leave.type) || ''}`;
+  if (st === 'Libur') return c === 'O' ? 'EXL' : 'OFF';
+  if (st === 'Alpa') return 'ABS';
+  if (['Hadir', 'Terlambat', 'Tidak scan pulang', 'Tidak scan masuk', 'Sedang bekerja'].includes(st)) return 'PRS';
+  if (st === 'Dinas luar') return 'BTR';
+  if (st === 'Izin') return 'PRM';
+  if (st === 'Sakit') return 'SWC';
+  if (st === 'Cuti') return c === 'VM' || /melahirkan/i.test(t) ? 'MTL' : c === 'VN' || /nikah/i.test(t) ? 'MRL' : c === CUTI_CODE || /tahunan/i.test(t) ? 'ANL' : 'LVE';
+  return '';
+}
+function arRow(e, d, cfg, comp) {
+  const code = d.code || '', sh = hrIsWorkCode(code) ? d.shift : null, dd = d.iso.slice(8), doc = attDoc(e.id, d.iso.slice(0, 7)) || {};
+  const web = ((doc.web || {})[dd] || []).slice().sort((a, b) => String(a.t).localeCompare(String(b.t))), wIn = web[0], wOut = web.length > 1 ? web[web.length - 1] : null;
+  const S0 = sh ? tmin(sh.start) : null, E0 = sh ? tmin(sh.end) : null, inM = d.in ? tmin(d.in) : null, outM = d.out ? tmin(d.out) : null;
+  const L = sh && inM != null ? arWrap(S0 - inM) : null, M = sh && outM != null ? arWrap(outM - E0) : null;
+  const work = inM != null && outM != null ? (outM - inM + 1440) % 1440 : 0, prod = sh ? shiftProdMin(sh) : 0, br = sh ? shiftBreak(sh) : null;
+  const V = arStatusCode(d);
+  let W = V;
+  if (V === 'PRS' && sh) {
+    const f = ['PRS'];
+    if (L != null && L > 0) f.push('EAI');
+    if (d.late > 0) { f.push('LTI'); const l = d.late; f.push(l <= 15 ? 'LTI_1_15' : l <= 30 ? 'LTI_15_30' : l <= 45 ? 'LTI_30_45' : l <= 60 ? 'LTI_45_60' : 'LTI_60'); }
+    if (d.early > 0) f.push('EAO');
+    if (inM == null) f.push('NSI'); if (outM == null) f.push('NSO');
+    if (hrNightShift(sh)) f.push('SHMALAM');
+    if (inM != null && outM != null) { const tot = Math.round(shiftHours(sh) * 60), inShift = tot - Math.max(0, -L) - Math.max(0, -M) - (br ? br.m : 0); if (prod - inShift > (cfg.tolLate || 0)) f.push('UNPR'); }
+    W = f.sort().join(',');
+  }
+  const msg = (d.fix && d.fix.note) || d.note || (d.holiday && d.holiday.name) || (code ? (d.auto ? 'Jadwal otomatis' : 'Jadwal shift') : 'Belum dijadwalkan');
+  return [null, e.nik || '', e.name || '', e.unit || '', comp, arDate(d.iso),
+    !code ? '' : code === 'L' ? 'Shift OFF' : sh && sh.custom ? code : hrSym(cfg, code),
+    sh ? sh.start : code ? '00:00' : '', sh ? sh.end : code ? '00:00' : '', d.in || '', d.out || '', arMin(L), arMin(M), work, prod, prod ? arHM(prod) : '',
+    wIn ? `${wIn.lat},${wIn.lng}` : '', wIn ? wIn.site || '' : '', wOut ? `${wOut.lat},${wOut.lng}` : '', wOut ? wOut.site || '' : '',
+    !code ? '' : code === 'L' ? 'OFF' : 'WD', V, W, msg,
+    d.late > 0 ? -Math.max(0, d.late - (cfg.tolLate || 0)) : 0, d.early > 0 ? -Math.max(0, d.early - (cfg.tolEarly || 0)) : 0,
+    br ? br.s : '', br ? br.e : '', '', '', '', ''];
+}
+function arData(p) {
+  const cid = S.companyId, cfg = hrCfg(cid), co = Store.get('companies', cid) || {}, comp = co.name || '';
+  const P0 = hrPeriod(p.month || hrCurMonth(cid), cid), f0 = p.mode === 'range' ? p.from || P0.from : P0.from, t0 = p.mode === 'range' ? p.to || P0.to : P0.to, P = { from: f0 <= t0 ? f0 : t0, to: f0 <= t0 ? t0 : f0 };
+  const today = todayISO(), to = P.to > today ? today : P.to;
+  const q = (p.q || '').trim().toLowerCase();
+  const emps = empList(e => (!p.unit || e.unit === p.unit) && (!e.joinDate || e.joinDate <= P.to) && (e.active !== false || (e.endDate || '') >= P.from) && (!q || `${e.name} ${e.nik || ''}`.toLowerCase().includes(q)))
+    .sort((a, b) => String(a.name).localeCompare(String(b.name), 'id'));
+  const rows = [];
+  if (P.from <= to) emps.forEach(e => attRange(e, P.from, to).forEach(d => { if (e.joinDate && d.iso < e.joinDate) return; if (e.endDate && e.active === false && d.iso > e.endDate) return; const r = arRow(e, d, cfg, comp); if (!p.st || r[21] === p.st) rows.push(r); }));
+  rows.forEach((r, i) => r[0] = `${i + 1}.`);
+  return { rows, from: P.from, to: P.to, until: to, emps, co, cfg };
+}
+async function loadExcelJS() {
+  if (window.ExcelJS) return window.ExcelJS;
+  for (const u of ['https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js', 'https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js']) {
+    try { await loadScript(u); if (window.ExcelJS) return window.ExcelJS; } catch (e) {}
+  }
+  throw new Error('Pustaka Excel gagal dimuat. Periksa koneksi internet lalu coba lagi.');
+}
+async function arExcel(D, p) {
+  const X = await loadExcelJS(), wb = new X.Workbook(); wb.creator = 'LyrionX HR Suite'; wb.created = new Date();
+  const ws = wb.addWorksheet('Attendance', { views: [{ state: 'frozen', ySplit: 9 }] });
+  const W = { A: 5, B: 20, C: 28.4, D: 30, E: 22, F: 20, G: 13.4, H: 15, I: 15, J: 15, K: 15, L: 15, M: 15, N: 15, O: 15, P: 20, Q: 30, R: 22, S: 30, T: 22, U: 15, V: 12, W: 25, X: 40, Y: 15, Z: 15, AA: 15, AB: 15, AC: 18, AD: 18, AE: 15, AF: 15 };
+  Object.entries(W).forEach(([k, w]) => ws.getColumn(k).width = w);
+  ['A1:B1', 'C1:AF1', 'C2:AF2', 'C3:AF3', 'C4:AF4', 'C5:AF5', 'C6:AF6', 'A7:AF7', 'A8:AF8'].forEach(r => ws.mergeCells(r));
+  const font = { name: 'Calibri', size: 11 };
+  ws.getCell('C1').value = D.co.name || ''; ws.getCell('C1').font = { ...font, bold: true };
+  ws.getCell('C2').value = D.co.address || '';
+  const unitTxt = p.unit ? `Unit: ${p.unit}` : 'Semua unit';
+  ws.getCell('A7').value = 'Laporan Kehadiran'; ws.getCell('A7').font = { ...font, bold: true }; ws.getCell('A7').alignment = { horizontal: 'center' };
+  ws.getCell('A8').value = `Periode ${arDate(D.from)} – ${arDate(D.to)} · ${unitTxt}${p.st ? ` · Status ${p.st}` : ''}`; ws.getCell('A8').alignment = { horizontal: 'center' }; ws.getCell('A8').font = { ...font, italic: true, color: { argb: 'FF555555' } };
+  if (D.co.logo && /^data:image\/(png|jpeg)/.test(D.co.logo)) {
+    try { const ext = /png/.test(D.co.logo.slice(0, 20)) ? 'png' : 'jpeg', id = wb.addImage({ base64: D.co.logo, extension: ext });
+      const h = 70, w = Math.round(h * ((D.co.logoW || 1) / (D.co.logoH || 1))) || 70; ws.addImage(id, { tl: { col: 0.15, row: 0.15 }, ext: { width: Math.min(w, 160), height: h } }); } catch (e) {}
+  }
+  const head = ws.getRow(9); head.values = AR_HEAD; head.height = 31.5;
+  const dbl = { style: 'double', color: { argb: 'FF000000' } };
+  head.eachCell(c => { c.font = { ...font, bold: true }; c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFF00' } }; c.border = { top: dbl, left: dbl, bottom: dbl, right: dbl }; });
+  D.rows.forEach((r, i) => { const row = ws.getRow(10 + i); row.values = r; row.height = 30.75; row.alignment = { vertical: 'middle' }; });
+  ws.autoFilter = { from: 'A9', to: { row: Math.max(9, 9 + D.rows.length), column: 32 } };
+  const lg = wb.addWorksheet('Keterangan Kode');
+  lg.getColumn(1).width = 14; lg.getColumn(2).width = 48;
+  const put = (r, a, b, bold) => { const row = lg.getRow(r); row.values = [a, b]; if (bold) row.font = { ...font, bold: true }; };
+  let r = 1; put(r++, 'Status', 'Arti', true); Object.entries(AR_STATUS).forEach(([k, v]) => put(r++, k, v));
+  r++; put(r++, 'Status lain', 'Arti', true); Object.entries(AR_FLAGS).forEach(([k, v]) => put(r++, k, v));
+  r++; put(r++, 'Kolom', 'Keterangan', true);
+  [['Menit Mulai', 'Jam shift mulai dikurangi jam masuk aktual. Positif = datang lebih awal, negatif = terlambat.'], ['Menit Selesai', 'Jam keluar aktual dikurangi jam shift selesai. Negatif = pulang lebih awal.'], ['Menit Shift Jadwal', 'Lama shift dikurangi jam istirahat.'], ['Keterlambatan Masuk Aktual', `Menit terlambat di atas toleransi ${D.cfg.tolLate || 0} menit (negatif).`], ['Tipe Hari', 'WD = hari kerja, OFF = libur.']].forEach(([a, b]) => put(r++, a, b));
+  const buf = await wb.xlsx.writeBuffer();
+  return new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+}
+const AR_PREVIEW = 150;
+Views.attreport = () => {
+  const p = { mode: 'period', ...(S.params || {}) }, month = p.month || hrCurMonth(), D = arData({ ...p, month });
+  const units = [...new Set(empList().map(e => e.unit).filter(Boolean))].sort();
+  const cnt = D.rows.reduce((m, r) => (m[r[21] || '–'] = (m[r[21] || '–'] || 0) + 1, m), {});
+  const pv = D.rows.slice(0, AR_PREVIEW);
+  return `<div class="page-head"><div><h1>Laporan Kehadiran</h1><p>Rincian kehadiran harian setiap karyawan: jadwal shift, jam masuk–keluar, menit terlambat, jam produktif, lokasi absen online, dan kode status. File Excel mengikuti format Laporan Kehadiran rumah sakit.</p></div></div>
+  <div class="card card-pad stack">
+    <div class="row ar-f" style="gap:10px;flex-wrap:wrap;align-items:flex-end">
+      <label class="f" style="margin:0">Rentang<select class="input" id="arMode"><option value="period" ${p.mode !== 'range' ? 'selected' : ''}>Per periode bulan</option><option value="range" ${p.mode === 'range' ? 'selected' : ''}>Pilih tanggal</option></select></label>
+      ${p.mode === 'range' ? `<label class="f" style="margin:0">Dari<input class="input" type="date" id="arFrom" value="${esc(D.from)}"></label><label class="f" style="margin:0">Sampai<input class="input" type="date" id="arTo" value="${esc(D.to)}"></label>`
+        : `<label class="f" style="margin:0">Bulan<input class="input" type="month" id="arMonth" value="${month}" style="width:auto"></label>${periodChip(month)}`}
+      <label class="f" style="margin:0">Unit (cost center)<select class="input" id="arUnit"><option value="">Semua unit</option>${units.map(u => `<option ${u === p.unit ? 'selected' : ''}>${esc(u)}</option>`).join('')}</select></label>
+      <label class="f" style="margin:0">Status<select class="input" id="arSt"><option value="">Semua status</option>${Object.entries(AR_STATUS).map(([k, v]) => `<option value="${k}" ${p.st === k ? 'selected' : ''}>${k} · ${esc(v)}</option>`).join('')}</select></label>
+      <label class="f" style="margin:0;flex:1;min-width:180px">Cari karyawan<input class="input" id="arQ" value="${esc(p.q || '')}" placeholder="Nama atau NIK…"></label>
+    </div>
+    <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <div class="row hr-chips">${Object.keys(AR_STATUS).filter(k => cnt[k]).map(k => `<button type="button" class="pill ${p.st === k ? 'info' : ''}" data-arst="${k}" title="${esc(AR_STATUS[k])}">${k} · ${cnt[k]}</button>`).join('') || '<span class="small muted">Belum ada data kehadiran pada rentang ini.</span>'}</div>
+      <div class="row"><button class="btn" id="arCsv" ${D.rows.length ? '' : 'disabled'}>Unduh CSV</button><button class="btn primary" id="arXls" ${D.rows.length ? '' : 'disabled'}>Unduh Excel</button></div>
+    </div>
+    <p class="small muted" style="margin:0">${D.emps.length} karyawan · ${D.rows.length.toLocaleString('id-ID')} baris · ${arDate(D.from)} – ${arDate(D.to)}${D.until < D.to ? ` (data sampai hari ini, ${arDate(D.until)})` : ''}.${D.rows.length > AR_PREVIEW ? ` Pratinjau menampilkan ${AR_PREVIEW} baris pertama; file unduhan berisi semua baris.` : ''}</p>
+    ${pv.length ? `<div class="tbl-wrap ar-wrap"><table class="tbl no-stack ar-tbl"><thead><tr>${AR_HEAD.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${pv.map(r => `<tr>${r.map((v, i) => `<td class="${[13, 14, 24, 25].includes(i) ? 'num' : ''} ${i === 21 ? 'ar-st ar-' + esc(v) : ''}">${esc(v ?? '')}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : '<div class="empty">Tidak ada baris untuk filter ini.</div>'}
+  </div>
+  <details class="card card-pad"><summary><b>Keterangan kode</b></summary><div class="ar-legend"><div><h4>Status</h4>${Object.entries(AR_STATUS).map(([k, v]) => `<div><b>${k}</b> ${esc(v)}</div>`).join('')}</div><div><h4>Status lain</h4>${Object.entries(AR_FLAGS).map(([k, v]) => `<div><b>${k}</b> ${esc(v)}</div>`).join('')}</div>
+    <div><h4>Catatan</h4><div>Jam istirahat diambil dari Aturan Absensi → Shift (kolom istirahat). Menit Shift Jadwal = lama shift dikurangi istirahat.</div><div>Keterlambatan dihitung di atas toleransi ${D.cfg.tolLate || 0} menit.</div><div>Geolokasi terisi bila karyawan absen lewat aplikasi (absen online).</div></div></div></details>`;
+};
+Views.attreportMount = c => {
+  const p = { mode: 'period', ...(S.params || {}) };
+  const go = x => { S.params = { ...p, ...x }; App.renderContent(); };
+  const on = (id, f) => { const el = $('#' + id, c); if (el) el.onchange = () => f(el.value); };
+  on('arMode', v => go({ mode: v, from: '', to: '' })); on('arMonth', v => v && go({ month: v })); on('arFrom', v => go({ from: v })); on('arTo', v => go({ to: v }));
+  on('arUnit', v => go({ unit: v })); on('arSt', v => go({ st: v }));
+  const q = $('#arQ', c); if (q) { let t; q.oninput = () => { clearTimeout(t); t = setTimeout(() => { go({ q: q.value }); setTimeout(() => { const n = $('#arQ'); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } }, 0); }, 450); }; }
+  $$('[data-arst]', c).forEach(b => b.onclick = () => go({ st: p.st === b.dataset.arst ? '' : b.dataset.arst }));
+  const name = D => `Laporan-Kehadiran-${D.from}_sd_${D.to}${p.unit ? '-' + p.unit.replace(/[^\w]+/g, '-') : ''}`;
+  const x = $('#arXls', c); if (x) x.onclick = async () => {
+    x.disabled = true; const old = x.textContent; x.textContent = 'Menyiapkan…';
+    try { const D = arData({ ...p, month: p.month || hrCurMonth() }); await download(name(D) + '.xlsx', await arExcel(D, p)); audit('unduh laporan kehadiran', `${D.from} – ${D.to} · ${D.rows.length} baris`); }
+    catch (e) { toast(e.message || String(e)); } finally { x.disabled = false; x.textContent = old; }
+  };
+  const cv = $('#arCsv', c); if (cv) cv.onclick = async () => {
+    const D = arData({ ...p, month: p.month || hrCurMonth() }), qq = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    await download(name(D) + '.csv', '﻿' + [AR_HEAD, ...D.rows].map(r => r.map(qq).join(';')).join('\r\n')); audit('unduh laporan kehadiran (csv)', `${D.from} – ${D.to}`);
+  };
+};
 
 /* =========================================================
    KEPEGAWAIAN · Penggajian
