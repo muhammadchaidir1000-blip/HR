@@ -1296,6 +1296,12 @@ img.acct-av{width:34px;height:34px;padding:0}
 .att-qi{all:unset;box-sizing:border-box;display:flex;gap:10px;align-items:center;width:100%;padding:8px 10px;border-radius:8px;cursor:pointer}
 .att-qi span{display:flex;flex-direction:column;min-width:0}.att-qi small{color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .att-qi:hover,.att-qi.on{background:color-mix(in srgb,var(--brand,#1B6A4C) 10%,#fff)}
+/* periode cut off & dinas malam */
+.pchip{appearance:none;font:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;padding:6px 12px;border-radius:999px;border:1px solid #C7D2FE;background:#EEF2FF;color:#3730A3;font-size:13px;line-height:1.2;text-align:left}
+.pchip span{font-weight:700}.pchip small{color:#4F46E5;font-size:12px}.pchip:hover{background:#E0E7FF;border-color:#818CF8}
+.pchip:focus-visible{outline:2px solid #4F46E5;outline-offset:2px}
+.pill.night{background:#1E1B4B;color:#E0E7FF;border-color:#1E1B4B}
+.rc-tbl th.rc-nm,.rc-tbl td.rc-nm{background:#EEF2FF;color:#3730A3;font-weight:700}
 </style>
 </head>
 <body>
@@ -3554,9 +3560,9 @@ Views.meetingsMount = c => {
 
 /* ---- Lembur ---- */
 Views.overtime = () => {
-  const month = S.params.month || monthISO(); const st = settingsOf(S.companyId);
+  const month = S.params.month || hrCurMonth(); const st = settingsOf(S.companyId);
   const emps = Store.all('employees', inScope); const em = Object.fromEntries(emps.map(e => [e.id, e]));
-  const rows = Store.all('overtime', x => inScope(x) && (x.date || '').startsWith(month)).sort((a, b) => a.date.localeCompare(b.date));
+  const rows = Store.all('overtime', x => inScope(x) && hrInPeriod(x.date, month)).sort((a, b) => a.date.localeCompare(b.date));
   let tot = 0;
   const pend = rows.filter(o => otFinal(o) === 'Menunggu').length;
   const body = rows.map(o => { const e = em[o.employeeId]; if (!e) return ''; const mult = otMultiplier(o.hours, o.dayType, st.workDays); const amt = mult * hourlyWage(e), fin = otFinal(o), stp = reqStepIdx(o); if (fin === 'Disetujui') tot += amt;
@@ -3566,11 +3572,11 @@ Views.overtime = () => {
   const weekly = {}; rows.filter(o => reqLive(o)).forEach(o => { const d = new Date(o.date + 'T00:00:00'); const mon = new Date(d); mon.setDate(d.getDate() - ((d.getDay() + 6) % 7)); const k = o.employeeId + '|' + mon.toISOString().slice(0, 10); weekly[k] = (weekly[k] || 0) + (+o.hours || 0); });
   const over = Object.entries(weekly).filter(([, h]) => h > 18);
   return `<div class="page-head"><div><h1>Lembur</h1><p>Perhitungan sesuai PP 35/2021: upah sejam = 1/173 × (gaji pokok + tunjangan tetap). Hari kerja: jam ke-1 1,5×, jam berikutnya 2×. Hari libur (${st.workDays} hari kerja/minggu): jam ke-1–${st.workDays == 6 ? 7 : 8} 2×, jam ke-${st.workDays == 6 ? 8 : 9} 3×, selanjutnya 4×.</p></div>
-    <div class="row"><input class="input" type="month" id="om" value="${month}" style="width:auto"><button class="btn primary" id="addO" ${emps.length ? '' : 'disabled'}>+ Catat lembur</button></div></div>
+    <div class="row"><input class="input" type="month" id="om" value="${month}" style="width:auto">${periodChip(month)}<button class="btn primary" id="addO" ${emps.length ? '' : 'disabled'}>+ Catat lembur</button></div></div>
   ${pend ? `<div class="note">${pend} pengajuan lembur menunggu persetujuan. Hanya lembur yang disetujui yang masuk ke penggajian.</div>` : ''}
   ${over.length ? `<div class="note warn">Melebihi batas 18 jam/minggu: ${over.map(([k, h]) => `${esc(em[k.split('|')[0]]?.name)} (minggu ${fmtDate(k.split('|')[1])}: ${h} jam)`).join('; ')}.</div>` : ''}
   <div class="card">${rows.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Tanggal</th><th>Karyawan</th><th>Jenis hari</th><th class="num">Jam</th><th class="num">Pengali</th><th class="num">Upah/jam</th><th class="num">Upah lembur</th><th>Jam & keterangan</th><th>Status</th><th></th></tr></thead><tbody>${body}</tbody>
-    <tfoot><tr><td colspan="6">Total disetujui ${fmtMonth(month)}</td><td class="num">${nf(tot)}</td><td colspan="3"></td></tr></tfoot></table></div>` : `<div class="empty">Tidak ada lembur pada ${fmtMonth(month)}.</div>`}</div>`;
+    <tfoot><tr><td colspan="6">Total disetujui periode ${fmtMonth(month)}</td><td class="num">${nf(tot)}</td><td colspan="3"></td></tr></tfoot></table></div>` : `<div class="empty">Tidak ada lembur pada ${fmtMonth(month)}.</div>`}</div>`;
 };
 Views.overtimeMount = c => {
   $('#om', c).onchange = e => { S.params = { month: e.target.value }; App.renderContent(); };
@@ -6160,10 +6166,10 @@ Views.employee = () => {
       <div class="card card-pad stack"><div class="eyebrow">Legalitas tenaga kesehatan</div>${row('STR', e.strNo ? esc(e.strNo) + (e.strUntil ? ' · s.d. ' + fmtDate(e.strUntil) : ' · seumur hidup') : '')}${row('SIP', e.sipNo ? esc(e.sipNo) + (e.sipUntil ? ' · s.d. ' + fmtDate(e.sipUntil) : '') : '')}</div></div>
     <div class="card card-pad stack"><div class="eyebrow">Data pribadi</div>${row('Jenis kelamin', e.gender === 'L' ? 'Laki-laki' : e.gender === 'P' ? 'Perempuan' : '')}${row('Tempat, tanggal lahir', [esc(e.birthPlace), e.birthDate ? fmtDate(e.birthDate) : ''].filter(Boolean).join(', '))}${row('NIK KTP', esc(e.nikKtp))}${row('No HP', esc(e.phone))}${row('Email', esc(e.email))}${row('Alamat', esc(e.address))}</div>
     <div class="card card-pad stack"><div class="eyebrow">Pajak, BPJS & rekening</div>${row('NPWP', esc(e.npwp))}${row('Status PTKP', esc(e.ptkp))}${row('BPJS Kesehatan', esc(e.bpjsKesNo))}${row('BPJS Ketenagakerjaan', esc(e.bpjsTkNo))}${row('Rekening', [esc(e.bankName), esc(e.bankAcc), e.bankHolder ? 'a.n. ' + esc(e.bankHolder) : ''].filter(Boolean).join(' · '))}</div></div>`;
-  if (tab === 'gaji') { const month = S.params.month || monthISO(), r = payrollRow(e, month, settingsOf(S.companyId));
-    body = `<div class="card card-pad stack"><div class="row" style="justify-content:space-between"><div class="eyebrow">Perkiraan gaji ${fmtMonth(month)}</div><input class="input" type="month" id="egm" value="${month}" style="width:auto"></div>${payslipHtml(r, month)}</div>`; }
-  if (tab === 'absen') { const month = S.params.month || monthISO(), A = attMonth(e, month), R = attRecap(A);
-    body = `<div class="card card-pad stack"><div class="row" style="justify-content:space-between"><div class="eyebrow">Absensi ${fmtMonth(month)}</div><div class="row"><input class="input" type="month" id="eam" value="${month}" style="width:auto"><button class="btn sm" data-go="attendance" data-p='${JSON.stringify({ tab: 'rekap', month })}'>Buka menu Absensi</button></div></div>
+  if (tab === 'gaji') { const month = S.params.month || hrCurMonth(), r = payrollRow(e, month, settingsOf(S.companyId));
+    body = `<div class="card card-pad stack"><div class="row" style="justify-content:space-between"><div class="eyebrow">Perkiraan gaji ${fmtMonth(month)}</div><div class="row"><input class="input" type="month" id="egm" value="${month}" style="width:auto">${periodChip(month)}</div></div>${payslipHtml(r, month)}</div>`; }
+  if (tab === 'absen') { const month = S.params.month || hrCurMonth(), A = attPeriod(e, month), R = attRecap(A);
+    body = `<div class="card card-pad stack"><div class="row" style="justify-content:space-between"><div class="eyebrow">Absensi ${fmtMonth(month)}</div><div class="row"><input class="input" type="month" id="eam" value="${month}" style="width:auto">${periodChip(month)}<button class="btn sm" data-go="attendance" data-p='${JSON.stringify({ tab: 'rekap', month })}'>Buka menu Absensi</button></div></div>
       ${attRecapChips(R)}${attDaysTable(e, A)}</div>`; }
   if (tab === 'cuti') { const year = new Date().getFullYear(), b = leaveBalance(e, year), L = Store.all('leaves', l => l.employeeId === e.id).sort((a, c) => (c.start || '').localeCompare(a.start || ''));
     body = `<div class="card card-pad stack"><div class="row" style="justify-content:space-between"><div class="eyebrow">Saldo cuti tahunan ${year}</div><button class="btn sm" id="eLadj">Sesuaikan saldo</button></div><div class="row">${b.type ? `<span class="pill info">Hak ${b.quota} hari${b.adj ? ` (termasuk penyesuaian ${b.adj > 0 ? '+' : ''}${b.adj})` : ''}</span><span class="pill" title="tanggal cuti sudah lewat">Terpakai ${fmtDays(b.used)}</span><span class="pill warn" title="sudah diajukan/disetujui, tanggal belum lewat">Diajukan / terjadwal ${fmtDays(b.booked)}</span><span class="pill ok">Sisa ${fmtDays(b.left)}</span>${b.eligible ? '' : `<span class="pill warn">berhak mulai ${fmtDate(b.eligDate)}</span>`}` : '<span class="small muted">Belum ada jenis cuti yang ditandai sebagai cuti tahunan.</span>'}</div></div>
@@ -6783,9 +6789,10 @@ function attMonth(e, month) {
   return out;
 }
 function attRecap(A) {
-  const R = { nodata: 0, sched: 0, hadir: 0, late: 0, lateMin: 0, early: 0, noOut: 0, noIn: 0, alpa: 0, cuti: 0, sakit: 0, izin: 0, dinas: 0, libur: 0, belum: 0 };
+  const R = { nodata: 0, sched: 0, malam: 0, malamSched: 0, hadir: 0, late: 0, lateMin: 0, early: 0, noOut: 0, noIn: 0, alpa: 0, cuti: 0, sakit: 0, izin: 0, dinas: 0, libur: 0, belum: 0 };
   A.forEach(d => {
     if (hrIsWorkCode(d.code)) R.sched++;
+    if (hrIsWorkCode(d.code) && hrNightShift(d.shift)) { R.malamSched++; if (['Hadir', 'Sedang bekerja', 'Tidak scan pulang', 'Tidak scan masuk', 'Dinas luar'].includes(d.status)) R.malam++; }
     const s = d.status;
     if (s === 'Hadir' || s === 'Sedang bekerja') R.hadir++; if (s === 'Tidak scan pulang') { R.noOut++; R.hadir++; } if (s === 'Tidak scan masuk') { R.noIn++; R.hadir++; }
     if (d.late) { R.late++; R.lateMin += d.late; } if (d.early) R.early++;
@@ -6793,7 +6800,7 @@ function attRecap(A) {
   });
   return R;
 }
-const attRecapChips = R => `<div class="row hr-chips"><span class="pill info">Jadwal kerja ${R.sched} hari</span><span class="pill ok">Hadir ${R.hadir}</span><span class="pill ${R.late ? 'warn' : ''}">Terlambat ${R.late}× (${R.lateMin} mnt)</span><span class="pill ${R.early ? 'warn' : ''}">Pulang cepat ${R.early}×</span><span class="pill ${R.noOut + R.noIn ? 'warn' : ''}">Scan tidak lengkap ${R.noOut + R.noIn}</span><span class="pill ${R.alpa ? 'bad' : ''}">Alpa ${R.alpa}</span><span class="pill">Cuti ${R.cuti} · Sakit ${R.sakit} · Izin ${R.izin}</span>${R.belum ? `<span class="pill warn">Belum dijadwalkan ${R.belum}</span>` : ''}${R.nodata ? `<span class="pill">Belum ada data mesin ${R.nodata} hari</span>` : ''}</div>`;
+const attRecapChips = R => `<div class="row hr-chips"><span class="pill info">Jadwal kerja ${R.sched} hari</span><span class="pill ok">Hadir ${R.hadir}</span>${R.malamSched ? `<span class="pill night" title="Dinas malam dijalani / dijadwalkan">🌙 Dinas malam ${R.malam}${R.malam !== R.malamSched ? ' / ' + R.malamSched : ''}</span>` : ''}<span class="pill ${R.late ? 'warn' : ''}">Terlambat ${R.late}× (${R.lateMin} mnt)</span><span class="pill ${R.early ? 'warn' : ''}">Pulang cepat ${R.early}×</span><span class="pill ${R.noOut + R.noIn ? 'warn' : ''}">Scan tidak lengkap ${R.noOut + R.noIn}</span><span class="pill ${R.alpa ? 'bad' : ''}">Alpa ${R.alpa}</span><span class="pill">Cuti ${R.cuti} · Sakit ${R.sakit} · Izin ${R.izin}</span>${R.belum ? `<span class="pill warn">Belum dijadwalkan ${R.belum}</span>` : ''}${R.nodata ? `<span class="pill">Belum ada data mesin ${R.nodata} hari</span>` : ''}</div>`;
 const attShiftChip = (cfg, code, auto) => { if (!code) return '<span class="faint">–</span>'; if (code === 'L') return `<span class="sh-chip off${auto ? ' auto' : ''}">L</span>`; if (code === CUTI_CODE) return '<span class="sh-chip cuti" title="Cuti">C</span>'; const s = hrShift(cfg, code); return `<span class="sh-chip${auto ? ' auto' : ''}" style="--c:${s ? s.color : '#888'}" title="${esc(s ? `${s.name} ${s.start}–${s.end}` : 'Kode tidak terdaftar')}">${esc(code)}</span>`; };
 function attDaysTable(e, A, ro) {
   const cfg = hrCfg(e.companyId);
@@ -6827,7 +6834,7 @@ function attFixDialog(e, iso) {
 
 /* =====================  HALAMAN ABSENSI  ===================== */
 Views.attendance = () => {
-  const p = S.params || {}, tab = p.tab || 'rekap', month = p.month || monthISO(), cfg = hrCfg();
+  const p = S.params || {}, tab = p.tab || 'rekap', month = p.month || hrCurMonth(), cfg = hrCfg();
   const tabs = [['rekap', 'Rekap bulanan'], ['harian', 'Harian'], ['jadwal', 'Jadwal shift'], ['impor', 'Impor data mesin']];
   const units = [...new Set(empList().map(e => e.unit).filter(Boolean))].sort();
   const unitSel = `<select class="input" id="aUnit" style="width:auto"><option value="">Semua unit</option>${units.map(u => `<option ${u === p.unit ? 'selected' : ''}>${esc(u)}</option>`).join('')}</select>`;
@@ -6836,18 +6843,18 @@ Views.attendance = () => {
   const nameBox = `<div class="att-q"><input class="input" id="aQ" placeholder="Ketik nama karyawan…" autocomplete="off" value="${esc(p.q || '')}" aria-label="Cari nama karyawan" role="combobox" aria-expanded="false" aria-controls="aQl"><div class="att-ql" id="aQl" role="listbox" hidden></div></div>`;
   const one = tab === 'rekap' && p.emp ? Store.get('employees', p.emp) : null;
   if (one) {
-    const A = attMonth(one, month), R = attRecap(A), last = attLastData(S.companyId, month);
-    body = `<div class="card"><div class="card-head"><div class="row"><input class="input" type="month" id="aMonth" value="${month}" style="width:auto">${nameBox}<button class="btn sm" id="aQx">✕ Semua karyawan</button></div><div class="row"><button class="btn sm" id="aCsv1">Unduh detail (CSV)</button><button class="btn sm" data-go="employee" data-p='${esc(JSON.stringify({ id: one.id, tab: 'absen', month }))}'>Profil karyawan</button></div></div>
+    const A = attPeriod(one, month), R = attRecap(A), last = attLastData(S.companyId, month);
+    body = `<div class="card"><div class="card-head"><div class="row"><input class="input" type="month" id="aMonth" value="${month}" style="width:auto">${periodChip(month)}${nameBox}<button class="btn sm" id="aQx">✕ Semua karyawan</button></div><div class="row"><button class="btn sm" id="aCsv1">Unduh detail (CSV)</button><button class="btn sm" data-go="employee" data-p='${esc(JSON.stringify({ id: one.id, tab: 'absen', month }))}'>Profil karyawan</button></div></div>
       <div class="card-pad stack" style="padding-top:0"><div class="row" style="gap:12px">${avatarHtml(one.name, empPhoto(one), 44)}<div><b style="font-size:16px">${esc(one.name)}</b>${sampleTag(one)}<div class="small muted">${esc([one.nik, one.position, one.unit, one.workType === 'shift' ? 'shift' : 'non-shift', one.pin ? 'PIN ' + one.pin : 'PIN kosong'].filter(Boolean).join(' · '))}</div></div></div>
       ${attRecapChips(R)}</div>${attDaysTable(one, A)}</div>
-      <p class="small faint" style="margin:0">Detail harian ${esc(one.name)} bulan ${fmtMonth(month)}: jadwal, jam masuk–pulang, lama kerja, status, dan keterangan. Klik Koreksi untuk mengubah satu hari. Data mesin terakhir: ${last ? fmtDate(last) : 'belum ada'}.</p>`;
+      <p class="small faint" style="margin:0">Detail harian ${esc(one.name)} periode ${fmtMonth(month)} (${hrPeriodTxt(month)}): jadwal, jam masuk–pulang, lama kerja, status, dan keterangan. Klik Koreksi untuk mengubah satu hari. Data mesin terakhir: ${last ? fmtDate(last) : 'belum ada'}.</p>`;
   } else if (tab === 'rekap') {
-    const rows = emps.map(e => ({ e, R: attRecap(attMonth(e, month)) })), T = k => rows.reduce((s, r) => s + r.R[k], 0), last = attLastData(S.companyId, month);
-    body = `<div class="card"><div class="card-head"><div class="row"><input class="input" type="month" id="aMonth" value="${month}" style="width:auto">${unitSel}${nameBox}</div><div class="row"><span class="small muted" id="aQn"></span><button class="btn sm" id="aCsv" ${rows.length ? '' : 'disabled'}>Unduh rekap (CSV)</button></div></div>
-      ${rows.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Karyawan</th><th class="num">Jadwal kerja</th><th class="num">Hadir</th><th class="num">Terlambat</th><th class="num">Pulang cepat</th><th class="num">Scan tidak lengkap</th><th class="num">Alpa</th><th>Cuti · sakit · izin · dinas</th><th class="num">Belum dijadwalkan</th></tr></thead><tbody>
+    const rows = emps.map(e => ({ e, R: attRecap(attPeriod(e, month)) })), T = k => rows.reduce((s, r) => s + r.R[k], 0), last = attLastData(S.companyId, month);
+    body = `<div class="card"><div class="card-head"><div class="row"><input class="input" type="month" id="aMonth" value="${month}" style="width:auto">${periodChip(month)}${unitSel}${nameBox}</div><div class="row"><span class="small muted" id="aQn"></span><button class="btn sm" id="aCsv" ${rows.length ? '' : 'disabled'}>Unduh rekap (CSV)</button></div></div>
+      ${rows.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Karyawan</th><th class="num">Jadwal kerja</th><th class="num">Hadir</th><th class="num" title="Dinas malam yang dijalani (dari jadwal malam)">Dinas malam</th><th class="num">Terlambat</th><th class="num">Pulang cepat</th><th class="num">Scan tidak lengkap</th><th class="num">Alpa</th><th>Cuti · sakit · izin · dinas</th><th class="num">Belum dijadwalkan</th></tr></thead><tbody>
         ${rows.map(({ e, R }) => `<tr class="click" data-attemp="${e.id}" data-qname="${esc((e.name + ' ' + (e.nik || '')).toLowerCase())}" tabindex="0"><td><b>${esc(e.name)}</b>${sampleTag(e)}<div class="small muted">${esc(e.unit || '')} · ${e.workType === 'shift' ? 'shift' : 'non-shift'}${e.pin ? '' : ' · <span class="pill warn">PIN kosong</span>'}</div></td>
-          <td class="num">${R.sched}</td><td class="num">${R.hadir}</td><td class="num">${R.late ? `<b>${R.late}×</b><div class="small muted">${R.lateMin} mnt</div>` : 0}</td><td class="num">${R.early}</td><td class="num">${R.noOut + R.noIn}</td><td class="num">${R.alpa ? `<span class="pill bad">${R.alpa}</span>` : 0}</td><td class="small">${R.cuti} · ${R.sakit} · ${R.izin} · ${R.dinas}</td><td class="num">${R.belum ? `<span class="pill warn">${R.belum}</span>` : 0}</td></tr>`).join('')}
-        </tbody><tfoot><tr><td>Total</td>${['sched', 'hadir', 'late', 'early'].map(k => `<td class="num">${T(k)}</td>`).join('')}<td class="num">${T('noOut') + T('noIn')}</td><td class="num">${T('alpa')}</td><td class="small">${T('cuti')} · ${T('sakit')} · ${T('izin')} · ${T('dinas')}</td><td class="num">${T('belum')}</td></tr></tfoot></table></div>` : '<div class="empty">Belum ada karyawan.</div>'}</div>
+          <td class="num">${R.sched}</td><td class="num">${R.hadir}</td><td class="num">${R.malamSched ? `<b>${R.malam}</b>${R.malam !== R.malamSched ? `<div class="small muted">dari ${R.malamSched} jadwal</div>` : ''}` : 0}</td><td class="num">${R.late ? `<b>${R.late}×</b><div class="small muted">${R.lateMin} mnt</div>` : 0}</td><td class="num">${R.early}</td><td class="num">${R.noOut + R.noIn}</td><td class="num">${R.alpa ? `<span class="pill bad">${R.alpa}</span>` : 0}</td><td class="small">${R.cuti} · ${R.sakit} · ${R.izin} · ${R.dinas}</td><td class="num">${R.belum ? `<span class="pill warn">${R.belum}</span>` : 0}</td></tr>`).join('')}
+        </tbody><tfoot><tr><td>Total</td>${['sched', 'hadir', 'malam', 'late', 'early'].map(k => `<td class="num">${T(k)}</td>`).join('')}<td class="num">${T('noOut') + T('noIn')}</td><td class="num">${T('alpa')}</td><td class="small">${T('cuti')} · ${T('sakit')} · ${T('izin')} · ${T('dinas')}</td><td class="num">${T('belum')}</td></tr></tfoot></table></div>` : '<div class="empty">Belum ada karyawan.</div>'}</div>
       <p class="small faint" style="margin:0">Ketik nama di kotak pencarian lalu pilih untuk melihat jam masuk–pulang harian. Klik baris karyawan untuk melihat absensi harian dan melakukan koreksi. Hari ini, hari yang akan datang, dan hari setelah data mesin terakhir (${last ? fmtDate(last) : 'belum ada data'}) belum dihitung alpa.</p>`;
   }
   if (tab === 'harian') {
@@ -6882,15 +6889,15 @@ Views.attendanceMount = c => {
   const qx = $('#aQx', c); if (qx) qx.onclick = () => setP({ emp: '', q: '' });
   const one = p.emp && Store.get('employees', p.emp); if (one && tab === 'rekap') attDaysWire(c, one);
   const csv1 = $('#aCsv1', c); if (csv1 && one) csv1.onclick = () => {
-    const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`, A = attMonth(one, month);
+    const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`, A = attPeriod(one, month);
     const lines = [['Tanggal', 'Hari', 'Jadwal', 'Jam jadwal', 'Masuk', 'Pulang', 'Lama kerja', 'Terlambat (mnt)', 'Pulang cepat (mnt)', 'Status', 'Keterangan', 'Scan mesin'].map(q).join(';'),
       ...A.map(d => [d.iso, HARI[dow(d.iso)], d.code, d.shift ? `${d.shift.start}-${d.shift.end}` : '', d.in, d.out, d.work ? hhmm(d.work) : '', d.late || '', d.early || '', d.status, [d.note, d.holiday?.name].filter(Boolean).join(' · '), d.scans.join(' ')].map(q).join(';'))];
     download(`absensi-${(one.nik || one.name).replace(/[^\w-]+/g, '_')}-${month}.csv`, '\ufeff' + lines.join('\n')); audit('unduh detail absensi', `${one.name} · ${month}`); };
   $$('[data-fixe]', c).forEach(b => b.onclick = () => attFixDialog(Store.get('employees', b.dataset.fixe), p.date || todayISO()));
   const csv = $('#aCsv', c); if (csv) csv.onclick = () => {
     const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`, emps = empList(e => (!p.unit || e.unit === p.unit) && (e.active !== false || (e.endDate || '') >= month + '-01'));
-    const head = ['NIK', 'Nama', 'Unit', 'PIN', 'Jadwal kerja', 'Hadir', 'Terlambat (kali)', 'Terlambat (menit)', 'Pulang cepat', 'Tidak scan pulang', 'Tidak scan masuk', 'Alpa', 'Cuti', 'Sakit', 'Izin', 'Dinas luar', 'Belum dijadwalkan'];
-    const lines = [head.map(q).join(';'), ...emps.map(e => { const R = attRecap(attMonth(e, month)); return [e.nik, e.name, e.unit, e.pin, R.sched, R.hadir, R.late, R.lateMin, R.early, R.noOut, R.noIn, R.alpa, R.cuti, R.sakit, R.izin, R.dinas, R.belum].map(q).join(';'); })];
+    const head = ['NIK', 'Nama', 'Unit', 'PIN', 'Jadwal kerja', 'Hadir', 'Dinas malam (dijadwalkan)', 'Dinas malam (dijalani)', 'Terlambat (kali)', 'Terlambat (menit)', 'Pulang cepat', 'Tidak scan pulang', 'Tidak scan masuk', 'Alpa', 'Cuti', 'Sakit', 'Izin', 'Dinas luar', 'Belum dijadwalkan'];
+    const lines = [head.map(q).join(';'), ...emps.map(e => { const R = attRecap(attPeriod(e, month)); return [e.nik, e.name, e.unit, e.pin, R.sched, R.hadir, R.malamSched, R.malam, R.late, R.lateMin, R.early, R.noOut, R.noIn, R.alpa, R.cuti, R.sakit, R.izin, R.dinas, R.belum].map(q).join(';'); })];
     download(`rekap-absensi-${month}.csv`, '﻿' + lines.join('\n')); audit('unduh rekap absensi', month);
   };
   if (tab === 'jadwal') attRosterWire(c, month);
@@ -6918,8 +6925,8 @@ function attNameSearch(c, p, setP) {
   if (q.value.trim()) filterRows(norm(q.value.trim()));
 }
 function attEmpModal(e, month) {
-  const A = attMonth(e, month);
-  openModal({ title: `${e.name} · ${fmtMonth(month)}`, wide: true, body: `${attRecapChips(attRecap(A))}${attDaysTable(e, A)}`, foot: `<button class="btn" data-close>Tutup</button><button class="btn primary" id="aOpenE">Buka profil karyawan</button>`,
+  const A = attPeriod(e, month);
+  openModal({ title: `${e.name} · ${fmtMonth(month)} (${hrPeriodTxt(month, e.companyId)})`, wide: true, body: `${attRecapChips(attRecap(A))}${attDaysTable(e, A)}`, foot: `<button class="btn" data-close>Tutup</button><button class="btn primary" id="aOpenE">Buka profil karyawan</button>`,
     onMount: r => { attDaysWire(r, e); $('#aOpenE', r).onclick = () => { closeModal(); App.go('employee', { id: e.id, tab: 'absen', month }); }; } });
 }
 
@@ -6936,18 +6943,18 @@ function attRosterHtml(p, month, cfg, unitSel) {
   const brush = S._roster.brush || (cfg.shifts[0] || {}).code || 'L';
   const head = Array.from({ length: n }, (_, i) => { const iso = `${month}-${pad(i + 1)}`, w = hrIsWeekend(iso, S.companyId), h = hrHoliday(cfg, iso); return `<th class="rc-h ${w ? 'we' : ''} ${h ? 'hol' : ''}" title="${esc(h ? h.name : HARI[dow(iso)])}">${i + 1}<small>${HARI3[dow(iso)].slice(0, 2)}</small></th>`; }).join('');
   const lmap = leaveDayMap(month, new Set(emps.map(e => e.id)));
-  const rows = emps.map(e => { const doc = attDoc(e.id, month); let cnt = 0;
+  const rows = emps.map(e => { const doc = attDoc(e.id, month); let cnt = 0, nm = 0;
     const cells = Array.from({ length: n }, (_, i) => { const dd = pad(i + 1), iso = `${month}-${dd}`, ch = S._roster.ch[e.id + '|' + dd];
       const { code, auto } = ch !== undefined ? { code: ch || attCode(e, iso, cfg, { ...(doc || {}), sched: {} }).code, auto: !ch } : attCode(e, iso, cfg, doc || null);
       const lv = lmap.get(e.id + '|' + dd), cv = rcCuti(code, lv, ch !== undefined), show = cv ? CUTI_CODE : code;
-      if (hrIsWorkCode(show)) cnt++; const s = hrIsWorkCode(show) ? hrShift(cfg, show) : null;
+      if (hrIsWorkCode(show)) cnt++; if (hrIsNight(cfg, show)) nm++; const s = hrIsWorkCode(show) ? hrShift(cfg, show) : null;
       return `<td class="rc ${hrIsWeekend(iso, S.companyId) || hrHoliday(cfg, iso) ? 'we' : ''} ${show === 'L' ? 'off' : ''} ${cv ? 'cuti ' + cv : ''} ${lv && !lv.full && !cv ? 'lvp' : ''} ${auto ? 'auto' : ''} ${ch !== undefined ? 'chg' : ''} ${s && s.custom ? 'cus' : ''}" data-rc="${e.id}|${dd}" tabindex="0" title="${esc(rcCutiTitle(cfg, code, lv, cv))}" style="${s ? `--c:${s.color}` : ''}">${rcLabel(cfg, show)}</td>`; }).join('');
-    return `<tr><th class="rc-name"><b>${esc(e.name)}</b><small>${esc(e.unit || '')}${e.workType === 'shift' ? '' : ' · non-shift'}</small></th>${cells}<td class="num small">${cnt}</td></tr>`; }).join('');
-  return `<div class="card card-pad stack"><div class="row" style="justify-content:space-between"><div class="row"><input class="input" type="month" id="aMonth" value="${month}" style="width:auto">${unitSel}<label class="row small"><input type="checkbox" id="rAll" ${showAll ? 'checked' : ''}> Tampilkan juga karyawan non-shift</label></div>
+    return `<tr><th class="rc-name"><b>${esc(e.name)}</b><small>${esc(e.unit || '')}${e.workType === 'shift' ? '' : ' · non-shift'}${nm ? ` · 🌙 ${nm} malam` : ''}</small></th>${cells}<td class="num small">${cnt}</td><td class="num small rc-nm">${nm || ''}</td></tr>`; }).join('');
+  return `<div class="card card-pad stack"><div class="row" style="justify-content:space-between"><div class="row"><input class="input" type="month" id="aMonth" value="${month}" style="width:auto">${periodChip(month)}${unitSel}<label class="row small"><input type="checkbox" id="rAll" ${showAll ? 'checked' : ''}> Tampilkan juga karyawan non-shift</label></div>
       <div class="row"><button class="btn sm" id="rPat">Isi pola otomatis…</button><button class="btn sm" id="rCopy">Salin dari bulan lalu</button><button class="btn sm primary" id="rSave">Simpan jadwal</button></div></div>
     <div class="row rc-pal" role="toolbar" aria-label="Pilih kode shift"><span class="small muted">Kuas:</span>${cfg.shifts.map(s => `<button type="button" class="rc-b ${brush === s.code ? 'on' : ''}" data-brush="${esc(s.code)}" style="--c:${s.color}" id="bk_br_${esc(s.code)}" title="${esc(s.name)} ${s.start}–${s.end} (${hoursTxt(shiftHours(s))})">${esc(s.code)} <small>${esc(s.name)} ${s.start}–${s.end}</small></button>`).join('')}<button type="button" class="rc-b off ${brush === 'L' ? 'on' : ''}" data-brush="L" id="bk_br_L">L <small>Libur</small></button><button type="button" class="rc-b cuti ${brush === CUTI_CODE ? 'on' : ''}" data-brush="${CUTI_CODE}" id="bk_br_C" title="Cuti tahunan: otomatis diajukan saat jadwal disimpan">C <small>Cuti</small></button><button type="button" class="rc-b ${brush === '' ? 'on' : ''}" data-brush="" id="bk_br_x">Hapus</button></div>
     <p class="small muted" style="margin:0"><b>Klik satu sel</b> untuk memilih shift atau mengatur jam masuk–pulang sendiri (kelipatan 30 menit). <b>Seret</b> beberapa sel untuk mengisi sekaligus dengan kuas. Sel yang belum diatur memakai jadwal otomatis (non-shift: hari kerja dan libur bawaan). Tekan <b>Simpan jadwal</b> setelah selesai.</p>
-    ${emps.length ? `<div class="tbl-wrap rc-wrap"><table class="tbl no-stack rc-tbl" id="rcT"><thead><tr><th class="rc-name">Karyawan</th>${head}<th class="num small">Hari kerja</th></tr></thead><tbody>${rows}</tbody></table></div>` : `<div class="empty">Tidak ada karyawan shift${p.unit ? ' di unit ini' : ''}. Ubah jenis kerja karyawan menjadi "Shift" di Data Karyawan, atau centang "Tampilkan juga karyawan non-shift".</div>`}</div>`;
+    ${emps.length ? `<div class="tbl-wrap rc-wrap"><table class="tbl no-stack rc-tbl" id="rcT"><thead><tr><th class="rc-name">Karyawan</th>${head}<th class="num small">Hari kerja</th><th class="num small rc-nm" title="Jumlah dinas malam di bulan ini">Dinas malam</th></tr></thead><tbody>${rows}</tbody></table></div>` : `<div class="empty">Tidak ada karyawan shift${p.unit ? ' di unit ini' : ''}. Ubah jenis kerja karyawan menjadi "Shift" di Data Karyawan, atau centang "Tampilkan juga karyawan non-shift".</div>`}</div>`;
 }
 function attRosterWire(c, month, save = attRosterSave) {
   const R = S._roster, cfg = hrCfg(); let painting = false;
@@ -7617,6 +7624,53 @@ async function rosterLeaveApply(month, byEmp, lvlOf) {
 const rosterLeaveMsg = r => [r.made ? `${r.made} pengajuan cuti dibuat` : '', r.cancelled ? `${r.cancelled} cuti dibatalkan` : '', r.skipped ? 'belum ada jenis cuti tahunan di Pengaturan' : ''].filter(Boolean).join(', ');
 
 /* =========================================================
+   Periode cut off & dinas malam
+   Cut off = tanggal penutup periode bulanan perusahaan. Contoh cut off 20:
+   periode "November 2026" = 21 Okt – 20 Nov 2026. 0 = bulan kalender penuh.
+   Dipakai rekap absensi, absensi karyawan, lembur, dan penggajian.
+   ========================================================= */
+const hrCutoff = cid => { const v = Math.round(+(hrCfg(cid).cutoff || 0)); return v >= 1 && v <= 28 ? v : 0; };
+function hrPeriod(month, cid, cut) {
+  const c = cut == null ? hrCutoff(cid) : cut;
+  if (!c) return { from: month + '-01', to: `${month}-${pad(daysIn(month))}`, cut: 0 };
+  return { from: `${prevMonth(month)}-${pad(c + 1)}`, to: `${month}-${pad(c)}`, cut: c };
+}
+const hrDayMon = d => `${+d.slice(8)} ${BULAN[+d.slice(5, 7) - 1].slice(0, 3)}`;
+const hrPeriodTxt = (month, cid, cut) => { const p = hrPeriod(month, cid, cut); return `${hrDayMon(p.from)} – ${hrDayMon(p.to)} ${p.to.slice(0, 4)}`; };
+const hrInPeriod = (iso, month, cid) => { const p = hrPeriod(month, cid); return !!iso && iso >= p.from && iso <= p.to; };
+/* bulan periode yang sedang berjalan (lewat tanggal cut off = sudah masuk periode bulan depan) */
+const hrCurMonth = cid => { const c = hrCutoff(cid), t = todayISO(); return c && +t.slice(8) > c ? nextMonth(t.slice(0, 7)) : t.slice(0, 7); };
+/* absensi harian sepanjang periode cut off */
+function attPeriod(e, month) {
+  const P = hrPeriod(month, e.companyId); if (!P.cut) return attMonth(e, month);
+  return [...attMonth(e, prevMonth(month)).filter(d => d.iso >= P.from), ...attMonth(e, month).filter(d => d.iso <= P.to)];
+}
+/* dinas malam: shift yang melewati tengah malam, atau bernama "malam" */
+const hrNightShift = s => !!s && ((tmin(s.end) ?? 0) <= (tmin(s.start) ?? 0) || /malam/i.test(s.name || ''));
+const hrIsNight = (cfg, code) => hrIsWorkCode(code) && hrNightShift(hrShift(cfg, code));
+const canCutoff = () => !!S.user && (S.user.role === SA || S.user.role === CO);
+/* tombol periode di samping filter bulan; klik untuk mengatur cut off */
+const periodChip = (month, cid) => { const c = hrCutoff(cid);
+  return `<button type="button" class="pchip" data-cutoff="${esc(month)}" title="${canCutoff() ? 'Klik untuk mengatur tanggal cut off perusahaan' : 'Periode cut off perusahaan'}">📅 <span>Periode ${esc(hrPeriodTxt(month, cid))}</span><small>${c ? 'cut off tgl ' + c : 'bulan kalender'}${canCutoff() ? ' · ubah' : ''}</small></button>`; };
+function cutoffModal(month) {
+  const cid = S.companyId, cur = hrCutoff(cid);
+  if (!canCutoff()) { toast(`Periode ${fmtMonth(month)}: ${hrPeriodTxt(month, cid)}. Tanggal cut off diatur oleh admin perusahaan.`); return; }
+  const comp = Store.get('companies', cid)?.name || 'perusahaan';
+  openModal({ title: 'Tanggal cut off periode', body: `<form id="coF" class="stack">
+      <p class="small muted" style="margin:0">Berlaku untuk <b>${esc(comp)}</b>: rekap absensi, absensi karyawan, lembur, dan penggajian menghitung data sesuai periode ini. Jadwal shift tetap disusun per bulan kalender.</p>
+      <label class="row"><input type="radio" name="mode" value="0" ${cur ? '' : 'checked'}> <span><b>Bulan kalender</b><br><span class="small muted">tanggal 1 sampai akhir bulan</span></span></label>
+      <label class="row"><input type="radio" name="mode" value="1" ${cur ? 'checked' : ''}> <span><b>Cut off setiap tanggal</b> <select class="input" name="day" style="width:auto;display:inline-block">${Array.from({ length: 28 }, (_, i) => `<option ${(cur || 20) === i + 1 ? 'selected' : ''}>${i + 1}</option>`).join('')}</select><br><span class="small muted">periode bulan X dimulai sehari setelah cut off di bulan sebelumnya</span></span></label>
+      <div class="note small" id="coPrev"></div></form>`,
+    foot: '<button class="btn" data-close>Batal</button><button class="btn primary" form="coF">Simpan cut off</button>',
+    onMount: r => { const f = $('#coF', r), val = () => f.mode.value === '1' ? +f.day.value : 0;
+      const prev = () => { const v = val(); $('#coPrev', r).innerHTML = [0, 1, 2].map(k => { let m = month; for (let i = 0; i < k; i++) m = nextMonth(m); return `Periode <b>${fmtMonth(m)}</b>: ${hrPeriodTxt(m, cid, v)}`; }).join('<br>'); };
+      f.onchange = prev; f.day.onfocus = () => { f.mode.value = '1'; prev(); }; prev();
+      f.onsubmit = async ev => { ev.preventDefault(); const v = val(); await hrSaveCfg(cid, { cutoff: v }); audit('ubah cut off periode', v ? 'tanggal ' + v : 'bulan kalender');
+        closeModal(); toast(v ? `Cut off diatur tanggal ${v}` : 'Periode memakai bulan kalender'); App.renderContent(); }; } });
+}
+document.addEventListener('click', ev => { const b = ev.target.closest && ev.target.closest('[data-cutoff]'); if (!b) return; ev.preventDefault(); cutoffModal(b.dataset.cutoff); });
+
+/* =========================================================
    KEPEGAWAIAN · Penggajian
    Upah tetap = gaji pokok + tunjangan tetap + komponen tetap (dasar lembur PP 35/2021 & BPJS)
    ========================================================= */
@@ -7628,17 +7682,17 @@ function payrollRow(e, month, st) {
   const wage = (+e.basic || 0) + (+e.fixedAllow || 0) + fixedComps.reduce((s, k) => s + amt(k), 0);
   const hr = wage / 173, perDay = wage / (+st.workDays === 6 ? 25 : 21);
   /* prorata bila masuk / keluar di tengah bulan */
-  const m1 = month + '-01', m2 = `${month}-${pad(daysIn(month))}`, from = e.joinDate && e.joinDate > m1 ? e.joinDate : m1, to = e.endDate && e.endDate < m2 ? e.endDate : m2;
+  const P = hrPeriod(month, e.companyId), m1 = P.from, m2 = P.to, from = e.joinDate && e.joinDate > m1 ? e.joinDate : m1, to = e.endDate && e.endDate < m2 ? e.endDate : m2;
   const full = payWorkdays(e.companyId, m1, m2), act = from <= to ? payWorkdays(e.companyId, from, to) : 0, factor = full && (from !== m1 || to !== m2) ? act / full : 1;
   /* lembur */
-  const ots = Store.all('overtime', o => o.employeeId === e.id && (o.date || '').startsWith(month) && otFinal(o) === 'Disetujui');
+  const ots = Store.all('overtime', o => o.employeeId === e.id && o.date >= m1 && o.date <= m2 && otFinal(o) === 'Disetujui');
   let otHours = 0, otMult = 0; ots.forEach(o => { otHours += +o.hours || 0; otMult += otMultiplier(o.hours, o.dayType, st.workDays); });
   const otPay = otMult * hr;
   /* absensi: hanya dipakai bila bulan ini ada data scan/koreksi */
-  const doc = attDoc(e.id, month), useAtt = !!(doc && (Object.keys(doc.scans || {}).length || Object.keys(doc.fix || {}).length));
+  const useAtt = [...new Set([m1.slice(0, 7), month])].some(mm => { const doc = attDoc(e.id, mm); return !!(doc && (Object.keys(doc.scans || {}).length || Object.keys(doc.fix || {}).length)); });
   let R = null, absentDays = 0, absentDed = 0, lateDed = 0, lateCnt = 0, lateMin = 0;
   if (useAtt) {
-    const A = attMonth(e, month).filter(d => d.iso >= from && d.iso <= to); R = attRecap(A);
+    const A = attPeriod(e, month).filter(d => d.iso >= from && d.iso <= to); R = attRecap(A);
     absentDays = R.alpa; if (cfg.deductAbsent) absentDed = absentDays * perDay;
     const lates = A.filter(d => d.late).slice(+cfg.lateFree || 0); lateCnt = lates.length; lateMin = lates.reduce((s, d) => s + d.late, 0);
     if (cfg.lateRule === 'perMinute') lateDed = lateMin * (+cfg.latePerMinute || 0); else if (cfg.lateRule === 'perTimes') lateDed = lateCnt * (+cfg.latePerTimes || 0);
@@ -7673,13 +7727,13 @@ function payslipHtml(r, month) {
 }
 
 Views.payroll = () => {
-  const month = (S.params || {}).month || monthISO(), st = settingsOf(S.companyId), run = Store.get('payroll_runs', S.companyId + '__' + month), locked = !!(run && run.locked && Array.isArray(run.rows) && run.rows[0]?.earn);
-  const m1 = month + '-01', m2 = `${month}-${pad(daysIn(month))}`;
+  const month = (S.params || {}).month || hrCurMonth(), st = settingsOf(S.companyId), run = Store.get('payroll_runs', S.companyId + '__' + month), locked = !!(run && run.locked && Array.isArray(run.rows) && run.rows[0]?.earn);
+  const { from: m1, to: m2 } = hrPeriod(month);
   const rows = locked ? run.rows : empList(e => (!e.joinDate || e.joinDate <= m2) && (e.active !== false || (e.endDate || '') >= m1)).map(e => paySnap(payrollRow(e, month, st)));
   const T = k => rows.reduce((s, r) => s + (+r[k] || 0), 0), noBank = rows.filter(r => !r.bankAcc).length;
   const line = (r, re) => r.ded.filter(([k]) => re.test(k)).reduce((s, x) => s + x[1], 0);
-  return `<div class="page-head"><div><h1>Penggajian</h1><p>Gaji ${fmtMonth(month)}. Lembur, cuti tidak dibayar, dan potongan absensi diambil otomatis dari modulnya masing-masing. Komponen dan aturan potongan diatur di Aturan Absensi & Gaji.</p></div>
-    <div class="row"><input class="input" type="month" id="pm" value="${month}" style="width:auto"><button class="btn" id="pCsv" ${rows.length ? '' : 'disabled'}>Unduh rekap (CSV)</button><button class="btn" id="pBank" ${rows.length ? '' : 'disabled'}>File transfer bank</button><button class="btn" id="pPdf" ${rows.length ? '' : 'disabled'}>Slip semua (PDF)</button>
+  return `<div class="page-head"><div><h1>Penggajian</h1><p>Gaji ${fmtMonth(month)} (periode ${hrPeriodTxt(month)}). Lembur, cuti tidak dibayar, dan potongan absensi diambil otomatis dari modulnya masing-masing. Komponen dan aturan potongan diatur di Aturan Absensi & Gaji.</p></div>
+    <div class="row"><input class="input" type="month" id="pm" value="${month}" style="width:auto">${periodChip(month)}<button class="btn" id="pCsv" ${rows.length ? '' : 'disabled'}>Unduh rekap (CSV)</button><button class="btn" id="pBank" ${rows.length ? '' : 'disabled'}>File transfer bank</button><button class="btn" id="pPdf" ${rows.length ? '' : 'disabled'}>Slip semua (PDF)</button>
       ${locked && Store.all('pay_slips', x => x.companyId === S.companyId && x.month === month).length < rows.length ? '<button class="btn" id="pPub">Terbitkan slip ke akun staf</button>' : ''}${locked ? '<button class="btn" id="pUnlock">Buka kunci periode</button>' : `<button class="btn primary" id="pLock" ${rows.length ? '' : 'disabled'}>Kunci periode</button>`}</div></div>
   ${locked ? `<div class="note ok"><b>Periode terkunci</b> sejak ${fmtDT(run.savedAt)} oleh ${esc(run.savedBy)}. Angka di bawah adalah arsip saat dikunci dan tidak berubah meskipun data karyawan, absensi, atau lembur diubah.</div>` : `<div class="note">Angka masih <b>sementara</b> dan ikut berubah bila data absensi, lembur, atau cuti diubah. Kunci periode setelah semua data final.</div>`}
   ${noBank ? `<div class="note warn">${noBank} karyawan belum punya nomor rekening di Data Karyawan.</div>` : ''}
@@ -7696,9 +7750,9 @@ Views.payroll = () => {
   <p class="small faint" style="margin:0">Batas upah BPJS Kesehatan ${rp(st.bpjs.kesCap)} dan Jaminan Pensiun ${rp(st.bpjs.jpCap)} dapat diperbarui di Pengaturan Perusahaan. PPh 21 memakai persentase per karyawan.</p>`;
 };
 Views.payrollMount = c => {
-  const month = (S.params || {}).month || monthISO(), st = settingsOf(S.companyId), comp = Store.get('companies', S.companyId), runId = S.companyId + '__' + month;
+  const month = (S.params || {}).month || hrCurMonth(), st = settingsOf(S.companyId), comp = Store.get('companies', S.companyId), runId = S.companyId + '__' + month;
   const run = Store.get('payroll_runs', runId), locked = !!(run && run.locked && Array.isArray(run.rows) && run.rows[0]?.earn);
-  const m1 = month + '-01', m2 = `${month}-${pad(daysIn(month))}`;
+  const { from: m1, to: m2 } = hrPeriod(month);
   const rows = () => locked ? run.rows : empList(e => (!e.joinDate || e.joinDate <= m2) && (e.active !== false || (e.endDate || '') >= m1)).map(e => paySnap(payrollRow(e, month, st)));
   $('#pm', c).onchange = e => { S.params = { month: e.target.value }; App.renderContent(); };
   $$('[data-slip]', c).forEach(b => b.onclick = () => { const r = rows().find(x => x.employeeId === b.dataset.slip); if (!r) return;
@@ -8432,7 +8486,7 @@ const stDayRow = (e, d) => { const cfg = hrCfg(e.companyId); return `<div class=
 /* ---------- Beranda Saya ---------- */
 Views.me = () => {
   const e = myEmp(); if (!e) return stNoEmp();
-  const t = todayISO(), y = +t.slice(0, 4), b = leaveBalance(e, y), A = attMonth(e, t.slice(0, 7)), R = attRecap(A.filter(d => d.iso <= t));
+  const t = todayISO(), y = +t.slice(0, 4), b = leaveBalance(e, y), A = attPeriod(e, hrCurMonth(e.companyId)), R = attRecap(A.filter(d => d.iso <= t));
   const slip = stSlips(e)[0], news = stNews(e).slice(0, 3), al = hrAlerts(e);
   const lv = Store.all('leaves', l => l.employeeId === e.id).sort((a, b2) => (b2.createdAt || '').localeCompare(a.createdAt || '')).slice(0, 3);
   const week = stDays(e, t, 7);
@@ -8488,9 +8542,9 @@ Views.myprofile = () => {
 /* ---------- Jadwal & Absensi ---------- */
 Views.myschedule = () => {
   const e = myEmp(); if (!e) return stNoEmp();
-  const month = (S.params || {}).month || monthISO(), A = attMonth(e, month), R = attRecap(A);
+  const month = (S.params || {}).month || hrCurMonth(e.companyId), A = attPeriod(e, month), R = attRecap(A);
   return `<div class="page-head"><div><h1>Jadwal & Absensi Saya</h1><p>Jadwal shift dan catatan absensi (mesin sidik jari dan absen online). Bila ada yang keliru, ajukan koreksi absensi atau perubahan jadwal.</p><div class="row" style="gap:8px;margin-top:6px"><button class="btn sm" data-go="myreq" data-p='{"new":"attfix"}'>Ajukan koreksi absensi</button><button class="btn sm" data-go="myreq" data-p='{"new":"shift"}'>Ajukan ubah jadwal</button></div></div>
-    <div class="row"><button class="btn sm" data-sm="${prevMonth(month)}" aria-label="Bulan sebelumnya">‹</button><b>${fmtMonth(month)}</b><button class="btn sm" data-sm="${nextMonth(month)}" aria-label="Bulan berikutnya">›</button></div></div>
+    <div class="row"><button class="btn sm" data-sm="${prevMonth(month)}" aria-label="Bulan sebelumnya">‹</button><b>${fmtMonth(month)}</b><button class="btn sm" data-sm="${nextMonth(month)}" aria-label="Bulan berikutnya">›</button>${periodChip(month, e.companyId)}</div></div>
   <div class="card card-pad">${attRecapChips(R)}</div>
   <div class="card">${attDaysTable(e, A, true)}</div>`;
 };
