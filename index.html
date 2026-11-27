@@ -6967,7 +6967,7 @@ function attRosterHtml(p, month, cfg, unitSel) {
       return `<td class="rc ${hrIsWeekend(iso, S.companyId) || hrHoliday(cfg, iso) ? 'we' : ''} ${show === 'L' ? 'off' : ''} ${cv ? 'cuti ' + cv : ''} ${lv && !lv.full && !cv ? 'lvp' : ''} ${auto ? 'auto' : ''} ${ch !== undefined ? 'chg' : ''} ${s && s.custom ? 'cus' : ''}" data-rc="${e.id}|${dd}" tabindex="0" title="${esc(rcCutiTitle(cfg, code, lv, cv))}" style="${s ? `--c:${s.color}` : HR_SPECIAL[show] ? `--c:${HR_SPECIAL[show].color}` : ''}">${rcLabel(cfg, show)}</td>`; }).join('');
     return `<tr><th class="rc-name"><b>${esc(e.name)}</b><small>${esc(e.unit || '')}${e.workType === 'shift' ? '' : ' · non-shift'}${nm ? ` · 🌙 ${nm} malam` : ''}</small></th>${cells}<td class="num small">${cnt}</td><td class="num small rc-nm">${nm || ''}</td></tr>`; }).join('');
   return `<div class="card card-pad stack"><div class="row" style="justify-content:space-between"><div class="row"><input class="input" type="month" id="aMonth" value="${month}" style="width:auto">${periodChip(month)}${unitSel}<label class="row small"><input type="checkbox" id="rAll" ${showAll ? 'checked' : ''}> Tampilkan juga karyawan non-shift</label></div>
-      <div class="row"><button class="btn sm" id="rPat">Isi pola otomatis…</button><button class="btn sm" id="rCopy">Salin dari bulan lalu</button><button class="btn sm primary" id="rSave">Simpan jadwal</button></div></div>
+      <div class="row"><button class="btn sm" id="rPat">Isi pola otomatis…</button><button class="btn sm" id="rCopy">Salin dari bulan lalu</button><button class="btn sm" id="rImp" title="Isi jadwal dari file Excel/CSV">⬆ Upload jadwal (Excel)</button><button class="btn sm primary" id="rSave">Simpan jadwal</button></div></div>
     <div class="rc-pal" role="toolbar" aria-label="Pilih kode shift">${hrShiftGroups(cfg).map(g => `<div class="row rc-pal-row">${g.label ? `<span class="rc-pal-l">${esc(g.label)}</span>` : '<span class="small muted">Kuas:</span>'}${g.list.map(s => `<button type="button" class="rc-b ${brush === s.code ? 'on' : ''}" data-brush="${esc(s.code)}" style="--c:${s.color}" id="bk_br_${esc(s.code)}" title="${esc(s.name)} ${s.start}–${s.end} (${hoursTxt(shiftHours(s))})">${esc(s.code)} <small>${s.start}–${s.end}</small></button>`).join('')}</div>`).join('')}
       <div class="row rc-pal-row"><span class="rc-pal-l">Libur &amp; cuti</span><button type="button" class="rc-b off ${brush === 'L' ? 'on' : ''}" data-brush="L" id="bk_br_L">${esc(hrSym(cfg, 'L'))} <small>Libur</small></button><button type="button" class="rc-b cuti ${brush === CUTI_CODE ? 'on' : ''}" data-brush="${CUTI_CODE}" id="bk_br_C" title="Cuti tahunan: otomatis diajukan saat jadwal disimpan">${esc(hrSym(cfg, CUTI_CODE))} <small>Cuti</small></button>${hrSpecialCodes(cfg).map(k => `<button type="button" class="rc-b ${brush === k ? 'on' : ''}" data-brush="${k}" id="bk_br_${k}" style="--c:${HR_SPECIAL[k].color}" title="${esc(HR_SPECIAL[k].name)}">${k} <small>${esc(HR_SPECIAL[k].name)}</small></button>`).join('')}<button type="button" class="rc-b ${brush === '' ? 'on' : ''}" data-brush="" id="bk_br_x">Hapus</button>${canCutoff() ? '<button type="button" class="btn sm ghost" id="rTpl" title="Pasang simbol P/MD/S/M, X, O, V, VM, VN, DL">Template simbol RS…</button>' : ''}</div></div>
     <p class="small muted" style="margin:0"><b>Klik satu sel</b> untuk memilih shift atau mengatur jam masuk–pulang sendiri (kelipatan 30 menit). <b>Seret</b> beberapa sel untuk mengisi sekaligus dengan kuas. Sel yang belum diatur memakai jadwal otomatis (non-shift: hari kerja dan libur bawaan). Tekan <b>Simpan jadwal</b> setelah selesai.</p>
@@ -6990,6 +6990,7 @@ function attRosterWire(c, month, save = attRosterSave) {
   }
   const all = $('#rAll', c); if (all) all.onchange = () => { S.params = { ...S.params, all: all.checked ? '1' : '' }; App.renderContent(); };
   $('#rSave', c).onclick = () => save(month);
+  const imp = $('#rImp', c); if (imp) imp.onclick = () => rosterImport(c, month, R, cfg);
   $('#rCopy', c).onclick = async () => {
     const pm = prevMonth(month), n = daysIn(month), emps = $$('[data-rc]', c).map(td => td.dataset.rc.split('|')[0]).filter((v, i, a) => a.indexOf(v) === i);
     let k = 0; emps.forEach(id => { const d = attDoc(id, pm); if (!d || !d.sched) return; for (let i = 1; i <= n; i++) { const v = d.sched[pad(i)]; if (v) { R.ch[id + '|' + pad(i)] = v; k++; } } });
@@ -7700,6 +7701,125 @@ function hrApplyTemplate(after) {
       await hrSaveCfg(cid, { shifts, sym: { ...HR_SYM_TEMPLATE }, specials: true, defaultShift: shifts.some(s => s.code === cfg.defaultShift) ? cfg.defaultShift : 'P5' });
       audit('pasang template simbol shift', `${HR_SHIFT_TEMPLATE.length} shift + X/O/V/VM/VN/DL`);
       closeModal(); toast('Template simbol shift dipasang'); (after || App.renderContent)(); } });
+}
+
+/* =========================================================
+   Upload jadwal shift dari Excel / CSV
+   - Format tabel bulanan: satu baris per karyawan (NIK / Nama), kolom tanggal 1–31 berisi kode shift.
+   - Format laporan: satu baris per karyawan per tanggal (Karyawan, Tanggal, Nama Shift).
+   Hasil dibaca otomatis lalu dimasukkan ke tabel jadwal; klik "Simpan jadwal" untuk menyimpan.
+   ========================================================= */
+const RI_MON = { jan: 1, feb: 2, mar: 3, apr: 4, mei: 5, may: 5, jun: 6, jul: 7, agu: 8, agt: 8, aug: 8, sep: 9, okt: 10, oct: 10, nov: 11, des: 12, dec: 12 };
+const riNorm = s => String(s || '').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+const riBase = s => riNorm(String(s || '').split(',')[0].replace(/\b(dr|drg|ns|ners|apt|bd|h|hj|ir)\.\s*/gi, ''));
+const riNik = s => String(s || '').replace(/\s+/g, '').replace(/^'/, '').toUpperCase();
+/* tanggal sel → 'YYYY-MM-DD' atau null */
+function riDate(v, month) {
+  const s = String(v ?? '').trim(); if (!s) return null;
+  let m;
+  if ((m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))) return `${m[1]}-${pad(+m[2])}-${pad(+m[3])}`;
+  if ((m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/))) { const y = m[3].length === 2 ? '20' + m[3] : m[3], a = `${y}-${pad(+m[2])}-${pad(+m[1])}`, b = `${y}-${pad(+m[1])}-${pad(+m[2])}`; return month && a.slice(0, 7) !== month && b.slice(0, 7) === month && +m[1] <= 12 ? b : a; }
+  if ((m = s.match(/^(\d{1,2})[\s\-]+([A-Za-z]{3,})[a-z]*[\s\-,]+(\d{2,4})$/))) { const mo = RI_MON[m[2].slice(0, 3).toLowerCase()]; if (mo) return `${m[3].length === 2 ? '20' + m[3] : m[3]}-${pad(mo)}-${pad(+m[1])}`; }
+  if (/^\d{5}(\.\d+)?$/.test(s)) { const d = new Date(Math.round((+s - 25569) * 864e5)); return d.toISOString().slice(0, 10); }
+  return null;
+}
+/* nomor hari dari judul kolom: "1", "01", "Tgl 1", tanggal penuh pada bulan ini */
+function riDayOf(h, month) {
+  const s = String(h ?? '').trim(); if (!s) return 0;
+  const n = s.match(/^(?:tgl\.?\s*|tanggal\s*)?(\d{1,2})(?:\s*[a-z]{0,6})?$/i);
+  if (n && +n[1] >= 1 && +n[1] <= daysIn(month)) return +n[1];
+  const iso = riDate(s, month); return iso && iso.slice(0, 7) === month ? +iso.slice(8) : 0;
+}
+function riCode(cfg, v) {
+  const raw = String(v ?? '').trim(); if (!raw || raw === '-' || raw === '–') return { skip: true };
+  const u = raw.toUpperCase().replace(/\s+/g, ' ');
+  if (['SHIFT OFF', 'OFF', 'LIBUR', 'L'].includes(u)) return { code: 'L' };
+  if (u === 'CUTI') return { code: CUTI_CODE };
+  const code = hrSymIn(cfg, u);
+  return hrKnownCode(cfg, code) ? { code } : { bad: raw };
+}
+/* baca baris mentah → { cells: [{eid, dd, code}], miss: [nama], bad: {kode: n}, matched: Set } */
+function riParse(rows, month, emps, cfg) {
+  const byNik = new Map(), byName = new Map(), byBase = new Map();
+  emps.forEach(e => { if (e.nik) byNik.set(riNik(e.nik), e); byName.set(riNorm(e.name), e); const b = riBase(e.name); byBase.set(b, byBase.has(b) && byBase.get(b) !== e ? null : e); });
+  const res = { cells: [], miss: [], bad: {}, matched: new Set(), found: new Set(), outside: 0, fmt: '' };
+  const find0 = (nik, name) => (nik && byNik.get(riNik(nik))) || byName.get(riNorm(name)) || byBase.get(riBase(name)) || null;
+  const find = (nik, name) => { const e = find0(nik, name); if (e) res.found.add(e.id); return e; };
+    const isName = h => /^(nama|nama karyawan|karyawan|nama pegawai|pegawai|employee|name|nama lengkap)$/i.test(String(h).trim());
+  const isNik = h => /^(nik|no\.? ?karyawan|no\.? ?induk|nip|nrp|id karyawan|employee id|no\.? ?pegawai)$/i.test(String(h).trim());
+  const add = (e, dd, v, nameTxt) => { const r = riCode(cfg, v); if (r.skip) return; if (r.bad) { res.bad[r.bad] = (res.bad[r.bad] || 0) + 1; return; } res.cells.push({ eid: e.id, dd: pad(dd), code: r.code }); res.matched.add(e.id); };
+  // format laporan (per tanggal)
+  for (let h = 0; h < Math.min(rows.length, 20); h++) {
+    const hr = rows[h].map(x => String(x).trim()), iT = hr.findIndex(x => /^tanggal$/i.test(x)), iS = hr.findIndex(x => /^(nama shift|shift|kode shift|jadwal)$/i.test(x));
+    const iN = hr.findIndex(isName), iK = hr.findIndex(isNik);
+    if (iT >= 0 && iS >= 0 && (iN >= 0 || iK >= 0)) {
+      res.fmt = 'per tanggal';
+      rows.slice(h + 1).forEach(r => { const iso = riDate(r[iT], month); if (!iso) return; if (iso.slice(0, 7) !== month) { res.outside++; return; }
+        const e = find(iK >= 0 ? r[iK] : '', iN >= 0 ? r[iN] : ''); if (!e) { const nm = String((iN >= 0 ? r[iN] : r[iK]) || '').trim(); if (nm && !res.miss.includes(nm)) res.miss.push(nm); return; }
+        add(e, +iso.slice(8), r[iS]); });
+      return res;
+    }
+  }
+  // format tabel bulanan (kolom tanggal)
+  let hi = -1, days = [];
+  for (let h = 0; h < Math.min(rows.length, 25); h++) { const d = rows[h].map(x => riDayOf(x, month)); if (d.filter(Boolean).length >= Math.min(7, daysIn(month))) { hi = h; days = d; break; } }
+  if (hi < 0) { res.err = 'Kolom tanggal (1, 2, 3, … atau tanggal lengkap) tidak ditemukan di baris judul.'; return res; }
+  res.fmt = 'tabel bulanan';
+  const hr = rows[hi].map(x => String(x).trim()); let iN = hr.findIndex(isName), iK = hr.findIndex(isNik);
+  if (iN < 0) { // cari kolom teks terpanjang sebelum kolom tanggal pertama
+    const first = days.findIndex(Boolean), score = Array.from({ length: first }, (_, j) => rows.slice(hi + 1, hi + 40).reduce((s, r) => s + (/[a-z]{3,}/i.test(String(r[j] || '')) ? 1 : 0), 0));
+    iN = score.indexOf(Math.max(...score, 0)); if (iN < 0 || !score[iN]) { res.err = 'Kolom nama karyawan tidak ditemukan. Beri judul "Nama" atau "NIK".'; return res; }
+  }
+  rows.slice(hi + 1).forEach(r => {
+    const name = String(r[iN] || '').trim(), nik = iK >= 0 ? r[iK] : '';
+    if (!name && !nik) return;
+    const e = find(nik, name);
+    if (!e) { if (!days.some((d, j) => d && String(r[j] || '').trim())) return; const nm = name || String(nik); if (!res.miss.includes(nm)) res.miss.push(nm); return; }
+    days.forEach((dd, j) => { if (dd) add(e, dd, r[j]); });
+  });
+  return res;
+}
+async function riTemplate(month, emps, cfg) {
+  const X = await skLoadXlsx(), n = daysIn(month), HARI = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+  const head = ['NIK', 'Nama Karyawan', 'Unit', ...Array.from({ length: n }, (_, i) => i + 1)];
+  const hari = ['', '', 'Hari →', ...Array.from({ length: n }, (_, i) => HARI[new Date(`${month}-${pad(i + 1)}T00:00:00`).getDay()])];
+  const body = emps.map(e => { const doc = attDoc(e.id, month) || {}; return [e.nik || '', e.name, e.unit || '', ...Array.from({ length: n }, (_, i) => { const v = (doc.sched || {})[pad(i + 1)]; return v ? (v === 'L' ? hrSym(cfg, 'L') : hrSym(cfg, v)) : ''; })]; });
+  const ws = X.utils.aoa_to_sheet([head, hari, ...body]); ws['!cols'] = [{ wch: 16 }, { wch: 30 }, { wch: 18 }, ...Array.from({ length: n }, () => ({ wch: 5 }))]; ws['!freeze'] = { xSplit: 3, ySplit: 2 };
+  const kode = [['Kode', 'Arti', 'Jam'], ...cfg.shifts.map(s => [s.code, s.name, `${s.start}–${s.end}`]), [hrSym(cfg, 'L'), 'Libur', ''], [hrSym(cfg, CUTI_CODE), 'Cuti tahunan (otomatis diajukan)', ''], ...hrSpecialCodes(cfg).map(k => [k, HR_SPECIAL[k].name, ''])];
+  const ks = X.utils.aoa_to_sheet(kode); ks['!cols'] = [{ wch: 8 }, { wch: 36 }, { wch: 14 }];
+  const wb = X.utils.book_new(); X.utils.book_append_sheet(wb, ws, 'Jadwal ' + month); X.utils.book_append_sheet(wb, ks, 'Kode Shift');
+  const out = X.write(wb, { bookType: 'xlsx', type: 'array' });
+  await download(`template-jadwal-${month}.xlsx`, new Blob([out], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+}
+function rosterImport(c, month, R, cfg) {
+  const ids = [...new Set($$('[data-rc]', c).map(td => td.dataset.rc.split('|')[0]))], emps = ids.map(id => Store.get('employees', id)).filter(Boolean);
+  if (!emps.length) { toast('Belum ada karyawan di tabel jadwal ini'); return; }
+  openModal({ title: `Upload jadwal ${fmtMonth(month)}`, body: `<div class="stack">
+      <p class="small muted" style="margin:0">Unggah file Excel (.xlsx / .xls) atau CSV. Sistem mencocokkan karyawan berdasarkan <b>NIK</b> atau <b>nama</b>, lalu membaca kode shift tiap tanggal (mis. ${esc(cfg.shifts.slice(0, 3).map(s => s.code).join(', '))}, ${esc(hrSym(cfg, 'L'))} libur, ${esc(hrSym(cfg, CUTI_CODE))} cuti).</p>
+      <div class="note small">Format yang dikenali: <b>tabel bulanan</b> (satu baris per karyawan, kolom tanggal 1–${daysIn(month)}) atau <b>per tanggal</b> (kolom Karyawan, Tanggal, Nama Shift, seperti Laporan Kehadiran). Sel kosong tidak mengubah jadwal yang sudah ada.</div>
+      <div class="row" style="gap:8px;flex-wrap:wrap"><button type="button" class="btn sm" id="riTpl">Unduh template ${esc(fmtMonth(month))}</button><label class="btn primary" style="cursor:pointer">Pilih file jadwal…<input type="file" id="riFile" accept=".xlsx,.xls,.csv" hidden></label></div>
+      <div id="riRes" aria-live="polite"></div></div>`,
+    foot: '<button class="btn" data-close>Batal</button><button class="btn primary" id="riOk" disabled>Masukkan ke jadwal</button>',
+    onMount: r => {
+      let P = null;
+      $('#riTpl', r).onclick = async () => { try { await riTemplate(month, emps, cfg); } catch (e) { toast('Template gagal dibuat: ' + (e.message || e)); } };
+      $('#riFile', r).onchange = async ev => {
+        const f = ev.target.files[0]; if (!f) return; const out = $('#riRes', r); out.innerHTML = '<p class="small muted">Membaca file…</p>'; $('#riOk', r).disabled = true;
+        try { P = riParse(await skReadFile(f), month, emps, cfg); } catch (e) { out.innerHTML = `<div class="note small" style="color:#B42318">File tidak bisa dibaca: ${esc(e.message || e)}</div>`; return; }
+        if (P.err) { out.innerHTML = `<div class="note small" style="color:#B42318">${esc(P.err)}</div>`; return; }
+        const changed = P.cells.filter(x => { const k = x.eid + '|' + x.dd, cur = R.ch[k] !== undefined ? R.ch[k] : ((attDoc(x.eid, month) || {}).sched || {})[x.dd]; return cur !== x.code; }).length;
+        const bad = Object.entries(P.bad);
+        out.innerHTML = `<div class="stack" style="gap:8px">
+          <div class="row" style="gap:8px;flex-wrap:wrap"><span class="pill ok">${P.found.size} karyawan cocok</span><span class="pill info">${P.cells.length} sel terbaca · ${changed} berubah</span>${P.miss.length ? `<span class="pill bad">${P.miss.length} nama tidak ditemukan</span>` : ''}${bad.length ? `<span class="pill warn">${bad.reduce((s, [, n]) => s + n, 0)} kode tidak dikenal</span>` : ''}</div>
+          <p class="small muted" style="margin:0">File: ${esc(f.name)} · format ${esc(P.fmt)}${P.outside ? ` · ${P.outside} baris di luar ${esc(fmtMonth(month))} dilewati` : ''}.</p>
+          ${P.miss.length ? `<details class="small"><summary>Nama yang tidak ada di tabel jadwal ini (${P.miss.length})</summary><div class="muted" style="margin-top:4px">${P.miss.slice(0, 60).map(esc).join(', ')}${P.miss.length > 60 ? ', …' : ''}</div><div class="muted">Periksa ejaan nama/NIK, atau centang "Tampilkan semua karyawan" bila karyawan tersebut tidak tampil.</div></details>` : ''}
+          ${bad.length ? `<details class="small" open><summary>Kode yang tidak dikenal (dilewati)</summary><div style="margin-top:4px">${bad.map(([k, n]) => `<b>${esc(k)}</b> ×${n}`).join(' · ')}</div><div class="muted">Tambahkan kode tersebut di Aturan Absensi → Shift, lalu upload ulang.</div></details>` : ''}</div>`;
+        $('#riOk', r).disabled = !P.cells.length; if (!P.cells.length && P.found.size) out.insertAdjacentHTML('beforeend', '<p class="small" style="margin:6px 0 0">Nama karyawan cocok, tetapi semua kolom tanggal masih kosong. Isi kode shift di file lalu unggah lagi.</p>');
+      };
+      $('#riOk', r).onclick = () => { if (!P || !P.cells.length) return;
+        P.cells.forEach(x => { R.ch[x.eid + '|' + x.dd] = x.code; }); S.dirty = true; closeModal(); App.renderContent();
+        toast(`${P.cells.length} sel jadwal terisi dari file. Periksa, lalu klik Simpan jadwal.`); };
+    } });
 }
 
 /* =========================================================
