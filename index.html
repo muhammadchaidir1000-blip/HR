@@ -1302,6 +1302,12 @@ img.acct-av{width:34px;height:34px;padding:0}
 .pchip:focus-visible{outline:2px solid #4F46E5;outline-offset:2px}
 .pill.night{background:#1E1B4B;color:#E0E7FF;border-color:#1E1B4B}
 .rc-tbl th.rc-nm,.rc-tbl td.rc-nm{background:#EEF2FF;color:#3730A3;font-weight:700}
+/* template simbol: palet & pilihan berkelompok */
+.rc-pal{display:flex;flex-direction:column;gap:6px}
+.rc-pal-row{gap:6px;flex-wrap:wrap;align-items:center}
+.rc-pal-l{min-width:92px;font-size:12px;font-weight:700;color:var(--muted)}
+.rcp-gl{font-size:12px;font-weight:700;color:var(--muted);margin:6px 0 -4px;text-transform:uppercase;letter-spacing:.04em}
+.tbl.rc-tbl tbody tr td.rc{background:color-mix(in srgb,var(--c,transparent) 55%,#fff);color:color-mix(in srgb,var(--c,#1E2533) 62%,#000)}
 </style>
 </head>
 <body>
@@ -5750,7 +5756,7 @@ Views.hrsettings = () => {
   const cfg = hrCfg(), tab = (S.params || {}).tab || 'shift';
   const tabs = [['shift', 'Shift & jam kerja'], ['abs', 'Aturan absensi'], ['libur', 'Hari libur'], ['cuti', 'Jenis cuti'], ['gaji', 'Komponen gaji'], ['mesin', 'Mesin absensi'], ['online', 'Absen online']];
   let body = '';
-  if (tab === 'shift') body = `<div class="card card-pad stack"><h3>Daftar shift</h3><p class="small muted" style="margin:0">Kode singkat dipakai di jadwal (misalnya P, S, M). Bila jam pulang lebih kecil dari jam masuk, shift dianggap melewati tengah malam. Kode <b>L</b> dipakai untuk libur dan tidak perlu didaftarkan.</p>
+  if (tab === 'shift') body = `<div class="card card-pad stack"><div class="row" style="justify-content:space-between"><h3 style="margin:0">Daftar shift</h3><button type="button" class="btn sm" id="hTpl">Pakai template simbol RS (P · MD · S · M)…</button></div>${cfg.sym ? `<p class="small" style="margin:0">Simbol jadwal: <b>${esc(hrSym(cfg, 'L'))}</b> libur · <b>${esc(hrSym(cfg, CUTI_CODE))}</b> cuti${hrSpecialCodes(cfg).map(k => ` · <b>${k}</b> ${esc(HR_SPECIAL[k].name.toLowerCase())}`).join('')}</p>` : ''}<p class="small muted" style="margin:0">Kode singkat dipakai di jadwal (misalnya P, S, M). Bila jam pulang lebih kecil dari jam masuk, shift dianggap melewati tengah malam. Kode <b>L</b> dipakai untuk libur dan tidak perlu didaftarkan.</p>
       ${hrRowsTable('tShift', [{ k: 'code', label: 'Kode', w: '70px', attrs: 'maxlength="3" required' }, { k: 'name', label: 'Nama shift' }, { k: 'start', label: 'Masuk', type: 'time' }, { k: 'end', label: 'Pulang', type: 'time' }, { k: 'color', label: 'Warna', type: 'color', w: '56px' }], cfg.shifts)}
       <label class="f" style="max-width:320px">Shift bawaan karyawan non-shift<select class="input" id="hDef">${cfg.shifts.map(s => `<option ${s.code === cfg.defaultShift ? 'selected' : ''} value="${esc(s.code)}">${esc(s.code)} · ${esc(s.name)}</option>`).join('')}</select></label>
       <p class="small muted" style="margin:0">Karyawan non-shift otomatis memakai shift bawaan pada hari kerja (${settingsOf(S.companyId).workDays} hari/minggu, diatur di Pengaturan Perusahaan) dan libur pada akhir pekan serta hari libur nasional.</p></div>`;
@@ -5799,13 +5805,14 @@ Views.hrsettingsMount = c => {
   const tab = (S.params || {}).tab || 'shift';
   $$('[data-htab]', c).forEach(b => b.onclick = async () => { if (S.dirty && !(await confirmBox('Perubahan di tab ini belum disimpan dan akan hilang. Lanjut pindah tab?', 'Pindah tab'))) return; S.dirty = false; S.params = { tab: b.dataset.htab }; App.renderContent(); });
   hrRowsWire(c);
+  const tpl = $('#hTpl', c); if (tpl) tpl.onclick = () => hrApplyTemplate();
   const v = id => $('#' + id, c)?.value;
   const save = async () => {
     let p = {};
     if (tab === 'shift') {
       const rows = hrRowsRead(c, 'tShift').filter(r => r.code).map(r => ({ ...r, code: r.code.toUpperCase() }));
       const bad = rows.find(r => tmin(r.start) == null || tmin(r.end) == null); if (bad) { toast(`Jam shift ${bad.code} belum lengkap`); return; }
-      if (rows.some(r => r.code === 'L' || r.code === CUTI_CODE)) { toast('Kode L dipakai untuk libur dan C untuk cuti. Pilih kode lain.'); return; }
+      const rsv = HR_RESERVED(cfg), clash = rows.find(r => rsv.includes(r.code)); if (clash) { toast(`Kode ${clash.code} sudah dipakai untuk libur/cuti/dinas (${rsv.join(', ')}). Pilih kode lain.`); return; }
       if (new Set(rows.map(r => r.code)).size !== rows.length) { toast('Kode shift tidak boleh sama'); return; }
       if (!rows.length) { toast('Minimal satu shift'); return; }
       p = { shifts: rows, defaultShift: rows.some(r => r.code === v('hDef')) ? v('hDef') : rows[0].code };
@@ -6754,13 +6761,13 @@ function attMonth(e, month) {
   const info = isoList.map(iso => ({ iso, ...attCode(e, iso, cfg, docs[iso.slice(0, 7)] || null) }));
   const out = [];
   info.forEach((d, i) => {
-    const sh = d.code && d.code !== 'L' ? hrShift(cfg, d.code) : null, dd = d.iso.slice(8, 10), doc = docs[d.iso.slice(0, 7)];
+    const sh = hrIsWorkCode(d.code) ? hrShift(cfg, d.code) : null, dd = d.iso.slice(8, 10), doc = docs[d.iso.slice(0, 7)];
     const fix = doc?.fix?.[dd] || null, raw = doc?.scans?.[dd] || [];
     let S0 = null, E0 = null, tin = null, tout = null;
     if (sh) {
       S0 = i * 1440 + tmin(sh.start); E0 = i * 1440 + tmin(sh.end); if (E0 <= S0) E0 += 1440;
       const mid = (S0 + E0) / 2; let cap = E0 + cfg.scanAfter;
-      const nx = info[i + 1], nsh = nx && nx.code && nx.code !== 'L' ? hrShift(cfg, nx.code) : null;
+      const nx = info[i + 1], nsh = nx && hrIsWorkCode(nx.code) ? hrShift(cfg, nx.code) : null;
       if (nsh) cap = Math.min(cap, Math.max(E0 + 60, (i + 1) * 1440 + tmin(nsh.start) - 15));
       const a = pool.find(p => !p.used && p.t >= S0 - cfg.scanBefore && p.t < mid); if (a) { a.used = true; tin = a.t; }
       const bs = pool.filter(p => !p.used && p.t >= mid && p.t <= cap); const b = bs[bs.length - 1]; if (b) { b.used = true; tout = b.t; }
@@ -6774,7 +6781,8 @@ function attMonth(e, month) {
     if (sh && tout != null && E0 - tout > cfg.tolEarly) early = E0 - tout;
     if (fix && fix.status) status = fix.status;
     else if (lv) { status = /sakit/i.test(lv.type) ? 'Sakit' : 'Cuti'; note = lv.type; }
-    else if (d.code === 'L') { status = 'Libur'; note = hol ? hol.name : ''; }
+    else if (hrIsOff(d.code)) { status = 'Libur'; note = hol ? hol.name : d.code === 'O' ? HR_SPECIAL.O.name : ''; }
+    else if (HR_SPECIAL[d.code]) { status = d.iso > today ? '' : HR_SPECIAL[d.code].kind === 'dinas' ? 'Dinas luar' : 'Cuti'; note = HR_SPECIAL[d.code].name + ' (dari jadwal)'; }
     else if (d.code === CUTI_CODE) { const pl = Store.all('leaves', l => l.employeeId === e.id && reqLive(l) && leaveCovers(l, d.iso))[0]; if (pl) { status = 'Cuti'; note = `${pl.type} · menunggu persetujuan`; } else status = d.iso <= today ? 'Belum dijadwalkan' : ''; }
     else if (!d.code) status = raw.length ? 'Hadir' : (d.iso <= today ? 'Belum dijadwalkan' : '');
     else if (d.iso > today) status = '';
@@ -6801,11 +6809,11 @@ function attRecap(A) {
   return R;
 }
 const attRecapChips = R => `<div class="row hr-chips"><span class="pill info">Jadwal kerja ${R.sched} hari</span><span class="pill ok">Hadir ${R.hadir}</span>${R.malamSched ? `<span class="pill night" title="Dinas malam dijalani / dijadwalkan">🌙 Dinas malam ${R.malam}${R.malam !== R.malamSched ? ' / ' + R.malamSched : ''}</span>` : ''}<span class="pill ${R.late ? 'warn' : ''}">Terlambat ${R.late}× (${R.lateMin} mnt)</span><span class="pill ${R.early ? 'warn' : ''}">Pulang cepat ${R.early}×</span><span class="pill ${R.noOut + R.noIn ? 'warn' : ''}">Scan tidak lengkap ${R.noOut + R.noIn}</span><span class="pill ${R.alpa ? 'bad' : ''}">Alpa ${R.alpa}</span><span class="pill">Cuti ${R.cuti} · Sakit ${R.sakit} · Izin ${R.izin}</span>${R.belum ? `<span class="pill warn">Belum dijadwalkan ${R.belum}</span>` : ''}${R.nodata ? `<span class="pill">Belum ada data mesin ${R.nodata} hari</span>` : ''}</div>`;
-const attShiftChip = (cfg, code, auto) => { if (!code) return '<span class="faint">–</span>'; if (code === 'L') return `<span class="sh-chip off${auto ? ' auto' : ''}">L</span>`; if (code === CUTI_CODE) return '<span class="sh-chip cuti" title="Cuti">C</span>'; const s = hrShift(cfg, code); return `<span class="sh-chip${auto ? ' auto' : ''}" style="--c:${s ? s.color : '#888'}" title="${esc(s ? `${s.name} ${s.start}–${s.end}` : 'Kode tidak terdaftar')}">${esc(code)}</span>`; };
+const attShiftChip = (cfg, code, auto) => { if (!code) return '<span class="faint">–</span>'; if (code === 'L') return `<span class="sh-chip off${auto ? ' auto' : ''}" title="Libur">${esc(hrSym(cfg, 'L'))}</span>`; if (code === CUTI_CODE) return `<span class="sh-chip cuti" title="Cuti">${esc(hrSym(cfg, CUTI_CODE))}</span>`; if (HR_SPECIAL[code]) return `<span class="sh-chip" style="--c:${HR_SPECIAL[code].color}" title="${esc(HR_SPECIAL[code].name)}">${esc(code)}</span>`; const s = hrShift(cfg, code); return `<span class="sh-chip${auto ? ' auto' : ''}" style="--c:${s ? s.color : '#888'}" title="${esc(s ? `${s.name} ${s.start}–${s.end}` : 'Kode tidak terdaftar')}">${esc(code)}</span>`; };
 function attDaysTable(e, A, ro) {
   const cfg = hrCfg(e.companyId);
   return `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Tanggal</th><th>Jadwal</th><th>Masuk</th><th>Pulang</th><th class="num">Lama kerja</th><th class="num">Terlambat</th><th class="num">Pulang cepat</th><th>Status / keterangan</th><th>Scan mesin</th>${ro ? '' : '<th></th>'}</tr></thead><tbody>
-    ${A.map(d => `<tr class="${d.code === 'L' ? 'hr-off' : ''}"><td class="small"><b>${HARI3[dow(d.iso)]}</b> ${+d.dd}${d.holiday ? `<div class="small muted">${esc(d.holiday.name)}</div>` : ''}</td><td>${attShiftChip(cfg, d.code, d.auto)}${d.shift ? `<div class="small faint">${d.shift.start}–${d.shift.end}</div>` : ''}</td>
+    ${A.map(d => `<tr class="${hrIsOff(d.code) ? 'hr-off' : ''}"><td class="small"><b>${HARI3[dow(d.iso)]}</b> ${+d.dd}${d.holiday ? `<div class="small muted">${esc(d.holiday.name)}</div>` : ''}</td><td>${attShiftChip(cfg, d.code, d.auto)}${d.shift ? `<div class="small faint">${d.shift.start}–${d.shift.end}</div>` : ''}</td>
       <td class="mono">${d.in || '–'}</td><td class="mono">${d.out || '–'}</td><td class="num mono">${d.work ? `${Math.floor(d.work / 60)}j ${pad(d.work % 60)}m` : ''}</td><td class="num">${d.late ? d.late + ' mnt' : ''}</td><td class="num">${d.early ? d.early + ' mnt' : ''}</td>
       <td>${d.status ? `<span class="pill ${d.late && d.status === 'Hadir' ? 'warn' : ATT_PILL[d.status] || ''}">${esc(d.late && d.status === 'Hadir' ? 'Terlambat' : d.status)}</span>` : ''}${d.fix ? ' <span class="pill info" title="Dikoreksi manual">koreksi</span>' : ''}${d.note ? `<div class="small muted">${esc(d.note)}</div>` : ''}</td>
       <td class="small mono">${esc(d.scans.join(' · '))}</td>${ro ? '' : `<td><button class="btn sm" data-attfix="${d.iso}" aria-label="Koreksi ${fmtDate(d.iso)}">Koreksi</button></td>`}</tr>`).join('')}</tbody></table></div>`;
@@ -6816,7 +6824,7 @@ function attFixDialog(e, iso) {
   const day = attMonth(e, month).find(x => x.iso === iso) || {};
   openModal({ title: `Koreksi absensi · ${e.name}`, body: `<p class="small muted" style="margin:0">${HARI[dow(iso)]}, ${fmtDateLong(iso)} · scan mesin: <span class="mono">${esc((doc?.scans?.[dd] || []).join(', ') || 'tidak ada')}</span></p>
     <form id="afF" class="form-grid">
-      <label class="f">Jadwal hari ini<select class="input" name="code"><option value="">${cur.auto ? `Otomatis (${cur.code || 'belum dijadwalkan'})` : '– kosongkan –'}</option>${cfg.shifts.map(s => `<option value="${esc(s.code)}" ${!cur.auto && cur.code === s.code ? 'selected' : ''}>${esc(s.code)} · ${esc(s.name)} ${s.start}–${s.end}</option>`).join('')}<option value="L" ${!cur.auto && cur.code === 'L' ? 'selected' : ''}>L · Libur</option></select></label>
+      <label class="f">Jadwal hari ini<select class="input" name="code"><option value="">${cur.auto ? `Otomatis (${cur.code || 'belum dijadwalkan'})` : '– kosongkan –'}</option>${cfg.shifts.map(s => `<option value="${esc(s.code)}" ${!cur.auto && cur.code === s.code ? 'selected' : ''}>${esc(s.code)} · ${esc(s.name)} ${s.start}–${s.end}</option>`).join('')}${['L', ...hrSpecialCodes(cfg)].map(k => `<option value="${k}" ${!cur.auto && cur.code === k ? 'selected' : ''}>${esc(hrSym(cfg, k))} · ${esc(hrCodeName(cfg, k))}</option>`).join('')}</select></label>
       <label class="f">Status<select class="input" name="status"><option value="">Otomatis dari scan (${esc(day.status || '–')})</option>${HR_DAYSTATUS.map(s => `<option ${fix.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select></label>
       <label class="f">Jam masuk (koreksi)<input class="input" type="time" name="in" value="${esc(fix.in || '')}"></label>
       <label class="f">Jam pulang (koreksi)<input class="input" type="time" name="out" value="${esc(fix.out || '')}"></label>
@@ -6931,8 +6939,8 @@ function attEmpModal(e, month) {
 }
 
 /* ---------- jadwal shift (grid bulanan, klik untuk mengisi) ---------- */
-const rcLabel = (cfg, code) => { const s = hrIsWorkCode(code) ? hrShift(cfg, code) : null; return s && s.custom ? `<span class="rc-t">${s.start}<br>${s.end}</span>` : esc(code || ''); };
-const rcTitle = (cfg, code) => { if (code === 'L') return 'Libur'; if (code === CUTI_CODE) return 'Cuti (memotong jatah cuti tahunan)'; const s = code ? hrShift(cfg, code) : null; return s ? `${s.name} ${s.start}–${s.end} (${hoursTxt(shiftHours(s))})` : ''; };
+const rcLabel = (cfg, code) => { const s = hrIsWorkCode(code) ? hrShift(cfg, code) : null; return s && s.custom ? `<span class="rc-t">${s.start}<br>${s.end}</span>` : esc(hrSym(cfg, code)); };
+const rcTitle = (cfg, code) => { if (code === 'L') return 'Libur'; if (code === CUTI_CODE) return 'Cuti (memotong jatah cuti tahunan)'; if (HR_SPECIAL[code]) return HR_SPECIAL[code].name; const s = code ? hrShift(cfg, code) : null; return s ? `${s.name} ${s.start}–${s.end} (${hoursTxt(shiftHours(s))})` : ''; };
 /* tampilan sel cuti: 'ok' disetujui, 'wait' menunggu, 'x' kode C tanpa pengajuan yang berlaku (ditolak/dibatalkan) */
 const rcCuti = (code, lv, unsaved) => { const full = lv && lv.full; if (code !== CUTI_CODE && !full) return ''; if (full) return leaveFinal(lv.l) === 'Disetujui' ? 'ok' : 'wait'; return unsaved ? 'wait' : 'x'; };
 const rcCutiTitle = (cfg, code, lv, cv) => cv === 'x' ? 'Cuti di jadwal, tetapi pengajuannya ditolak atau dibatalkan. Ganti dengan shift lain.' : lv ? leaveDayTitle(lv) + (code && code !== CUTI_CODE && lv.full ? ` · jadwal asli ${code}` : '') : rcTitle(cfg, code);
@@ -6948,11 +6956,12 @@ function attRosterHtml(p, month, cfg, unitSel) {
       const { code, auto } = ch !== undefined ? { code: ch || attCode(e, iso, cfg, { ...(doc || {}), sched: {} }).code, auto: !ch } : attCode(e, iso, cfg, doc || null);
       const lv = lmap.get(e.id + '|' + dd), cv = rcCuti(code, lv, ch !== undefined), show = cv ? CUTI_CODE : code;
       if (hrIsWorkCode(show)) cnt++; if (hrIsNight(cfg, show)) nm++; const s = hrIsWorkCode(show) ? hrShift(cfg, show) : null;
-      return `<td class="rc ${hrIsWeekend(iso, S.companyId) || hrHoliday(cfg, iso) ? 'we' : ''} ${show === 'L' ? 'off' : ''} ${cv ? 'cuti ' + cv : ''} ${lv && !lv.full && !cv ? 'lvp' : ''} ${auto ? 'auto' : ''} ${ch !== undefined ? 'chg' : ''} ${s && s.custom ? 'cus' : ''}" data-rc="${e.id}|${dd}" tabindex="0" title="${esc(rcCutiTitle(cfg, code, lv, cv))}" style="${s ? `--c:${s.color}` : ''}">${rcLabel(cfg, show)}</td>`; }).join('');
+      return `<td class="rc ${hrIsWeekend(iso, S.companyId) || hrHoliday(cfg, iso) ? 'we' : ''} ${show === 'L' ? 'off' : ''} ${cv ? 'cuti ' + cv : ''} ${lv && !lv.full && !cv ? 'lvp' : ''} ${auto ? 'auto' : ''} ${ch !== undefined ? 'chg' : ''} ${s && s.custom ? 'cus' : ''}" data-rc="${e.id}|${dd}" tabindex="0" title="${esc(rcCutiTitle(cfg, code, lv, cv))}" style="${s ? `--c:${s.color}` : HR_SPECIAL[show] ? `--c:${HR_SPECIAL[show].color}` : ''}">${rcLabel(cfg, show)}</td>`; }).join('');
     return `<tr><th class="rc-name"><b>${esc(e.name)}</b><small>${esc(e.unit || '')}${e.workType === 'shift' ? '' : ' · non-shift'}${nm ? ` · 🌙 ${nm} malam` : ''}</small></th>${cells}<td class="num small">${cnt}</td><td class="num small rc-nm">${nm || ''}</td></tr>`; }).join('');
   return `<div class="card card-pad stack"><div class="row" style="justify-content:space-between"><div class="row"><input class="input" type="month" id="aMonth" value="${month}" style="width:auto">${periodChip(month)}${unitSel}<label class="row small"><input type="checkbox" id="rAll" ${showAll ? 'checked' : ''}> Tampilkan juga karyawan non-shift</label></div>
       <div class="row"><button class="btn sm" id="rPat">Isi pola otomatis…</button><button class="btn sm" id="rCopy">Salin dari bulan lalu</button><button class="btn sm primary" id="rSave">Simpan jadwal</button></div></div>
-    <div class="row rc-pal" role="toolbar" aria-label="Pilih kode shift"><span class="small muted">Kuas:</span>${cfg.shifts.map(s => `<button type="button" class="rc-b ${brush === s.code ? 'on' : ''}" data-brush="${esc(s.code)}" style="--c:${s.color}" id="bk_br_${esc(s.code)}" title="${esc(s.name)} ${s.start}–${s.end} (${hoursTxt(shiftHours(s))})">${esc(s.code)} <small>${esc(s.name)} ${s.start}–${s.end}</small></button>`).join('')}<button type="button" class="rc-b off ${brush === 'L' ? 'on' : ''}" data-brush="L" id="bk_br_L">L <small>Libur</small></button><button type="button" class="rc-b cuti ${brush === CUTI_CODE ? 'on' : ''}" data-brush="${CUTI_CODE}" id="bk_br_C" title="Cuti tahunan: otomatis diajukan saat jadwal disimpan">C <small>Cuti</small></button><button type="button" class="rc-b ${brush === '' ? 'on' : ''}" data-brush="" id="bk_br_x">Hapus</button></div>
+    <div class="rc-pal" role="toolbar" aria-label="Pilih kode shift">${hrShiftGroups(cfg).map(g => `<div class="row rc-pal-row">${g.label ? `<span class="rc-pal-l">${esc(g.label)}</span>` : '<span class="small muted">Kuas:</span>'}${g.list.map(s => `<button type="button" class="rc-b ${brush === s.code ? 'on' : ''}" data-brush="${esc(s.code)}" style="--c:${s.color}" id="bk_br_${esc(s.code)}" title="${esc(s.name)} ${s.start}–${s.end} (${hoursTxt(shiftHours(s))})">${esc(s.code)} <small>${s.start}–${s.end}</small></button>`).join('')}</div>`).join('')}
+      <div class="row rc-pal-row"><span class="rc-pal-l">Libur &amp; cuti</span><button type="button" class="rc-b off ${brush === 'L' ? 'on' : ''}" data-brush="L" id="bk_br_L">${esc(hrSym(cfg, 'L'))} <small>Libur</small></button><button type="button" class="rc-b cuti ${brush === CUTI_CODE ? 'on' : ''}" data-brush="${CUTI_CODE}" id="bk_br_C" title="Cuti tahunan: otomatis diajukan saat jadwal disimpan">${esc(hrSym(cfg, CUTI_CODE))} <small>Cuti</small></button>${hrSpecialCodes(cfg).map(k => `<button type="button" class="rc-b ${brush === k ? 'on' : ''}" data-brush="${k}" id="bk_br_${k}" style="--c:${HR_SPECIAL[k].color}" title="${esc(HR_SPECIAL[k].name)}">${k} <small>${esc(HR_SPECIAL[k].name)}</small></button>`).join('')}<button type="button" class="rc-b ${brush === '' ? 'on' : ''}" data-brush="" id="bk_br_x">Hapus</button>${canCutoff() ? '<button type="button" class="btn sm ghost" id="rTpl" title="Pasang simbol P/MD/S/M, X, O, V, VM, VN, DL">Template simbol RS…</button>' : ''}</div></div>
     <p class="small muted" style="margin:0"><b>Klik satu sel</b> untuk memilih shift atau mengatur jam masuk–pulang sendiri (kelipatan 30 menit). <b>Seret</b> beberapa sel untuk mengisi sekaligus dengan kuas. Sel yang belum diatur memakai jadwal otomatis (non-shift: hari kerja dan libur bawaan). Tekan <b>Simpan jadwal</b> setelah selesai.</p>
     ${emps.length ? `<div class="tbl-wrap rc-wrap"><table class="tbl no-stack rc-tbl" id="rcT"><thead><tr><th class="rc-name">Karyawan</th>${head}<th class="num small">Hari kerja</th><th class="num small rc-nm" title="Jumlah dinas malam di bulan ini">Dinas malam</th></tr></thead><tbody>${rows}</tbody></table></div>` : `<div class="empty">Tidak ada karyawan shift${p.unit ? ' di unit ini' : ''}. Ubah jenis kerja karyawan menjadi "Shift" di Data Karyawan, atau centang "Tampilkan juga karyawan non-shift".</div>`}</div>`;
 }
@@ -6961,7 +6970,7 @@ function attRosterWire(c, month, save = attRosterSave) {
   const mark = trackDirty(c, () => save(month));
   $$('[data-brush]', c).forEach(b => b.onclick = () => { R.brush = b.dataset.brush; $$('[data-brush]', c).forEach(x => x.classList.toggle('on', x === b)); });
   const setCell = (td, code) => { const k = td.dataset.rc; R.ch[k] = code; const s = hrIsWorkCode(code) ? hrShift(cfg, code) : null;
-    td.innerHTML = rcLabel(cfg, code); td.title = rcTitle(cfg, code); td.className = `rc chg ${td.classList.contains('we') ? 'we' : ''} ${code === 'L' ? 'off' : ''} ${code === CUTI_CODE ? 'cuti wait' : ''} ${s && s.custom ? 'cus' : ''}`; td.style.cssText = s ? `--c:${s.color}` : ''; mark(); };
+    td.innerHTML = rcLabel(cfg, code); td.title = rcTitle(cfg, code); td.className = `rc chg ${td.classList.contains('we') ? 'we' : ''} ${code === 'L' ? 'off' : ''} ${code === CUTI_CODE ? 'cuti wait' : ''} ${s && s.custom ? 'cus' : ''}`; td.style.cssText = s ? `--c:${s.color}` : HR_SPECIAL[code] ? `--c:${HR_SPECIAL[code].color}` : ''; mark(); };
   const paint = td => setCell(td, R.brush ?? ((cfg.shifts[0] || {}).code || 'L'));
   const t = $('#rcT', c); let start = null, moved = false;
   if (t) {
@@ -6978,15 +6987,16 @@ function attRosterWire(c, month, save = attRosterSave) {
     let k = 0; emps.forEach(id => { const d = attDoc(id, pm); if (!d || !d.sched) return; for (let i = 1; i <= n; i++) { const v = d.sched[pad(i)]; if (v) { R.ch[id + '|' + pad(i)] = v; k++; } } });
     if (!k) { toast('Bulan lalu belum ada jadwal yang tersimpan'); return; } S.dirty = true; App.renderContent();
   };
+  const tpl = $('#rTpl', c); if (tpl) tpl.onclick = () => { if (Object.keys(R.ch || {}).length) { toast('Simpan jadwal dulu sebelum memasang template'); return; } hrApplyTemplate(); };
   $('#rPat', c).onclick = () => {
     const emps = [...new Set($$('[data-rc]', c).map(td => td.dataset.rc.split('|')[0]))].map(id => Store.get('employees', id)).filter(Boolean);
-    openModal({ title: 'Isi pola jadwal', body: `<form id="pF" class="stack"><label class="f">Pola berulang (pisahkan dengan koma)<input class="input" name="pat" value="${esc(cfg.shifts.slice(1, 4).flatMap(s => [s.code, s.code]).concat(['L', 'L']).join(',') || 'N,N,N,N,N,L,L')}" required></label>
+    openModal({ title: 'Isi pola jadwal', body: `<form id="pF" class="stack"><label class="f">Pola berulang (pisahkan dengan koma)<input class="input" name="pat" value="${esc(cfg.shifts.slice(1, 4).flatMap(s => [s.code, s.code]).concat([hrSym(cfg, 'L'), hrSym(cfg, 'L')]).join(',') || 'N,N,N,N,N,L,L')}" required></label><p class="small muted" style="margin:-6px 0 0">Simbol: ${esc(hrSym(cfg, 'L'))} libur, ${esc(hrSym(cfg, CUTI_CODE))} cuti${hrSpecialCodes(cfg).length ? ', ' + hrSpecialCodes(cfg).map(k => `${k} ${HR_SPECIAL[k].name.toLowerCase()}`).join(', ') : ''}.</p>
       <label class="f">Mulai dari tanggal<input class="input" type="number" name="from" min="1" max="${daysIn(month)}" value="1"></label>
       <label class="row small"><input type="checkbox" name="shift" checked> Geser pola satu langkah untuk tiap karyawan berikutnya (agar shift tersebar)</label>
       <fieldset class="hr-fs"><legend>Karyawan</legend><div class="stack" style="max-height:220px;overflow:auto">${emps.map(e => `<label class="row small"><input type="checkbox" name="emp" value="${e.id}" checked> ${esc(e.name)} · ${esc(e.unit || '')}</label>`).join('')}</div></fieldset></form>`,
       foot: '<button class="btn" data-close>Batal</button><button class="btn primary" form="pF">Terapkan</button>',
-      onMount: r => $('#pF', r).onsubmit = ev => { ev.preventDefault(); const f = ev.target, pat = f.pat.value.split(',').map(x => x.trim().toUpperCase()).filter(Boolean);
-        const bad = pat.filter(x => x !== 'L' && x !== CUTI_CODE && !hrShift(cfg, x)); if (bad.length) { toast('Kode tidak dikenal: ' + bad.join(', ')); return; }
+      onMount: r => $('#pF', r).onsubmit = ev => { ev.preventDefault(); const f = ev.target, pat = f.pat.value.split(',').map(x => hrSymIn(cfg, x)).filter(Boolean);
+        const bad = pat.filter(x => !hrKnownCode(cfg, x)); if (bad.length) { toast('Kode tidak dikenal: ' + bad.join(', ')); return; }
         const ids = $$('input[name=emp]:checked', f).map(x => x.value), from = Math.max(1, +f.from.value || 1), n = daysIn(month);
         ids.forEach((id, j) => { const off = f.shift.checked ? j : 0; for (let d = from; d <= n; d++) R.ch[id + '|' + pad(d)] = pat[(d - from + off) % pat.length]; });
         closeModal(); S.dirty = true; App.renderContent(); } });
@@ -6998,15 +7008,16 @@ function attCellPicker(td, cfg, R, setCell) {
   const [id, dd] = td.dataset.rc.split('|'), e = Store.get('employees', id); if (!e) return;
   const iso = `${R.month}-${dd}`, cur = R.ch[td.dataset.rc] !== undefined ? R.ch[td.dataset.rc] : attCode(e, iso, cfg).code, cs = hrIsWorkCode(cur) ? hrShift(cfg, cur) : null;
   const lv = leaveDayMap(R.month, new Set([id])).get(id + '|' + dd), bal = leaveAnnualName(cfg) ? leaveBalance(e, +iso.slice(0, 4)) : null;
-  const br = R.brush && R.brush !== 'L' ? hrShift(cfg, R.brush) : null, base = cs || br || cfg.shifts[0] || { start: '08:00', end: '16:00' };
+  const br = hrIsWorkCode(R.brush) ? hrShift(cfg, R.brush) : null, base = cs || br || cfg.shifts[0] || { start: '08:00', end: '16:00' };
   const near = t => { const m = tmin(t) || 0; return HALF_HOURS[Math.round(m / 30) % 48]; };
   const opt = v => HALF_HOURS.map(h => `<option ${h === v ? 'selected' : ''}>${h}</option>`).join('');
   openModal({ title: `${e.name} · ${HARI[dow(iso)]}, ${fmtDate(iso)}`, body: `<div class="stack">
       <div class="small muted">Pilih shift</div>
-      <div class="rcp-grid">${cfg.shifts.map(s => `<button type="button" class="rcp-b ${cur === s.code ? 'on' : ''}" data-pick="${esc(s.code)}" style="--c:${s.color}"><b>${esc(s.code)}</b><span>${esc(s.name)}</span><small>${s.start}–${s.end} · ${hoursTxt(shiftHours(s))}</small></button>`).join('')}
-        <button type="button" class="rcp-b off ${cur === 'L' ? 'on' : ''}" data-pick="L"><b>L</b><span>Libur</span><small>tidak bekerja</small></button>
-        <button type="button" class="rcp-b cuti ${cur === CUTI_CODE ? 'on' : ''}" data-pick="${CUTI_CODE}"><b>C</b><span>Cuti</span><small>${bal ? `cuti tahunan · sisa ${fmtDays(bal.left)} hari` : 'cuti'}</small></button></div>
-      ${lv ? `<div class="note ${leaveFinal(lv.l) === 'Disetujui' ? 'ok' : ''} small">${esc(leaveDayTitle(lv))} (${esc(leaveWhen(lv.l))}).${lv.l.src === 'jadwal' ? ' Mengganti kode C dengan shift lain akan membatalkan cuti ini.' : ''}</div>` : `<p class="small muted" style="margin:0">Pilih <b>C</b> untuk cuti: saat jadwal disimpan, pengajuan cuti tahunan dibuat otomatis dan jatah cuti langsung terpotong.</p>`}
+      ${hrShiftGroups(cfg).map(g => `${g.label ? `<div class="rcp-gl">${esc(g.label)}</div>` : ''}<div class="rcp-grid">${g.list.map(s => `<button type="button" class="rcp-b ${cur === s.code ? 'on' : ''}" data-pick="${esc(s.code)}" style="--c:${s.color}"><b>${esc(s.code)}</b><span>${esc(s.name)}</span><small>${s.start}–${s.end} · ${hoursTxt(shiftHours(s))}</small></button>`).join('')}</div>`).join('')}
+      <div class="rcp-gl">Libur, cuti &amp; dinas</div><div class="rcp-grid">
+        <button type="button" class="rcp-b off ${cur === 'L' ? 'on' : ''}" data-pick="L"><b>${esc(hrSym(cfg, 'L'))}</b><span>Libur</span><small>tidak bekerja</small></button>
+        <button type="button" class="rcp-b cuti ${cur === CUTI_CODE ? 'on' : ''}" data-pick="${CUTI_CODE}"><b>${esc(hrSym(cfg, CUTI_CODE))}</b><span>Cuti</span><small>${bal ? `cuti tahunan · sisa ${fmtDays(bal.left)} hari` : 'cuti'}</small></button>${hrSpecialCodes(cfg).map(k => `<button type="button" class="rcp-b ${cur === k ? 'on' : ''}" data-pick="${k}" style="--c:${HR_SPECIAL[k].color}"><b>${k}</b><span>${esc(HR_SPECIAL[k].name)}</span><small>${HR_SPECIAL[k].kind === 'off' ? 'tidak bekerja' : HR_SPECIAL[k].kind === 'dinas' ? 'bertugas di luar' : 'tidak memotong cuti tahunan'}</small></button>`).join('')}</div>
+      ${lv ? `<div class="note ${leaveFinal(lv.l) === 'Disetujui' ? 'ok' : ''} small">${esc(leaveDayTitle(lv))} (${esc(leaveWhen(lv.l))}).${lv.l.src === 'jadwal' ? ' Mengganti kode ${esc(hrSym(cfg, CUTI_CODE))} dengan shift lain akan membatalkan cuti ini.' : ''}</div>` : `<p class="small muted" style="margin:0">Pilih <b>${esc(hrSym(cfg, CUTI_CODE))}</b> untuk cuti: saat jadwal disimpan, pengajuan cuti tahunan dibuat otomatis dan jatah cuti langsung terpotong.</p>`}
       <div class="small muted" style="margin-top:6px">Atau atur jam sendiri</div>
       <div class="row" style="gap:10px;align-items:flex-end;flex-wrap:wrap"><label class="f" style="margin:0">Jam masuk<select class="input" id="rcpS">${opt(near(base.start))}</select></label>
         <label class="f" style="margin:0">Jam pulang<select class="input" id="rcpE">${opt(near(base.end))}</select></label>
@@ -7121,7 +7132,7 @@ async function hrEnsureSamples() {
     for (const m of [prevMonth(month), month]) for (const e0 of Store.all('employees', e => e.sample)) {
       const e = e0, n = daysIn(m), doc = { companyId: e.companyId, employeeId: e.id, month: m, sched: {}, scans: {}, fix: {} };
       for (let d = 1; d <= n; d++) { const iso = `${m}-${pad(d)}`; if (e.workType === 'shift') doc.sched[pad(d)] = pat[(d + (e.id === 'e2' ? 3 : 0)) % pat.length]; }
-      for (let d = 1; d <= n; d++) { const iso = `${m}-${pad(d)}`; if (iso >= today) break; const { code } = attCode(e, iso, cfg, doc); const sh = code && code !== 'L' ? hrShift(cfg, code) : null; if (!sh) continue;
+      for (let d = 1; d <= n; d++) { const iso = `${m}-${pad(d)}`; if (iso >= today) break; const { code } = attCode(e, iso, cfg, doc); const sh = hrIsWorkCode(code) ? hrShift(cfg, code) : null; if (!sh) continue;
         const r = rnd(); if (r < 0.04) continue; const s = tmin(sh.start) - 20 + Math.round(rnd() * (r < 0.15 ? 45 : 22)), en = tmin(sh.end) + Math.round(rnd() * 25);
         const put = (dd, t) => { (doc.scans[dd] = doc.scans[dd] || []).push(hhmm(t)); };
         put(pad(d), s); if (r < 0.08) continue;
@@ -7263,7 +7274,7 @@ function leaveTimeWire(f, empOf) {
   const touched = { t1: false, t2: false }; f.t1.addEventListener('change', () => { touched.t1 = true; }); f.t2.addEventListener('change', () => { touched.t2 = true; });
   const near = t => { const m = tmin(t); return m == null ? null : HALF_HOURS[Math.round(m / 30) % 48]; };
   const fill = () => { const e = empOf(); if (!e) return; const cfg = hrCfg(e.companyId);
-    const sh = iso => { if (!/^\d{4}-\d\d-\d\d$/.test(iso || '')) return null; const c = attCode(e, iso, cfg).code; return c && c !== 'L' ? hrShift(cfg, c) : null; };
+    const sh = iso => { if (!/^\d{4}-\d\d-\d\d$/.test(iso || '')) return null; const c = attCode(e, iso, cfg).code; return hrIsWorkCode(c) ? hrShift(cfg, c) : null; };
     const ds = f._dates && f._dates.length ? f._dates : [todayISO()], a = sh(ds[0]), b = sh(ds[ds.length - 1]);
     if (!touched.t1 && a && near(a.start)) f.t1.value = near(a.start);
     if (!touched.t2 && b && near(b.end)) f.t2.value = near(b.end); };
@@ -7297,7 +7308,7 @@ function leaveDays(e, start, end, onlyMonth) {
   while (iso <= end && guard++ < 400) {
     if (!onlyMonth || iso.startsWith(onlyMonth)) {
       const { code } = attCode(e, iso, cfg);
-      if (code && code !== 'L') n++;
+      if (code && !hrIsOff(code)) n++;
       else if (!code && !hrIsWeekend(iso, e.companyId) && !hrHoliday(cfg, iso)) n++;
     }
     iso = addDays(iso, 1);
@@ -7450,7 +7461,7 @@ function leaveDaysOf(e, l, from, to) {
   const a = from && l.start < from ? from : l.start, b = to && l.end > to ? to : l.end; return leaveDays(e, a, b);
 }
 const leaveIsWork = (e, iso) => leaveDays(e, iso, iso) === 1;
-const leaveShiftOf = (e, iso) => { const cfg = hrCfg(e.companyId), c = attCode(e, iso, cfg).code; return c && c !== 'L' ? hrShift(cfg, c) : null; };
+const leaveShiftOf = (e, iso) => { const cfg = hrCfg(e.companyId), c = attCode(e, iso, cfg).code; return hrIsWorkCode(c) ? hrShift(cfg, c) : null; };
 const leaveNear = t => { const m = tmin(t); return m == null ? '08:00' : HALF_HOURS[Math.round(m / 30) % 48]; };
 /* porsi hari: jam cuti ÷ jam kerja shift hari itu (non-shift 8 jam), maks. 1 */
 function leaveFrac(e, iso, t1, t2, cal) {
@@ -7559,7 +7570,6 @@ function leaveCheckDates(e, cfg, type, slots, extra = []) {
    yang diajukan lewat tombol Cuti juga tampil sebagai C di jadwal.
    ========================================================= */
 const CUTI_CODE = 'C', CUTI_COLOR = '#FACC15';
-const hrIsWorkCode = c => !!c && c !== 'L' && c !== CUTI_CODE;
 const leaveAnnualName = cfg => (cfg.leaveTypes.find(t => t.annual) || {}).name || '';
 /* semua tanggal cuti satu pengajuan (hanya hari penuh bila full=true) */
 function leaveDatesOf(l, full) {
@@ -7622,6 +7632,66 @@ async function rosterLeaveApply(month, byEmp, lvlOf) {
   return { made, cancelled, skipped };
 }
 const rosterLeaveMsg = r => [r.made ? `${r.made} pengajuan cuti dibuat` : '', r.cancelled ? `${r.cancelled} cuti dibatalkan` : '', r.skipped ? 'belum ada jenis cuti tahunan di Pengaturan' : ''].filter(Boolean).join(', ');
+
+/* =========================================================
+   Simbol jadwal: kode khusus (libur ekstra, cuti khusus, dinas luar),
+   simbol tampilan untuk Libur/Cuti, dan template simbol rumah sakit.
+   Kode yang tersimpan tetap L (libur) dan C (cuti tahunan); simbol tampilannya
+   bisa diganti (mis. X dan V) lewat template.
+   ========================================================= */
+const HR_SPECIAL = {
+  O: { name: 'Libur extra / tanggal merah', kind: 'off', color: '#BE123C' },
+  VM: { name: 'Cuti melahirkan', kind: 'leave', color: '#BE185D' },
+  VN: { name: 'Cuti nikah', kind: 'leave', color: '#A21CAF' },
+  DL: { name: 'Dinas luar', kind: 'dinas', color: '#334155' }
+};
+const hrIsWorkCode = c => !!c && c !== 'L' && c !== CUTI_CODE && !HR_SPECIAL[c];
+const hrIsOff = c => c === 'L' || c === 'O';
+const hrSym = (cfg, c) => (c && cfg && cfg.sym && cfg.sym[c]) || c || '';
+const hrSymIn = (cfg, s) => { s = String(s || '').trim().toUpperCase(); const m = Object.entries((cfg && cfg.sym) || {}).find(([, v]) => v === s); return m ? m[0] : s; };
+const hrSpecialCodes = cfg => cfg && cfg.specials ? Object.keys(HR_SPECIAL) : [];
+const hrKnownCode = (cfg, c) => c === 'L' || c === CUTI_CODE || !!HR_SPECIAL[c] || !!hrShift(cfg, c);
+const hrCodeName = (cfg, c) => c === 'L' ? 'Libur' : c === CUTI_CODE ? 'Cuti' : HR_SPECIAL[c] ? HR_SPECIAL[c].name : (hrShift(cfg, c) || {}).name || c || '';
+const HR_RESERVED = cfg => ['L', CUTI_CODE, ...Object.keys(HR_SPECIAL), ...Object.values((cfg && cfg.sym) || {})];
+/* kelompok shift menurut huruf depan kode */
+const HR_FAM = [['P', 'Pagi'], ['MD', 'Middle'], ['S', 'Siang'], ['M', 'Malam']];
+const hrFamily = code => { const c = String(code || ''); if (/^MD/.test(c)) return 'MD'; if (/^M\d*$/.test(c)) return 'M'; if (/^P\d*$/.test(c)) return 'P'; if (/^S\d*$/.test(c)) return 'S'; return ''; };
+function hrShiftGroups(cfg) {
+  const g = HR_FAM.map(([k, l]) => ({ k, label: l, list: cfg.shifts.filter(s => hrFamily(s.code) === k) })).filter(x => x.list.length);
+  const rest = cfg.shifts.filter(s => !hrFamily(s.code)); if (rest.length) g.push({ k: '', label: 'Lainnya', list: rest });
+  return g.length > 1 ? g : [{ k: '', label: '', list: cfg.shifts }];
+}
+/* template simbol shift harian rumah sakit */
+const HR_SHIFT_TEMPLATE = [
+  ['P1', '07:00', '14:00', '#15803D'], ['P2', '07:00', '15:30', '#047857'], ['P3', '07:30', '16:00', '#0F766E'], ['P4', '08:00', '15:00', '#4D7C0F'],
+  ['P5', '08:00', '16:30', '#166534'], ['P6', '08:30', '17:00', '#0E7490'], ['P7', '09:00', '16:00', '#3F6212'],
+  ['MD1', '10:00', '17:00', '#1D4ED8'], ['MD2', '09:30', '16:30', '#0369A1'], ['MD3', '08:30', '15:30', '#4338CA'], ['MD4', '11:00', '18:00', '#1E3A8A'],
+  ['MD5', '10:00', '18:30', '#075985'], ['MD6', '10:30', '19:00', '#2563EB'], ['MD7', '09:00', '17:30', '#6D28D9'],
+  ['S1', '12:30', '21:00', '#C2410C'], ['S2', '13:00', '20:00', '#B45309'], ['S3', '14:00', '21:00', '#9A3412'], ['S4', '12:00', '19:00', '#A16207'], ['S5', '15:00', '22:00', '#7C2D12'],
+  ['M', '21:00', '07:00', '#581C87']
+].map(([code, start, end, color]) => ({ code, name: { P: 'Pagi', MD: 'Middle', S: 'Siang', M: 'Malam' }[hrFamily(code)] + (code.replace(/^\D+/, '') ? ' ' + code.replace(/^\D+/, '') : ''), start, end, color }));
+const HR_SYM_TEMPLATE = { L: 'X', C: 'V' };
+/* kode yang masih dipakai di jadwal tersimpan perusahaan ini */
+function hrCodesInUse(cid) {
+  const used = new Set(); Store.all('att_month', d => d.companyId === cid).forEach(d => Object.values(d.sched || {}).forEach(v => used.add(v))); return used;
+}
+function hrApplyTemplate(after) {
+  const cid = S.companyId, cfg = hrCfg(cid), used = hrCodesInUse(cid), tcodes = new Set(HR_SHIFT_TEMPLATE.map(s => s.code));
+  const keep = cfg.shifts.filter(s => !tcodes.has(s.code) && (used.has(s.code) || s.code === cfg.defaultShift));
+  const sample = g => HR_SHIFT_TEMPLATE.filter(s => hrFamily(s.code) === g).map(s => `<span class="sh-chip" style="--c:${s.color}">${s.code}</span>`).join(' ');
+  openModal({ title: 'Template simbol shift rumah sakit', body: `<div class="stack">
+      <p class="small muted" style="margin:0">Shift dan simbol berikut akan dipasang. Warna dibedakan per kelompok dan per kode agar mudah dibaca.</p>
+      ${HR_FAM.map(([k, l]) => `<div class="row" style="gap:6px;flex-wrap:wrap"><b style="min-width:70px">${k} · ${l}</b>${sample(k)}</div>`).join('')}
+      <div class="row" style="gap:6px;flex-wrap:wrap"><b style="min-width:70px">Lainnya</b><span class="sh-chip off">X</span><span class="small">Libur</span> <span class="sh-chip" style="--c:${HR_SPECIAL.O.color}">O</span><span class="small">Libur extra / tanggal merah</span> <span class="sh-chip cuti">V</span><span class="small">Cuti (cuti tahunan)</span> <span class="sh-chip" style="--c:${HR_SPECIAL.VM.color}">VM</span><span class="small">Cuti melahirkan</span> <span class="sh-chip" style="--c:${HR_SPECIAL.VN.color}">VN</span><span class="small">Cuti nikah</span> <span class="sh-chip" style="--c:${HR_SPECIAL.DL.color}">DL</span><span class="small">Dinas luar</span></div>
+      ${keep.length ? `<div class="note small">Shift lama yang masih dipakai di jadwal tersimpan tetap dipertahankan: <b>${keep.map(s => esc(s.code)).join(', ')}</b>. Hapus di Pengaturan → Shift jika sudah tidak dipakai.</div>` : ''}
+      <p class="small muted" style="margin:0">Jam setiap shift bisa diubah lagi di Pengaturan absensi → Shift.</p></div>`,
+    foot: '<button class="btn" data-close>Batal</button><button class="btn primary" id="tplOk">Pasang template</button>',
+    onMount: r => $('#tplOk', r).onclick = async () => {
+      const shifts = [...HR_SHIFT_TEMPLATE, ...keep];
+      await hrSaveCfg(cid, { shifts, sym: { ...HR_SYM_TEMPLATE }, specials: true, defaultShift: shifts.some(s => s.code === cfg.defaultShift) ? cfg.defaultShift : 'P5' });
+      audit('pasang template simbol shift', `${HR_SHIFT_TEMPLATE.length} shift + X/O/V/VM/VN/DL`);
+      closeModal(); toast('Template simbol shift dipasang'); (after || App.renderContent)(); } });
+}
 
 /* =========================================================
    Periode cut off & dinas malam
@@ -8481,7 +8551,7 @@ function stDays(e, from, n) {
     out.push({ iso, code, auto: c.auto && !L, leave: L || null, shift: hrIsWorkCode(code) ? hrShift(cfg, code) : null, holiday: hrHoliday(cfg, iso) }); }
   return out;
 }
-const stDayRow = (e, d) => { const cfg = hrCfg(e.companyId); return `<div class="st-day${d.iso === todayISO() ? ' today' : ''}"><span class="st-dd"><b>${HARI3[dow(d.iso)]}</b> ${+d.iso.slice(8)}</span>${attShiftChip(cfg, d.code, d.auto)}<span class="small">${d.code === 'L' ? 'Libur' : d.code === CUTI_CODE ? `Cuti${d.leave ? ` ${esc(d.leave.type || '')} · ${leaveFinal(d.leave) === 'Disetujui' ? 'disetujui' : 'menunggu persetujuan'}` : ''}` : d.shift ? `${esc(d.shift.name)} · ${d.shift.start}–${d.shift.end}` : '<span class="faint">belum dijadwalkan</span>'}${d.holiday ? ` · <span class="muted">${esc(d.holiday.name)}</span>` : ''}</span></div>`; };
+const stDayRow = (e, d) => { const cfg = hrCfg(e.companyId); return `<div class="st-day${d.iso === todayISO() ? ' today' : ''}"><span class="st-dd"><b>${HARI3[dow(d.iso)]}</b> ${+d.iso.slice(8)}</span>${attShiftChip(cfg, d.code, d.auto)}<span class="small">${hrIsOff(d.code) ? hrCodeName(cfg, d.code) : HR_SPECIAL[d.code] ? esc(HR_SPECIAL[d.code].name) : d.code === CUTI_CODE ? `Cuti${d.leave ? ` ${esc(d.leave.type || '')} · ${leaveFinal(d.leave) === 'Disetujui' ? 'disetujui' : 'menunggu persetujuan'}` : ''}` : d.shift ? `${esc(d.shift.name)} · ${d.shift.start}–${d.shift.end}` : '<span class="faint">belum dijadwalkan</span>'}${d.holiday ? ` · <span class="muted">${esc(d.holiday.name)}</span>` : ''}</span></div>`; };
 
 /* ---------- Beranda Saya ---------- */
 Views.me = () => {
@@ -8878,7 +8948,7 @@ const reqWhenOf = d => d.kind === 'trip' ? (d.start === d.end ? fmtDate(d.start)
 function reqWhat(d) {
   const K = REQ_KINDS[d.kind] || { label: d.kind };
   if (d.kind === 'attfix') return `Masuk <b>${esc(d.in || '–')}</b> · pulang <b>${esc(d.out || '–')}</b>${d.was ? `<div class="small muted">tercatat: ${esc(d.was)}</div>` : ''}`;
-  if (d.kind === 'shift') return `Jadwal baru <b>${esc(d.code === 'L' ? 'Libur' : d.code || '')}</b>${d.from ? ` <span class="muted">(sebelumnya ${esc(d.from)})</span>` : ''}${d.swap ? `<div class="small muted">tukar dengan ${esc(d.swap)}</div>` : ''}`;
+  if (d.kind === 'shift') return `Jadwal baru <b>${esc(hrIsWorkCode(d.code) ? d.code || '' : hrCodeName(hrCfg(), d.code))}</b>${d.from ? ` <span class="muted">(sebelumnya ${esc(d.from)})</span>` : ''}${d.swap ? `<div class="small muted">tukar dengan ${esc(d.swap)}</div>` : ''}`;
   if (d.kind === 'trip') return `Tujuan <b>${esc(d.city || '')}</b><div class="small muted">${esc(d.mode || '')}${d.days ? ` · ${d.days} hari` : ''}</div>`;
   if (d.kind === 'profile') return Object.entries(d.changes || {}).map(([k, v]) => `<div class="small"><b>${esc((PROFILE_FIELDS.find(f => f[0] === k) || [k, k])[1])}</b>: <span class="muted">${esc(v.from || '–')}</span> → ${esc(v.to || '–')}</div>`).join('');
   if (d.kind === 'cancel') return `<b>${esc(d.refText || '')}</b>`;
@@ -8920,7 +8990,7 @@ function reqOwnWire(c, e) {
 /* ---------- form pengajuan lain (staf) ---------- */
 function reqForm(e, kind, prev, preset) {
   const cfg = hrCfg(e.companyId), K = REQ_KINDS[kind], p = prev || preset || {}, today = todayISO();
-  const shiftOpts = v => `${cfg.shifts.map(s => `<option value="${esc(s.code)}" ${s.code === v ? 'selected' : ''}>${esc(s.code)} · ${esc(s.name)} ${s.start}–${s.end}</option>`).join('')}<option value="L" ${v === 'L' ? 'selected' : ''}>L · Libur</option>`;
+  const shiftOpts = v => `${cfg.shifts.map(s => `<option value="${esc(s.code)}" ${s.code === v ? 'selected' : ''}>${esc(s.code)} · ${esc(s.name)} ${s.start}–${s.end}</option>`).join('')}${['L', ...hrSpecialCodes(cfg)].map(k => `<option value="${k}" ${v === k ? 'selected' : ''}>${esc(hrSym(cfg, k))} · ${esc(hrCodeName(cfg, k))}</option>`).join('')}`;
   let fields = '';
   if (kind === 'attfix') fields = `<label class="f">Tanggal yang dikoreksi<input class="input" type="date" name="date" required max="${today}" value="${esc(p.date || today)}"></label><div class="f"><span>Tercatat di sistem</span><div class="note small" id="rqWas" style="margin:0">–</div></div>
     <label class="f">Jam masuk seharusnya<input class="input" type="time" name="in" value="${esc(p.in || '')}"></label><label class="f">Jam pulang seharusnya<input class="input" type="time" name="out" value="${esc(p.out || '')}"></label>
@@ -8942,7 +9012,7 @@ function reqForm(e, kind, prev, preset) {
       const f = $('#rqF', r); if ($('#rqDoc', r)) hrDocInputWire(r, 'rqDoc');
       const was = () => { const w = $('#rqWas', r); if (!w || !f.date.value) return; const iso = f.date.value, A = attMonth(e, iso.slice(0, 7)), d = A.find(x => x.iso === iso);
         if (kind === 'attfix') w.innerHTML = d ? `${d.shift ? `${esc(d.shift.name)} ${d.shift.start}–${d.shift.end}` : esc(d.code === 'L' ? 'Libur' : 'tanpa jadwal')} · masuk <b>${d.in || '–'}</b> · pulang <b>${d.out || '–'}</b> · ${esc(d.status || '')}` : '–';
-        if (kind === 'shift') w.innerHTML = d ? (d.code === 'L' ? 'Libur' : d.shift ? `${esc(d.code)} · ${esc(d.shift.name)} ${d.shift.start}–${d.shift.end}` : 'belum dijadwalkan') : '–'; };
+        if (kind === 'shift') w.innerHTML = d ? (d.code && !hrIsWorkCode(d.code) ? esc(hrCodeName(cfg, d.code)) : d.shift ? `${esc(d.code)} · ${esc(d.shift.name)} ${d.shift.start}–${d.shift.end}` : 'belum dijadwalkan') : '–'; };
       if (f.date) { f.date.onchange = was; was(); }
       f.onsubmit = async ev => { ev.preventDefault(); const d = formData(f), note = (d.note || '').trim();
         if (note.length < REQ_MIN_NOTE) { toast(`Alasan wajib diisi (minimal ${REQ_MIN_NOTE} huruf)`); f.note.focus(); return; }
@@ -9059,7 +9129,7 @@ function clockCardHtml(e) {
   const g = geoCfg(e.companyId); if (!g.on || !g.sites.length) return '';
   const T = clockToday(e), A = attMonth(e, todayISO().slice(0, 7)).find(x => x.iso === todayISO()), sh = A?.shift;
   return `<div class="card card-pad clock-card"><div class="clock-l"><span class="eyebrow">Absen online · ${fmtDate(todayISO())}</span><b class="clock-now" id="clkNow">--:--</b>
-      <span class="small">${sh ? `Shift ${esc(sh.name)} ${sh.start}–${sh.end}` : A?.code === 'L' ? 'Hari ini libur' : A?.status === 'Cuti' || A?.code === CUTI_CODE ? 'Hari ini cuti' : 'Belum ada jadwal'} · masuk <b>${A?.in || '–'}</b> · pulang <b>${A?.out || '–'}</b></span>
+      <span class="small">${sh ? `Shift ${esc(sh.name)} ${sh.start}–${sh.end}` : hrIsOff(A?.code) ? 'Hari ini libur' : A?.code === 'DL' ? 'Hari ini dinas luar' : A?.status === 'Cuti' || A?.code === CUTI_CODE ? 'Hari ini cuti' : 'Belum ada jadwal'} · masuk <b>${A?.in || '–'}</b> · pulang <b>${A?.out || '–'}</b></span>
       ${T.web.length ? `<span class="small muted">Tercatat online: ${T.web.map(w => `${esc(w.t)}${w.site ? ' (' + esc(w.site) + ')' : ''}`).join(', ')}</span>` : ''}</div>
     <button class="btn primary clock-btn" id="clkGo">📍 ${A?.in ? 'Absen pulang' : 'Absen masuk'}</button></div>`;
 }
@@ -9302,8 +9372,8 @@ Views.teamday = () => {
   Store.cache.team_act = {}; D.acts.forEach(a => { Store.cache.team_act[a.id] = a.data; (acts[a.data.employeeId] = acts[a.data.employeeId] || []).push({ ...a.data, id: a.id }); });
   Store.cache.team_web = {};
   const team = (S.team || []).filter(t => t.lvl > 0).sort((a, b) => (a.unit || '').localeCompare(b.unit || '') || a.name.localeCompare(b.name));
-  const rows = team.map(t => { const r = byE.get(t.id) || {}, emp = { ...t, companyId: S.user.companyId }, code = r.sched || attCode(emp, date, cfg, { sched: {} }).code, sh = code && code !== 'L' ? hrShift(cfg, code) : null;
-    const scans = [...(r.scans || [])].sort(), web = r.web || [], A = acts[t.id] || [], st = r.fix?.status || (code === 'L' ? 'Libur' : code === CUTI_CODE ? 'Cuti' : scans.length ? 'Hadir' : date < todayISO() ? 'Tidak ada scan' : 'Belum absen');
+  const rows = team.map(t => { const r = byE.get(t.id) || {}, emp = { ...t, companyId: S.user.companyId }, code = r.sched || attCode(emp, date, cfg, { sched: {} }).code, sh = hrIsWorkCode(code) ? hrShift(cfg, code) : null;
+    const scans = [...(r.scans || [])].sort(), web = r.web || [], A = acts[t.id] || [], st = r.fix?.status || (hrIsOff(code) ? 'Libur' : code === CUTI_CODE || HR_SPECIAL[code]?.kind === 'leave' ? 'Cuti' : code === 'DL' ? 'Dinas luar' : scans.length ? 'Hadir' : date < todayISO() ? 'Tidak ada scan' : 'Belum absen');
     web.forEach((w, i) => { if (w.photo) Store.cache.team_web[`${t.id}_${i}`] = { files: [w.photo] }; });
     return { t, sh, code, scans, web, A, st }; });
   const n = s => rows.filter(x => x.st === s).length;
