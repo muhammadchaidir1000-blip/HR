@@ -5608,6 +5608,8 @@ async function papiEnsureSamples() {
    KEPEGAWAIAN · inti: pengaturan HR + fungsi bersama
    Semua nilai bawaan bisa diubah di menu Aturan Absensi & Gaji.
    ========================================================= */
+const HR_AGAMA = ['Islam', 'Kristen Protestan', 'Katolik', 'Hindu', 'Buddha', 'Konghucu', 'Lainnya'];
+const HR_NIKAH = ['Belum menikah', 'Menikah', 'Cerai hidup', 'Cerai mati'];
 const HR_STATUS = ['Tetap', 'Kontrak (PKWT)', 'Masa percobaan', 'Honorer', 'Magang', 'Mitra'];
 const HR_PTKP = ['TK/0', 'TK/1', 'TK/2', 'TK/3', 'K/0', 'K/1', 'K/2', 'K/3'];
 const HR_PROF = ['Dokter Spesialis', 'Dokter Umum', 'Dokter Gigi', 'Perawat', 'Bidan', 'Apoteker', 'Tenaga Teknis Kefarmasian', 'Analis/ATLM', 'Radiografer', 'Fisioterapis', 'Ahli Gizi', 'Perekam Medis', 'Tenaga Non-Kesehatan'];
@@ -5912,13 +5914,14 @@ function hrMasterDefault() {
 }
 const hrMaster = (k, cid) => hrCfg(cid).master[k] || [];
 const hrStatusList = cid => { const l = hrMaster('statuses', cid).map(x => x.name).filter(Boolean); return l.length ? l : HR_STATUS; };
-const hrIsContract = (status, cid) => { const m = hrMaster('statuses', cid).find(x => x.name === status); return m ? !!m.contract : /Kontrak|percobaan|Magang/i.test(status || ''); };
+const hrPermanent = s => /^\s*(tetap|pkwtt|karyawan tetap|pegawai tetap)\b/i.test(s || '');
+const hrIsContract = (status, cid) => { if (hrPermanent(status)) return false; const m = hrMaster('statuses', cid).find(x => x.name === status); return m ? !!m.contract : /Kontrak|percobaan|Magang/i.test(status || ''); };
 
 const HRM_TABS = [
   { k: 'jobs', label: 'Jabatan', help: 'Daftar jabatan. Kategori dan golongan dipakai untuk laporan dan kisaran gaji.', cols: () => [{ k: 'name', label: 'Nama jabatan' }, { k: 'cat', label: 'Kategori', type: 'select', opts: [['', '–'], ...hrMaster('cats').map(c => [c.name, c.name])] }, { k: 'grade', label: 'Golongan', type: 'select', opts: [['', '–'], ...hrMaster('grades').map(c => [c.name, c.name])] }, { k: 'desc', label: 'Uraian tugas singkat' }] },
   { k: 'cats', label: 'Kategori jabatan', help: 'Pengelompokan jabatan (misalnya Medis, Keperawatan, Non-medis).', cols: () => [{ k: 'name', label: 'Nama kategori' }] },
   { k: 'grades', label: 'Golongan gaji', help: 'Kisaran gaji pokok per golongan. Data Karyawan akan memberi tanda bila gaji pokok di luar kisaran. Isi 0 bila tidak dibatasi.', cols: () => [{ k: 'name', label: 'Golongan', w: '90px' }, { k: 'min', label: 'Gaji pokok minimal (Rp)', type: 'number', attrs: 'min="0" step="1000"' }, { k: 'max', label: 'Gaji pokok maksimal (Rp)', type: 'number', attrs: 'min="0" step="1000"' }] },
-  { k: 'statuses', label: 'Status kepegawaian', help: 'Tandai status yang punya tanggal akhir (kontrak, percobaan, magang) agar sistem mengingatkan 30 hari sebelum berakhir.', cols: () => [{ k: 'name', label: 'Status' }, { k: 'contract', label: 'Punya tanggal akhir', type: 'check' }] },
+  { k: 'statuses', label: 'Status kepegawaian', help: 'Tandai status yang punya tanggal akhir (kontrak, percobaan, magang) agar sistem mengingatkan 30 hari sebelum berakhir. Status ini juga dihitung di kartu "Kontrak / percobaan". Status Tetap selalu dianggap tanpa tanggal akhir.', cols: () => [{ k: 'name', label: 'Status' }, { k: 'contract', label: 'Punya tanggal akhir', type: 'check' }] },
   { k: 'locs', label: 'Lokasi kerja', help: 'Gedung, cabang, atau klinik tempat karyawan bekerja.', cols: () => [{ k: 'name', label: 'Nama lokasi' }, { k: 'address', label: 'Alamat' }, { k: 'phone', label: 'Telepon' }] },
   { k: 'edus', label: 'Jenjang pendidikan', help: 'Pilihan jenjang pada riwayat pendidikan karyawan.', cols: () => [{ k: 'name', label: 'Jenjang' }] },
   { k: 'licenses', label: 'Lisensi & sertifikat', help: 'Jenis lisensi/sertifikat. Sistem mengingatkan 60 hari sebelum masa berlakunya habis.', cols: () => [{ k: 'name', label: 'Nama lisensi / sertifikat' }] },
@@ -5947,6 +5950,7 @@ Views.hrmasterMount = c => {
   hrRowsWire(c);
   const save = async () => {
     const rows = hrRowsRead(c, 'tHm').filter(r => String(r.name || '').trim());
+    if (tab === 'statuses') rows.forEach(r => { if (hrPermanent(r.name) && r.contract) { r.contract = false; toast(`"${r.name}" adalah status tetap, jadi tidak punya tanggal akhir`); } });
     const names = rows.map(r => (r.job ? r.job + '|' : '') + r.name.toLowerCase());
     if (new Set(names).size !== names.length) { toast('Ada nama yang sama dua kali'); return; }
     if (tab === 'grades' && rows.some(r => r.max && r.min > r.max)) { toast('Gaji minimal lebih besar dari maksimal'); return; }
@@ -5963,7 +5967,7 @@ Views.hrmasterMount = c => {
 const EMP_COLS = [
   ['nik', 'NIK Karyawan'], ['name', 'Nama Lengkap'], ['pin', 'PIN Mesin Absensi'], ['unit', 'Unit'], ['position', 'Jabatan'], ['level', 'Level'], ['supNik', 'NIK Atasan'], ['grade', 'Golongan'], ['location', 'Lokasi Kerja'],
   ['status', 'Status Kepegawaian'], ['joinDate', 'Tanggal Masuk'], ['contractEnd', 'Kontrak Berakhir'], ['workType', 'Jenis Kerja (shift/nonshift)'],
-  ['profession', 'Profesi'], ['gender', 'Jenis Kelamin (L/P)'], ['birthPlace', 'Tempat Lahir'], ['birthDate', 'Tanggal Lahir'], ['nikKtp', 'NIK KTP'],
+  ['profession', 'Profesi'], ['gender', 'Jenis Kelamin (L/P)'], ['religion', 'Agama'], ['marital', 'Status Pernikahan'], ['birthPlace', 'Tempat Lahir'], ['birthDate', 'Tanggal Lahir'], ['nikKtp', 'NIK KTP'],
   ['phone', 'No HP'], ['email', 'Email'], ['address', 'Alamat'], ['ptkp', 'Status PTKP'], ['npwp', 'NPWP'], ['bpjsKesNo', 'No BPJS Kesehatan'], ['bpjsTkNo', 'No BPJS Ketenagakerjaan'],
   ['strNo', 'No STR'], ['strUntil', 'STR Berlaku s.d.'], ['sipNo', 'No SIP'], ['sipUntil', 'SIP Berlaku s.d.'],
   ['bankName', 'Bank'], ['bankAcc', 'No Rekening'], ['bankHolder', 'Nama Pemilik Rekening'],
@@ -5981,30 +5985,32 @@ Views.employees = () => {
   if (f.unit) rows = rows.filter(e => e.unit === f.unit);
   if (f.status) rows = rows.filter(e => (e.status || '') === f.status);
   if (f.alert) rows = rows.filter(e => hrAlerts(e).length);
+  if (f.kontrak) rows = rows.filter(e => hrIsContract(e.status, e.companyId));
+  if (f.nopin) rows = rows.filter(e => !e.pin);
   const act = all.filter(e => e.active !== false), alertN = act.filter(e => hrAlerts(e).length).length, noPin = act.filter(e => !e.pin).length;
-  const contract = act.filter(e => hrIsContract(e.status)).length;
+  const contract = act.filter(e => hrIsContract(e.status, e.companyId)).length;
   const sel = S._esel || (S._esel = new Set()), vis = new Set(rows.map(e => e.id)); [...sel].forEach(id => { if (!Store.get('employees', id)) sel.delete(id); });
   const selN = [...sel].filter(id => vis.has(id)).length, allOn = rows.length && rows.every(e => sel.has(e.id));
   const selOff = [...sel].some(id => Store.get('employees', id)?.active === false), selOn = [...sel].some(id => Store.get('employees', id)?.active !== false);
   return `<div class="page-head"><div><h1>Data Karyawan</h1><p>Data induk karyawan untuk absensi, cuti, dan penggajian.</p></div>
     <div class="row"><button class="btn" id="eExp">Unduh Excel (CSV)</button><button class="btn" id="eImp">Impor dari Excel</button><button class="btn" id="eAccGen" title="Buat akun login untuk karyawan yang belum punya akun">🔑 Buat akun staf</button><button class="btn primary" id="addE">+ Karyawan</button></div></div>
   <div class="grid g4">
-    <div class="card kpi k-blue"><span class="eyebrow">Karyawan aktif</span><b style="font-size:24px">${act.length}</b></div>
-    <div class="card kpi k-purple"><span class="eyebrow">Kontrak / percobaan</span><b style="font-size:24px">${contract}</b></div>
+    <button class="card kpi k-blue hr-kpibtn" data-kq='{}'><span class="eyebrow">Karyawan aktif</span><b style="font-size:24px">${act.length}</b><span class="small muted">${act.length - contract} tetap / non-kontrak</span></button>
+    <button class="card kpi k-purple hr-kpibtn" data-kq='{"kontrak":1}'><span class="eyebrow">Kontrak / percobaan</span><b style="font-size:24px">${contract}</b><span class="small muted">${esc(Object.entries(act.filter(e => hrIsContract(e.status, e.companyId)).reduce((m, e) => (m[e.status] = (m[e.status] || 0) + 1, m), {})).map(([k, v]) => k + ' ' + v).join(' · ') || 'punya tanggal akhir')}</span></button>
     <button class="card kpi k-orange hr-kpibtn" data-kq='{"alert":1}'><span class="eyebrow">Perlu perhatian</span><b style="font-size:24px">${alertN}</b><span class="small muted">kontrak, STR, SIP</span></button>
-    <div class="card kpi k-teal"><span class="eyebrow">Belum punya PIN mesin</span><b style="font-size:24px">${noPin}</b></div>
+    <button class="card kpi k-teal hr-kpibtn" data-kq='{"nopin":1}'><span class="eyebrow">Belum punya PIN mesin</span><b style="font-size:24px">${noPin}</b></button>
   </div>
   <div class="card"><div class="card-head"><div class="row">
     <input class="input" id="eq" placeholder="Cari nama, NIK, PIN…" value="${esc(f.q || '')}" style="width:220px">
     <select class="input" id="eu" style="width:auto"><option value="">Semua unit</option>${units.map(u => `<option ${u === f.unit ? 'selected' : ''}>${esc(u)}</option>`).join('')}</select>
     <select class="input" id="es" style="width:auto"><option value="">Semua status</option>${hrStatusList().map(u => `<option ${u === f.status ? 'selected' : ''}>${esc(u)}</option>`).join('')}</select>
     <select class="input" id="eshow" style="width:auto"><option value="">Aktif</option><option value="off" ${f.show === 'off' ? 'selected' : ''}>Nonaktif</option><option value="all" ${f.show === 'all' ? 'selected' : ''}>Semua</option></select>
-    ${f.alert ? '<button class="btn sm" id="eAlertOff">Hapus filter perhatian ✕</button>' : ''}</div><span class="small muted">${rows.length} karyawan</span></div>
+    ${f.alert || f.kontrak || f.nopin ? `<button class="btn sm" id="eAlertOff">Hapus filter ${f.alert ? 'perhatian' : f.kontrak ? 'kontrak / percobaan' : 'belum punya PIN'} ✕</button>` : ''}</div><span class="small muted">${rows.length} karyawan</span></div>
   ${sel.size ? `<div class="bulk-bar" role="region" aria-label="Aksi karyawan terpilih"><b>${sel.size} karyawan dipilih</b>${selN < sel.size ? `<span class="small muted">(${sel.size - selN} di luar filter)</span>` : ''}
     <div class="row" style="gap:8px;margin-left:auto">${selOn ? '<button class="btn sm" id="bOff">Nonaktifkan</button>' : ''}${selOff ? '<button class="btn sm" id="bOn">Aktifkan kembali</button>' : ''}${S.user.role === SA ? '<button class="btn sm danger" id="bDel">Hapus permanen</button>' : ''}<button class="btn sm ghost" id="bClr">Batal pilih</button></div></div>` : ''}
   ${rows.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th class="chk"><input type="checkbox" id="eAll" aria-label="Pilih semua yang tampil" ${allOn ? 'checked' : ''}></th><th>NIK</th><th>Nama</th><th>Unit / jabatan</th><th>Status</th><th>Masa kerja</th><th>PIN mesin</th><th>Jenis kerja</th><th>Perhatian</th></tr></thead><tbody>
     ${rows.map(e => `<tr class="click ${sel.has(e.id) ? 'sel' : ''}" data-open="${e.id}" tabindex="0"><td class="chk"><input type="checkbox" data-sel="${e.id}" aria-label="Pilih ${esc(e.name)}" ${sel.has(e.id) ? 'checked' : ''}></td><td class="mono small">${esc(e.nik || '–')}</td><td><div class="row" style="gap:10px;flex-wrap:nowrap">${avatarHtml(e.name, empPhoto(e), 32)}<div><b>${esc(e.name)}</b>${sampleTag(e)}${e.active === false ? ' <span class="pill">nonaktif</span>' : ''}<div class="small muted">${esc(e.profession || '')}</div></div></div></td>
-      <td>${esc(e.unit || '–')}<div class="small muted">${esc(e.position || '')}</div></td><td class="small">${esc(e.status || '–')}</td><td class="small">${hrServiceText(e.joinDate)}</td>
+      <td>${esc(e.unit || '–')}<div class="small muted">${esc(e.position || '')}</div></td><td class="small">${esc(e.status || '–')}${e.religion || e.marital ? `<div class="muted">${[esc(e.religion || ''), esc(e.marital || '')].filter(Boolean).join(' · ')}</div>` : ''}</td><td class="small">${hrServiceText(e.joinDate)}</td>
       <td class="mono">${e.pin ? esc(e.pin) : '<span class="pill warn">belum</span>'}</td><td class="small">${e.workType === 'shift' ? 'Shift' : 'Non-shift'}</td>
       <td>${hrAlerts(e).map(a => `<span class="pill ${a.lvl}">${esc(a.t)}</span>`).join(' ') || '<span class="small faint">–</span>'}</td></tr>`).join('')}
   </tbody></table></div>` : `<div class="empty">${all.length ? 'Tidak ada karyawan yang cocok dengan filter.' : 'Belum ada karyawan. Tambahkan satu per satu atau impor dari Excel.'}</div>`}</div>`;
@@ -6015,8 +6021,8 @@ Views.employeesMount = c => {
   $$('[data-open]', c).forEach(tr => { tr.onclick = () => App.go('employee', { id: tr.dataset.open }); tr.onkeydown = e => { if (e.key === 'Enter') tr.click(); }; });
   let t; $('#eq', c).oninput = e => { clearTimeout(t); t = setTimeout(() => { setP({ q: e.target.value }); const i = $('#eq'); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }, 300); };
   $('#eu', c).onchange = e => setP({ unit: e.target.value }); $('#es', c).onchange = e => setP({ status: e.target.value }); $('#eshow', c).onchange = e => setP({ show: e.target.value });
-  $$('[data-kq]', c).forEach(b => b.onclick = () => setP(JSON.parse(b.dataset.kq)));
-  const ao = $('#eAlertOff', c); if (ao) ao.onclick = () => setP({ alert: 0 });
+  $$('[data-kq]', c).forEach(b => b.onclick = () => setP({ alert: 0, kontrak: 0, nopin: 0, ...JSON.parse(b.dataset.kq) }));
+  const ao = $('#eAlertOff', c); if (ao) ao.onclick = () => setP({ alert: 0, kontrak: 0, nopin: 0 });
   $('#eExp', c).onclick = () => empExport();
   $('#eImp', c).onclick = () => empImportDialog();
   $('#eAccGen', c).onclick = () => staffAccGen();
@@ -6085,6 +6091,7 @@ function employeeForm(e = {}) {
     <fieldset class="hr-fs"><legend>Data pribadi</legend><div class="form-grid">
       ${Sel('gender', 'Jenis kelamin', [['', '–'], ['L', 'Laki-laki'], ['P', 'Perempuan']], e.gender)}${F('nikKtp', 'NIK KTP', 'inputmode="numeric" maxlength="16"')}
       ${F('birthPlace', 'Tempat lahir')}${F('birthDate', 'Tanggal lahir', '', 'date')}
+      ${Sel('religion', 'Agama', [['', '–'], ...[...new Set([...HR_AGAMA, ...(e.religion ? [e.religion] : [])])]], e.religion)}${Sel('marital', 'Status pernikahan', [['', '–'], ...[...new Set([...HR_NIKAH, ...(e.marital ? [e.marital] : [])])]], e.marital)}
       ${F('phone', 'No HP', '', 'tel')}${F('email', 'Email', '', 'email')}
       <label class="f" style="grid-column:1/-1">Alamat<input class="input" name="address" value="${esc(e.address || '')}"></label>
     </div></fieldset>
@@ -6124,7 +6131,7 @@ Views.employee = () => {
   const row = (k, v) => `<div class="hr-kv"><span>${k}</span><b>${v || '<span class="faint">–</span>'}</b></div>`;
   let body = '';
   if (tab === 'profil') body = `<div class="grid g2" style="align-items:start">
-    <div class="card card-pad stack"><div class="eyebrow">Kepegawaian</div>${row('NIK karyawan', esc(e.nik))}${row('Unit', esc(e.unit))}${row('Jabatan', esc(e.position))}${row('Level', esc(e.level))}${row('Status', esc(e.status))}
+    <div class="card card-pad stack"><div class="eyebrow">Kepegawaian</div>${row('NIK karyawan', esc(e.nik))}${row('Unit', esc(e.unit))}${row('Jabatan', esc(e.position))}${row('Level', esc(e.level))}${row('Status', esc(e.status))}${row('Agama', esc(e.religion))}${row('Status pernikahan', esc(e.marital))}
       ${row('Tanggal masuk', e.joinDate ? fmtDate(e.joinDate) + ' · ' + hrServiceText(e.joinDate) : '')}${row('Kontrak berakhir', e.contractEnd ? fmtDate(e.contractEnd) : '')}${row('Kategori / golongan', [esc(job?.cat || ''), esc(e.grade || job?.grade || '')].filter(Boolean).join(' · '))}${row('Lokasi kerja', esc(e.location))}${row('Profesi', esc(e.profession))}${row('Atasan langsung', sup ? `<a href="#" data-emp="${sup.id}">${esc(sup.name)}</a>` : '')}${row('Bawahan langsung', subs.map(x => `<a href="#" data-emp="${x.id}">${esc(x.name)}</a>`).join(', '))}
       ${e.active === false ? row('Nonaktif sejak', fmtDate(e.endDate) + (e.endReason ? ' · ' + esc(e.endReason) : '')) : ''}</div>
     <div class="stack"><div class="card card-pad stack"><div class="eyebrow">Akun HRIS staf</div>${(() => { const ac = e.accountId && Store.get('accounts', e.accountId);
@@ -8327,7 +8334,7 @@ Views.myprofile = () => {
   return `<div class="page-head"><div class="row" style="gap:16px;flex-wrap:nowrap">${myPhotoBtn()}<div><h1>Profil & Status Saya</h1><p>Data kepegawaian Anda yang tercatat di HRD. Bila ada yang berubah atau keliru, ajukan perubahan; data diperbarui setelah disetujui HRD.</p></div></div><div class="row"><button class="btn" data-go="mydocs">📁 Dokumen Saya</button><button class="btn" data-chpw>🔐 Ganti password</button><button class="btn primary" data-go="myreq" data-p='{"new":"profile"}'>Ajukan perubahan data</button></div></div>${initPwBanner()}
   <div class="grid g2" style="align-items:start">
     <div class="card card-pad stack" style="gap:0"><h3 style="margin:0 0 8px">Pekerjaan</h3>
-      ${stKv('NIK karyawan', esc(e.nik))}${stKv('Jabatan', esc(e.position))}${stKv('Unit', esc(e.unit))}${stKv('Level', esc(e.level))}${stKv('Status kepegawaian', esc(e.status))}
+      ${stKv('NIK karyawan', esc(e.nik))}${stKv('Jabatan', esc(e.position))}${stKv('Unit', esc(e.unit))}${stKv('Level', esc(e.level))}${stKv('Status kepegawaian', esc(e.status))}${stKv('Agama', esc(e.religion))}${stKv('Status pernikahan', esc(e.marital))}
       ${stKv('Tanggal masuk', e.joinDate ? fmtDate(e.joinDate) : '')}${stKv('Masa kerja', esc(hrServiceText(e.joinDate)))}${hrIsContract(e.status, e.companyId) ? stKv('Kontrak berakhir', e.contractEnd ? fmtDate(e.contractEnd) : '') : ''}
       ${stKv('Jenis kerja', e.workType === 'shift' ? 'Shift' : 'Non-shift')}${stKv('Lokasi kerja', esc(e.location))}${stKv('Atasan langsung', esc(sup))}${stKv('PIN mesin absensi', esc(e.pin))}</div>
     <div class="card card-pad stack" style="gap:0"><h3 style="margin:0 0 8px">Data pribadi & legalitas</h3>
@@ -8660,7 +8667,7 @@ const REQ_KINDS = {
   profile: { label: 'Perubahan data diri', ic: '🪪', hint: 'No HP, alamat, rekening, NPWP, BPJS, STR/SIP' },
   cancel: { label: 'Pembatalan pengajuan', ic: '↩️', hint: 'Batalkan cuti/lembur yang sudah disetujui' }
 };
-const PROFILE_FIELDS = [['phone', 'No HP'], ['email', 'Email'], ['address', 'Alamat'], ['bankName', 'Nama bank'], ['bankAcc', 'No rekening'], ['npwp', 'NPWP'], ['bpjsKesNo', 'No BPJS Kesehatan'], ['bpjsTkNo', 'No BPJS Ketenagakerjaan'], ['strNo', 'No STR'], ['strUntil', 'STR berlaku s.d.', 'date'], ['sipNo', 'No SIP'], ['sipUntil', 'SIP berlaku s.d.', 'date']];
+const PROFILE_FIELDS = [['marital', 'Status pernikahan', HR_NIKAH], ['religion', 'Agama', HR_AGAMA], ['phone', 'No HP'], ['email', 'Email'], ['address', 'Alamat'], ['bankName', 'Nama bank'], ['bankAcc', 'No rekening'], ['npwp', 'NPWP'], ['bpjsKesNo', 'No BPJS Kesehatan'], ['bpjsTkNo', 'No BPJS Ketenagakerjaan'], ['strNo', 'No STR'], ['strUntil', 'STR berlaku s.d.', 'date'], ['sipNo', 'No SIP'], ['sipUntil', 'SIP berlaku s.d.', 'date']];
 const REQ_MIN_NOTE = 5;
 const TRIP_MODES = ['Kendaraan dinas', 'Kendaraan pribadi', 'Transportasi umum darat', 'Pesawat', 'Kapal'];
 const reqWhenOf = d => d.kind === 'trip' ? (d.start === d.end ? fmtDate(d.start) : `${fmtDate(d.start)} – ${fmtDate(d.end)}`) : d.date ? fmtDate(d.date) : fmtDate((d.createdAt || '').slice(0, 10));
@@ -8719,7 +8726,7 @@ function reqForm(e, kind, prev, preset) {
   if (kind === 'trip') fields = `<label class="f">Kota / tempat tujuan<input class="input" name="city" required value="${esc(p.city || '')}" placeholder="mis. RSUD Kota Bandung"></label><label class="f">Transportasi<select class="input" name="mode">${TRIP_MODES.map(m => `<option ${m === p.mode ? 'selected' : ''}>${m}</option>`).join('')}</select></label>
     <label class="f">Berangkat<input class="input" type="date" name="start" required value="${esc(p.start || today)}"></label><label class="f">Kembali<input class="input" type="date" name="end" required value="${esc(p.end || today)}"></label>`;
   if (kind === 'profile') fields = `<div style="grid-column:1/-1" class="stack"><p class="small muted" style="margin:0">Ubah kolom yang datanya berubah. Kolom lain biarkan apa adanya. Perubahan berlaku setelah disetujui HRD.</p>
-    <div class="form-grid">${PROFILE_FIELDS.map(([k, l, t]) => `<label class="f">${esc(l)}<input class="input" name="pf_${k}" type="${t || 'text'}" value="${esc(p.changes?.[k]?.to ?? e[k] ?? '')}" data-was="${esc(e[k] ?? '')}"></label>`).join('')}</div></div>`;
+    <div class="form-grid">${PROFILE_FIELDS.map(([k, l, t]) => { const v = p.changes?.[k]?.to ?? e[k] ?? ''; return Array.isArray(t) ? `<label class="f">${esc(l)}<select class="input" name="pf_${k}" data-was="${esc(e[k] ?? '')}"><option value="">–</option>${[...new Set([...t, ...(v ? [v] : [])])].map(o => `<option ${o === v ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select></label>` : `<label class="f">${esc(l)}<input class="input" name="pf_${k}" type="${t || 'text'}" value="${esc(v)}" data-was="${esc(e[k] ?? '')}"></label>`; }).join('')}</div></div>`;
   if (kind === 'cancel') fields = `<div class="note" style="grid-column:1/-1;margin:0">Pengajuan yang dibatalkan: <b>${esc(p.refText || '')}</b><br><span class="small muted">Setelah pembatalan disetujui, ${p.refCol === 'leaves' ? 'hari cuti dikembalikan ke saldo' : 'jam lembur tidak dibayarkan'}.</span></div>`;
   openModal({ title: (prev ? 'Perbaiki · ' : '') + K.label, body: `<form id="rqF" class="form-grid">${fields}
     <label class="f" style="grid-column:1/-1">${kind === 'trip' ? 'Keperluan dinas' : 'Alasan'} <span style="color:var(--bad)">*</span><textarea class="input" name="note" rows="3" required minlength="${REQ_MIN_NOTE}" placeholder="${kind === 'attfix' ? 'mis. lupa scan pulang karena menangani pasien IGD' : kind === 'trip' ? 'mis. pelatihan BTCLS sesuai surat tugas Direktur' : 'Tulis alasannya dengan jelas'}">${esc(prev?.note || '')}</textarea></label>
